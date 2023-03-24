@@ -11,7 +11,14 @@ class ReactionMatrix:
     rate: np.ndarray
 
 
-def process_reactions(reactions):
+def create_reaction_data(reactions):
+    rmat_1st, rmat_2nd = create_reaction_matrix(reactions)
+    spec_table = create_specie_table(rmat_1st, rmat_2nd)
+    rmat_1st, rmat_2nd = name_to_inds(spec_table, rmat_1st, rmat_2nd)
+    return spec_table, rmat_1st, rmat_2nd
+
+
+def create_reaction_matrix(reactions):
     spec_1st_r = []
     spec_1st_p = []
     rate_1st = []
