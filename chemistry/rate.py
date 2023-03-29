@@ -31,6 +31,31 @@ class CosmicRayIonization(nn.Module):
         return rate
 
 
+class Photodissociation(nn.Module):
+    def forward(self, params, Av):
+        """
+        Args:
+            params (tensor): (R, 5). Parameters.
+
+                - Minimum reaction temperature.
+                - Maximum reaction temperature.
+                - Alpha.
+                - Beta.
+                - Gamma.
+            
+            Av (tensor): (B,). Visual extinction.
+
+        Returns:
+            tensor: (R,). Reaction rate.
+        """
+        alpha = params[:, 2]
+        gamma = params[:, 4]
+        Av = Av[:, None]
+        
+        rate = alpha*torch.exp(-gamma*Av)
+        return rate
+
+
 class ModifiedArrhenius(nn.Module):
     def forward(self, temp, params):
         """
