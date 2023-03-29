@@ -42,7 +42,7 @@ class Photodissociation(nn.Module):
                 - Alpha.
                 - Beta.
                 - Gamma.
-            
+
             Av (tensor): (B,). Visual extinction.
 
         Returns:
@@ -51,7 +51,7 @@ class Photodissociation(nn.Module):
         alpha = params[:, 2]
         gamma = params[:, 4]
         Av = Av[:, None]
-        
+
         rate = alpha*torch.exp(-gamma*Av)
         return rate
 
@@ -60,7 +60,7 @@ class ModifiedArrhenius(nn.Module):
     def forward(self, temp, params):
         """
         Args:
-            temp (tensor): (B,). Temperature [K]. 
+            temp (tensor): (B,). Temperature [K].
             params (tensor): (R, 5). Parameters.
 
                 - Minimum reaction temperature.
@@ -83,4 +83,27 @@ class ModifiedArrhenius(nn.Module):
         temp = temp_min + (temp_max - temp_min)*temp
 
         rate = alpha*(temp/300.)**beta*torch.exp(-gamma/temp)
+        return rate
+
+
+class GasGrainReaction(nn.Module):
+    def forward(self, params, temp):
+        """
+        Args:
+            params (tensor): (R, 5). Parameters.
+
+                - Minimum reaction temperature.
+                - Maximum reaction temperature.
+                - Alpha.
+                - Beta.
+                - Gamma.
+
+            temp (tensor): (B,). Temperature [K].
+
+        Returns:
+            tensor: (B, R). Reaction rate.
+        """
+        temp = temp[:, None]
+        temp_min, temp_max, alpha, beta, _ = params.T
+        rate = alpha*(temp/300.)**beta
         return rate
