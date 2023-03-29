@@ -3,12 +3,20 @@ from torch import nn
 from torch.nn import functional as F
 
 
-class ModifiedArrhenius(nn.Module):
-    def forward(self, temp, params):
+class CosmicRayIonization(nn.Module):
+    """Cosmic-ray ionization.
+
+    Args:
+        zeta (float): H2 cosmic-ray ionization rate [s^-1].
+    """
+    def __init__(self, zeta):
+        super(CosmicRayIonization, self).__init__()
+        self.register_buffer("zeta", torch.tensor(zeta, dtype=torch.float32))
+
+    def forward(self, params):
         """
         Args:
-            temp (tensor): (B,). Temperature [K]. 
-            params (tensor): (N, 5). Parameters.
+            params (tensor): (R, 5). Parameters.
 
                 - Minimum reaction temperature.
                 - Maximum reaction temperature.
@@ -17,7 +25,27 @@ class ModifiedArrhenius(nn.Module):
                 - Gamma.
 
         Returns:
-            (tensor): (B, N). Reaction rate.
+            tensor: (R,). Reaction rate.
+        """
+        rate = params[:, 2]*self.zeta
+        return rate
+
+
+class ModifiedArrhenius(nn.Module):
+    def forward(self, temp, params):
+        """
+        Args:
+            temp (tensor): (B,). Temperature [K]. 
+            params (tensor): (R, 5). Parameters.
+
+                - Minimum reaction temperature.
+                - Maximum reaction temperature.
+                - Alpha.
+                - Beta.
+                - Gamma.
+
+        Returns:
+            tensor: (B, R). Reaction rate.
         """
         temp = temp[:, None]
         temp_min, temp_max, alpha, beta, gamma = params.T
