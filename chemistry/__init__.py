@@ -1,3 +1,4 @@
+from .utils import *
 from .reaction import *
 from .surface_reaction import *
 from .rate import *
