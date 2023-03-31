@@ -3,54 +3,67 @@ from torch import nn
 from torch.nn import functional as F
 
 
+class GasPhaseRate1st(nn.Module):
+    def __init__(self, formula, params_reac, params_env, meta_params):
+        super(GasPhaseRate1st, self).__init__()
+
+        lookup = {"CR ionization": 0, "photodissociation": 1}
+        mask = F.one_hot(torch.tensor([lookup[name] for name in formula]), len(lookup))
+        mask = mask.type(torch.float32)
+        self.register_buffer("mask", mask) # (R, F)
+
+        self.formula_list = nn.ModuleList([
+            CosmicRayIonization(meta_params.rate_cr_ion),
+            Photodissociation()
+        ])
+
+        params_reac.register_buffer(self, "params_reac")
+        params_env.register_buffer(self, "params_env")
+
+    def forward(self, t_in):
+        rate = torch.zeros_like(self.mask)
+        for i_f, formula in enumerate(self.formula_list):
+            rate[:, i_f] = formula(self.params_reac, self.params_env)
+        rate = torch.sum(rate*self.mask, dim=-1)
+        return rate
+
+
 class CosmicRayIonization(nn.Module):
     """Cosmic-ray ionization.
 
     Args:
-        zeta (float): H2 cosmic-ray ionization rate [s^-1].
+        rate_cr_ion (float): H2 cosmic-ray ionization rate [s^-1].
     """
-    def __init__(self, zeta):
+    def __init__(self, rate_cr_ion):
         super(CosmicRayIonization, self).__init__()
-        self.register_buffer("zeta", torch.tensor(zeta, dtype=torch.float32))
+        self.register_buffer("rate_cr_ion", torch.tensor(rate_cr_ion, dtype=torch.float32))
 
-    def forward(self, params):
+    def forward(self, params_reac, params_env):
         """
         Args:
-            params (tensor): (R, 5). Parameters.
-
-                - Minimum reaction temperature.
-                - Maximum reaction temperature.
-                - Alpha.
-                - Beta.
-                - Gamma.
+            params_reac (KeyTensor): (R, 5). Reaction parameters.
+            params_env (KeyTensor): (3,). Environment parameters.
 
         Returns:
             tensor: (R,). Reaction rate.
         """
-        rate = params[:, 2]*self.zeta
+        rate = params_reac.get("alpha")*self.rate_cr_ion
         return rate
 
 
 class Photodissociation(nn.Module):
-    def forward(self, params, Av):
+    def forward(self, params_reac, params_env):
         """
         Args:
-            params (tensor): (R, 5). Parameters.
-
-                - Minimum reaction temperature.
-                - Maximum reaction temperature.
-                - Alpha.
-                - Beta.
-                - Gamma.
-
-            Av (tensor): (B,). Visual extinction.
+            params_reac (KeyTensor): (R, 5). Reaction parameters.
+            params_env (KeyTensor): (3,). Environment parameters.
 
         Returns:
             tensor: (R,). Reaction rate.
         """
-        alpha = params[:, 2]
-        gamma = params[:, 4]
-        Av = Av[:, None]
+        alpha = params_reac.get("alpha")
+        gamma = params_reac.get("gamma")
+        Av = params_env.get("Av")
 
         rate = alpha*torch.exp(-gamma*Av)
         return rate

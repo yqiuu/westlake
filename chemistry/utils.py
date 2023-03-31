@@ -20,6 +20,11 @@ class KeyTensor:
         inds = [self._lookup[key] for key in keys]
         return self._data[..., inds]
 
+    def register_buffer(self, module, name):
+        name_ = f"{name}_"
+        module.register_buffer(name_, self._data)
+        setattr(module, name, KeyTensor(self._lookup, getattr(module, name_)))
+
 
 def data_frame_to_key_tensor(df, **kwargs):
     return KeyTensor(df.columns.values.astype(str), torch.tensor(df.values, **kwargs))
