@@ -3,20 +3,15 @@ from torch import nn
 from torch.nn import functional as F
 
 
-class GasPhaseRate1st(nn.Module):
-    def __init__(self, formula, params_reac, params_env, meta_params):
-        super(GasPhaseRate1st, self).__init__()
+class GasPhaseReaction(nn.Module):
+    def __init__(self, formula_dict, formula, params_reac, params_env):
+        super(GasPhaseReaction, self).__init__()
 
-        lookup = {"CR ionization": 0, "photodissociation": 1}
+        lookup = {key: idx for idx, key in enumerate(formula_dict.keys())}
         mask = F.one_hot(torch.tensor([lookup[name] for name in formula]), len(lookup))
         mask = mask.type(torch.float32)
         self.register_buffer("mask", mask) # (R, F)
-
-        self.formula_list = nn.ModuleList([
-            CosmicRayIonization(meta_params.rate_cr_ion),
-            Photodissociation()
-        ])
-
+        self.formula_list = nn.ModuleList(formula_dict.values())
         params_reac.register_buffer(self, "params_reac")
         params_env.register_buffer(self, "params_env")
 
@@ -26,6 +21,25 @@ class GasPhaseRate1st(nn.Module):
             rate[:, i_f] = formula(self.params_reac, self.params_env)
         rate = torch.sum(rate*self.mask, dim=-1)
         return rate
+
+
+class GasPhaseReaction1st(GasPhaseReaction):
+    def __init__(self, formula, params_reac, params_env, meta_params):
+        formula_dict = {
+            "CR ionization": CosmicRayIonization(meta_params.rate_cr_ion),
+            "photodissociation": Photodissociation(),
+        }
+        super(GasPhaseReaction1st, self).__init__(
+            formula_dict, formula, params_reac, params_env)
+
+
+class GasPhaseReaction2nd(GasPhaseReaction):
+    def __init__(self, formula, params_reac, params_env, meta_params):
+        formula_dict = {
+            "modified Arrhenius": ModifiedArrhenius(),
+        }
+        super(GasPhaseReaction2nd, self).__init__(
+            formula_dict, formula, params_reac, params_env)
 
 
 class CosmicRayIonization(nn.Module):
@@ -70,32 +84,29 @@ class Photodissociation(nn.Module):
 
 
 class ModifiedArrhenius(nn.Module):
-    def forward(self, temp, params):
+    def forward(self, params_reac, params_env):
         """
         Args:
-            temp (tensor): (B,). Temperature [K].
-            params (tensor): (R, 5). Parameters.
-
-                - Minimum reaction temperature.
-                - Maximum reaction temperature.
-                - Alpha.
-                - Beta.
-                - Gamma.
+            params_reac (KeyTensor): (R, 5). Reaction parameters.
+            params_env (KeyTensor): (3,). Environment parameters.
 
         Returns:
             tensor: (B, R). Reaction rate.
         """
-        temp = temp[:, None]
-        temp_min, temp_max, alpha, beta, gamma = params.T
+        T_min, T_max, alpha, beta, gamma = params_reac.get().T
+        T_gas = params_env.get("T_gas")
 
         # TODO: Check how to compute the rate if the temperature is beyond the
         # range.
-        t_width = temp_max - temp_min
-        temp = (temp - temp_min)/t_width
-        temp = F.hardtanh(temp, min_val=0.)
-        temp = temp_min + (temp_max - temp_min)*temp
+        print(T_max, T_min)
+        print(T_gas)
+        t_width = T_max - T_min
+        T_gas = (T_gas - T_min)/t_width
+        T_gas = F.hardtanh(T_gas, min_val=0.)
+        T_gas = T_min + (T_max - T_min)*T_gas
+        print(T_gas)
 
-        rate = alpha*(temp/300.)**beta*torch.exp(-gamma/temp)
+        rate = alpha*(T_gas/300.)**beta*torch.exp(-gamma/T_gas)
         return rate
 
 
@@ -117,6 +128,6 @@ class GasGrainReaction(nn.Module):
             tensor: (B, R). Reaction rate.
         """
         temp = temp[:, None]
-        temp_min, temp_max, alpha, beta, _ = params.T
+        T_min, T_max, alpha, beta, _ = params.T
         rate = alpha*(temp/300.)**beta
         return rate
