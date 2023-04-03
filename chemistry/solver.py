@@ -2,7 +2,7 @@ import torch
 from scipy.integrate import solve_ivp
 
 
-def solve_ode(target, t_span, y0, vectorized=True):
+def solve_ode(target, t_span, y0, vectorized=True, **kwargs):
     def wrapper(t_in, y_in):
         t_in = torch.tensor(t_in, dtype=torch.float32)
         y_in = torch.tensor(y_in, dtype=torch.float32)
@@ -13,4 +13,4 @@ def solve_ode(target, t_span, y0, vectorized=True):
             y_out = y_out.T
         return y_out.numpy()
 
-    return solve_ivp(wrapper, t_span, y0, method='BDF', vectorized=vectorized)
+    return solve_ivp(wrapper, t_span, y0, method='BDF', vectorized=vectorized, **kwargs)
