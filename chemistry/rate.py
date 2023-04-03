@@ -93,7 +93,8 @@ class ModifiedArrhenius(nn.Module):
         Returns:
             tensor: (B, R). Reaction rate.
         """
-        T_min, T_max, alpha, beta, gamma = params_reac.get().T
+        T_min, T_max, alpha, beta, gamma \
+            = params_reac.get(("T_min", "T_max", "alpha", "beta", "gamma")).T
         T_gas = params_env.get("T_gas")
 
         # TODO: Check how to compute the rate if the temperature is beyond the
