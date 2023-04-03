@@ -4,13 +4,13 @@ from torch.nn import functional as F
 
 
 class GasPhaseReaction(nn.Module):
-    def __init__(self, formula_dict, formula, params_reac, params_env):
+    def __init__(self, formula_dict, formula, rmat, params_reac, params_env):
         super(GasPhaseReaction, self).__init__()
 
         lookup = {key: idx for idx, key in enumerate(formula_dict.keys())}
         mask = F.one_hot(torch.tensor([lookup[name] for name in formula]), len(lookup))
-        mask = mask.type(torch.float32)
-        self.register_buffer("mask", mask) # (R, F)
+        mask *= rmat.rate_sign[:, None]
+        self.register_buffer("mask", mask.type(torch.float32)) # (R, F)
         self.formula_list = nn.ModuleList(formula_dict.values())
         params_reac.register_buffer(self, "params_reac")
         params_env.register_buffer(self, "params_env")
@@ -24,22 +24,22 @@ class GasPhaseReaction(nn.Module):
 
 
 class GasPhaseReaction1st(GasPhaseReaction):
-    def __init__(self, formula, params_reac, params_env, meta_params):
+    def __init__(self, formula, rmat, params_reac, params_env, meta_params):
         formula_dict = {
             "CR ionization": CosmicRayIonization(meta_params.rate_cr_ion),
             "photodissociation": Photodissociation(),
         }
         super(GasPhaseReaction1st, self).__init__(
-            formula_dict, formula, params_reac, params_env)
+            formula_dict, formula, rmat, params_reac, params_env)
 
 
 class GasPhaseReaction2nd(GasPhaseReaction):
-    def __init__(self, formula, params_reac, params_env, meta_params):
+    def __init__(self, formula, rmat, params_reac, params_env, meta_params):
         formula_dict = {
             "modified Arrhenius": ModifiedArrhenius(),
         }
         super(GasPhaseReaction2nd, self).__init__(
-            formula_dict, formula, params_reac, params_env)
+            formula_dict, formula, rmat, params_reac, params_env)
 
 
 class CosmicRayIonization(nn.Module):
@@ -98,13 +98,10 @@ class ModifiedArrhenius(nn.Module):
 
         # TODO: Check how to compute the rate if the temperature is beyond the
         # range.
-        print(T_max, T_min)
-        print(T_gas)
         t_width = T_max - T_min
         T_gas = (T_gas - T_min)/t_width
         T_gas = F.hardtanh(T_gas, min_val=0.)
         T_gas = T_min + (T_max - T_min)*T_gas
-        print(T_gas)
 
         rate = alpha*(T_gas/300.)**beta*torch.exp(-gamma/T_gas)
         return rate
