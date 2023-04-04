@@ -69,6 +69,16 @@ class LinearInterp(nn.Module):
         return y_out
 
 
+class Constant(nn.Module):
+    """A module that returns constants."""
+    def __init__(self, key_tensor):
+        super(Constant, self).__init__()
+        key_tensor.register_buffer(self, "values")
+
+    def forward(self, *args, **kwargs):
+        return self.values
+
+
 def data_frame_to_key_tensor(df, **kwargs):
     """Create a key tensor from a pandas dataframe."""
     return KeyTensor(df.columns.values.astype(str), torch.tensor(df.values, **kwargs))
