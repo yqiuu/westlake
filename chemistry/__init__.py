@@ -6,3 +6,5 @@ from .splines import *
 from .solver import *
 from .equation import *
 from .meta_params import *
+from . import fenn
+
