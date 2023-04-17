@@ -2,6 +2,45 @@ import torch
 from torch import nn
 
 
+class QuadraticNet(nn.Module):
+    def __init__(self, n_dim, n_bin, ff_net=None, f_left=None):
+        super(QuadraticNet, self).__init__()
+        self.spline = QuadraticSpline(n_dim, n_bin)
+        self.ff_net = nn.Identity() if ff_net is None else ff_net
+
+        self.width = nn.Parameter(.1*torch.randn(n_dim, n_bin))
+        if f_left is None:
+            self.f_params = nn.Parameter(torch.randn(n_dim, 2*n_bin + 1))
+            self.f_left = None
+        elif isinstance(f_left, torch.Tensor):
+            self.f_params = nn.Parameter(torch.randn(n_dim, 2*n_bin))
+            self.register_buffer("f_left", f_left)
+        else:
+            raise ValueError("Unknown 'f_left'.")
+
+    def forward(self, x_in):
+        width = self.width
+        n_dim, n_bin = width.shape
+        x_node = torch.zeros((n_dim, n_bin + 1),
+            dtype=width.dtype, device=width.device)
+        x_node[:, 1:] = torch.cumsum(torch.softmax(width, dim=-1), dim=-1)
+
+        if self.f_left is None:
+            f_params = self.f_params
+        else:
+            f_params = torch.zeros((n_dim, 2*n_bin + 1),
+                dtype=width.dtype, device=width.device)
+            f_params[:, 0] = self.f_left
+            f_params[:, 1:] = self.f_params
+
+        if x_in.shape[-1] == 1:
+            x_in = x_in.repeat(1, n_dim)
+
+        y_out, _ = self.spline(x_in, x_node, f_params)
+        y_out = self.ff_net(y_out)
+        return y_out
+
+
 class QuadraticSpline(nn.Module):
     def __init__(self, n_dim, n_bin):
         super(QuadraticSpline, self).__init__()
@@ -36,7 +75,6 @@ class QuadraticSpline(nn.Module):
         f_params = self._derive_f_params(f_params[..., None], batch_size)
         weights = gather(f_params, inds_0.squeeze(dim=2))
         f_out = basis_function(x_local, self.coeff)
-        print(f_out.shape, weights.shape)
         f_out = torch.sum(f_out*weights, dim=-1)
 
         return f_out, x_local
