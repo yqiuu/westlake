@@ -29,13 +29,3 @@ class ReactionTerm(nn.Module):
             term_2 = y_in[:, self.inds_2r].prod(dim=-1)*self.rate_2(t_in)
             y_out.scatter_add_(1, inds_2p, term_2)
         return y_out
-
-
-class FixedReactionRate(nn.Module):
-    def __init__(self, rmat, rate):
-        super(FixedReactionRate, self).__init__()
-        rate = rmat.rate_sign*rate[rmat.inds]
-        self.register_buffer("rate", torch.tensor(rate, dtype=torch.float32))
-
-    def forward(self, t_in):
-        return self.rate

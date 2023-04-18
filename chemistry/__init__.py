@@ -1,10 +1,10 @@
 from .utils import *
-from .reaction import *
-from .surface_reaction import *
-from .rate import *
+from .reaction_matrices import *
+from .reaction_rates import *
+from .surface_reactions import *
+from .gas_reactions import *
 from .splines import *
 from .solver import *
 from .equation import *
 from .meta_params import *
 from . import fenn
-
