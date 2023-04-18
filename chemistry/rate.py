@@ -46,6 +46,7 @@ class GasPhaseReaction2nd(GasPhaseReaction):
     def __init__(self, formula, rmat, module_env, params_reac, meta_params):
         formula_dict = {
             "modified Arrhenius": ModifiedArrhenius(),
+            "gas grain": GasGrainReaction(),
         }
         super(GasPhaseReaction2nd, self).__init__(
             formula_dict, formula, rmat, module_env, params_reac)
@@ -121,23 +122,17 @@ class ModifiedArrhenius(nn.Module):
 
 
 class GasGrainReaction(nn.Module):
-    def forward(self, params, temp):
+    def forward(self, params_env, params_reac):
         """
         Args:
-            params (tensor): (R, 5). Parameters.
-
-                - Minimum reaction temperature.
-                - Maximum reaction temperature.
-                - Alpha.
-                - Beta.
-                - Gamma.
-
-            temp (tensor): (B,). Temperature [K].
+            params_reac (KeyTensor): (R, 5). Reaction parameters.
+            params_env (KeyTensor): (3,). Environment parameters.
 
         Returns:
             tensor: (B, R). Reaction rate.
         """
-        temp = temp[:, None]
-        T_min, T_max, alpha, beta, _ = params.T
-        rate = alpha*(temp/300.)**beta
+        alpha = params_reac.get("alpha")
+        beta = params_reac.get("beta")
+        T_gas = params_env.get("T_gas")
+        rate = alpha*(T_gas/300.)**beta
         return rate
