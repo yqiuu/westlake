@@ -62,15 +62,34 @@ class ModifiedArrhenius(nn.Module):
         T_gas = params_env.get("T_gas")
         if len(T_gas) != 1:
             T_gas = T_gas[:, None]
-
         # TODO: Check how to compute the rate if the temperature is beyond the
         # range.
-        T_width = T_max - T_min
-        T_gas = (T_gas - T_min)/T_width
-        T_gas = F.hardtanh(T_gas, min_val=0.)
-        T_gas = T_min + (T_max - T_min)*T_gas
+        cond = (T_gas >= T_min) & (T_gas < T_max)
+        cond = cond.type(T_gas.dtype)
+        rate = alpha*(T_gas/300.)**beta*torch.exp(-gamma/T_gas)*cond
+        return rate
+    
 
-        rate = alpha*(T_gas/300.)**beta*torch.exp(-gamma/T_gas)
+class Ionpol1(nn.Module):
+    def forward(self, params_env, params_reac):
+        T_min, T_max, alpha, beta, gamma \
+            = params_reac.get(("T_min", "T_max", "alpha", "beta", "gamma")).T
+        T_gas = params_env.get("T_gas")
+        cond = (T_gas >= T_min) & (T_gas < T_max)
+        cond = cond.type(T_gas.dtype)
+        rate = alpha*beta*(0.62 + 0.4767*gamma*(300./T_gas).sqrt())*cond
+        return rate
+    
+
+class Ionpol2(nn.Module):
+    def forward(self, params_env, params_reac):
+        T_min, T_max, alpha, beta, gamma \
+            = params_reac.get(("T_min", "T_max", "alpha", "beta", "gamma")).T
+        T_gas = params_env.get("T_gas")
+        cond = (T_gas >= T_min) & (T_gas < T_max)
+        cond = cond.type(T_gas.dtype)
+        inv_T_300 = 300./T_gas
+        rate = alpha*beta *(1 + 0.0967*gamma*inv_T_300.sqrt()+ gamma*gamma/10.526*inv_T_300)*cond
         return rate
 
 
@@ -102,6 +121,8 @@ def create_gas_reactions_1st(formula, rmat, module_env, params_reac, meta_params
 def create_gas_reactions_2nd(formula, rmat, module_env, params_reac, meta_params):
     formula_dict = {
         "modified Arrhenius": ModifiedArrhenius(),
+        "ionpol1": Ionpol1(),
+        "ionpol2": Ionpol2(),
         "gas grain": GasGrainReaction(),
     }
     return FormulaDictReactionRate(formula_dict, formula, rmat, module_env, params_reac)
