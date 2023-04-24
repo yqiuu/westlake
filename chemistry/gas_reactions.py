@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+from .utils import data_frame_to_tensor_dict
 from .reaction_rates import FormulaDictReactionRate
 
 
@@ -103,19 +104,27 @@ class GasGrainReaction(nn.Module):
         return rate
 
 
-def create_gas_reactions_1st(formula, rmat, module_env, params_reac, meta_params):
-    formula_dict = {
+def create_gas_reaction_module_1st(formula, rmat, module_env, params_reac, meta_params):
+    return FormulaDictReactionRate(
+        builtin_gas_reaction_formulae_1st(meta_params), formula, rmat, module_env, params_reac)
+
+
+def create_gas_reaction_module_2nd(formula, rmat, module_env, params_reac, meta_params):
+    return FormulaDictReactionRate(
+        builtin_gas_reaction_formulae_2nd(meta_params), formula, rmat, module_env, params_reac)
+
+
+def builtin_gas_reaction_formulae_1st(meta_params):
+    return {
         "CR ionization": CosmicRayIonization(meta_params.rate_cr_ion),
         "photodissociation": Photodissociation(),
     }
-    return FormulaDictReactionRate(formula_dict, formula, rmat, module_env, params_reac)
 
 
-def create_gas_reactions_2nd(formula, rmat, module_env, params_reac, meta_params):
-    formula_dict = {
+def builtin_gas_reaction_formulae_2nd(meta_params):
+    return {
         "modified Arrhenius": ModifiedArrhenius(),
         "ionpol1": Ionpol1(),
         "ionpol2": Ionpol2(),
         "gas grain": GasGrainReaction(),
     }
-    return FormulaDictReactionRate(formula_dict, formula, rmat, module_env, params_reac)
