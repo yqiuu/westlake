@@ -31,7 +31,9 @@ class FormulaDictReactionRate(nn.Module):
         self.params_reac = params_reac
 
     def forward(self, t_in):
-        rate = [formula(self.module_env(t_in), self.params_reac()) for formula in self.formula_list]
+        params_env = self.module_env(t_in)
+        params_reac = self.params_reac()
+        rate = [formula(params_env, params_reac) for formula in self.formula_list]
         rate = torch.vstack(rate).T
         rate = torch.sum(rate*self.mask, dim=-1)
         return rate
