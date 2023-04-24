@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from .utils import data_frame_to_key_tensor
+from .utils import data_frame_to_tensor_dict
 from .meta_params import MetaParameters
 from .reaction_matrices import create_reaction_data
 from .gas_reactions import create_gas_reactions_1st, create_gas_reactions_2nd
@@ -43,10 +43,10 @@ def create_problem(df_reac, params_env, ab_0, ab_0_dtype='list'):
     #
     meta_params = MetaParameters()
     # First order reactions
-    params_reac = data_frame_to_key_tensor(df_reac[["T_min", "T_max", "alpha", "beta", "gamma"]].iloc[rmat_1st.inds])
+    params_reac = data_frame_to_tensor_dict(df_reac[["T_min", "T_max", "alpha", "beta", "gamma"]].iloc[rmat_1st.inds])
     rate_1st = create_gas_reactions_1st(formulae[rmat_1st.inds], rmat_1st, params_env, params_reac, meta_params)
     # Second order reactions
-    params_reac = data_frame_to_key_tensor(df_reac[["T_min", "T_max", "alpha", "beta", "gamma"]].iloc[rmat_2nd.inds])
+    params_reac = data_frame_to_tensor_dict(df_reac[["T_min", "T_max", "alpha", "beta", "gamma"]].iloc[rmat_2nd.inds])
     rate_2nd = create_gas_reactions_2nd(formulae[rmat_2nd.inds], rmat_2nd, params_env, params_reac, meta_params)
     # Initial condition
     ab_0 = ab_0.copy()

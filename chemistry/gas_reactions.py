@@ -24,7 +24,7 @@ class CosmicRayIonization(nn.Module):
         Returns:
             tensor: (R,). Reaction rate.
         """
-        rate = params_reac.get("alpha")*self.rate_cr_ion
+        rate = params_reac["alpha"]*self.rate_cr_ion
         return rate
 
 
@@ -38,12 +38,10 @@ class Photodissociation(nn.Module):
         Returns:
             tensor: (R,). Reaction rate.
         """
-        alpha = params_reac.get("alpha")
-        gamma = params_reac.get("gamma")
-        Av = params_env.get("Av")
+        Av = params_env["Av"]
         if len(Av) != 1:
             Av = Av[:, None]
-        rate = alpha*torch.exp(-gamma*Av)
+        rate = params_reac["alpha"]*torch.exp(-params_reac["gamma"]*Av)
         return rate
 
 
@@ -57,9 +55,8 @@ class ModifiedArrhenius(nn.Module):
         Returns:
             tensor: (B, R). Reaction rate.
         """
-        T_min, T_max, alpha, beta, gamma \
-            = params_reac.get(("T_min", "T_max", "alpha", "beta", "gamma")).T
-        T_gas = params_env.get("T_gas")
+        T_min, T_max, alpha, beta, gamma = params_reac.values()
+        T_gas = params_env["T_gas"]
         if len(T_gas) != 1:
             T_gas = T_gas[:, None]
         # TODO: Check how to compute the rate if the temperature is beyond the
@@ -72,9 +69,8 @@ class ModifiedArrhenius(nn.Module):
 
 class Ionpol1(nn.Module):
     def forward(self, params_env, params_reac):
-        T_min, T_max, alpha, beta, gamma \
-            = params_reac.get(("T_min", "T_max", "alpha", "beta", "gamma")).T
-        T_gas = params_env.get("T_gas")
+        T_min, T_max, alpha, beta, gamma = params_reac.values()
+        T_gas = params_env["T_gas"]
         cond = (T_gas >= T_min) & (T_gas < T_max)
         cond = cond.type(T_gas.dtype)
         rate = alpha*beta*(0.62 + 0.4767*gamma*(300./T_gas).sqrt())*cond
@@ -83,9 +79,8 @@ class Ionpol1(nn.Module):
 
 class Ionpol2(nn.Module):
     def forward(self, params_env, params_reac):
-        T_min, T_max, alpha, beta, gamma \
-            = params_reac.get(("T_min", "T_max", "alpha", "beta", "gamma")).T
-        T_gas = params_env.get("T_gas")
+        T_min, T_max, alpha, beta, gamma = params_reac.values()
+        T_gas = params_env["T_gas"]
         cond = (T_gas >= T_min) & (T_gas < T_max)
         cond = cond.type(T_gas.dtype)
         inv_T_300 = 300./T_gas
@@ -103,10 +98,8 @@ class GasGrainReaction(nn.Module):
         Returns:
             tensor: (B, R). Reaction rate.
         """
-        alpha = params_reac.get("alpha")
-        beta = params_reac.get("beta")
-        T_gas = params_env.get("T_gas")
-        rate = alpha*(T_gas/300.)**beta
+        T_gas = params_env["T_gas"]
+        rate = params_reac["alpha"]*(T_gas/300.)**params_reac["beta"]
         return rate
 
 

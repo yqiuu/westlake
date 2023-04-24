@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from .utils import KeyTensor, Constant
+from .utils import TensorDict
 
 
 class FixedReactionRate(nn.Module):
@@ -24,19 +24,14 @@ class FormulaDictReactionRate(nn.Module):
         mask *= rmat.rate_sign[:, None]
         self.register_buffer("mask", mask.type(torch.float32)) # (R, F)
         self.formula_list = nn.ModuleList(formula_dict.values())
-        if isinstance(module_env, KeyTensor):
-            self.module_env = Constant(module_env)
-        elif isinstance(module_env, nn.Module):
+        if isinstance(module_env, TensorDict) or isinstance(module_env, nn.Module):
             self.module_env = module_env
         else:
             raise ValueError("Unknown 'module_env'.")
-        params_reac.register_buffer(self, "params_reac")
+        self.params_reac = params_reac
 
     def forward(self, t_in):
-        # TODO: check if we need more efficient masks.
-        rate = torch.zeros(
-            (t_in.shape[0], *self.mask.shape), dtype=self.mask.dtype, device=self.mask.device)
-        for i_f, formula in enumerate(self.formula_list):
-            rate[..., i_f] = formula(self.module_env(t_in), self.params_reac)
+        rate = [formula(self.module_env(t_in), self.params_reac()) for formula in self.formula_list]
+        rate = torch.vstack(rate).T
         rate = torch.sum(rate*self.mask, dim=-1)
         return rate

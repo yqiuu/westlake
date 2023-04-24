@@ -1,36 +1,5 @@
-from dataclasses import dataclass
-
-import numpy as np
 import torch
 from torch import nn
-
-
-class KeyTensor:
-    """A tensor whose last dimension can be accessed by a list of keys."""
-    def __init__(self, keys, data):
-        self._keys = tuple(keys)
-        self._lookup = {key: idx for idx, key in enumerate(keys)}
-        self._data = data
-
-    def get(self, keys=None):
-        """Access the data by keys."""
-        if keys is None:
-            return self._data
-
-        if isinstance(keys, str):
-            return self._data[..., self._lookup[keys]]
-
-        inds = [self._lookup[key] for key in keys]
-        return self._data[..., inds]
-
-    def new(self, data):
-        """Create a new key tensor using the same keys but new data."""
-        return KeyTensor(self._keys, data)
-
-    def register_buffer(self, module, name):
-        name_ = f"{name}_"
-        module.register_buffer(name_, self._data)
-        setattr(module, name, KeyTensor(self._lookup, getattr(module, name_)))
 
 
 class LinearInterp(nn.Module):
@@ -69,16 +38,18 @@ class LinearInterp(nn.Module):
         return y_out
 
 
-class Constant(nn.Module):
-    """A module that returns constants."""
-    def __init__(self, key_tensor):
-        super(Constant, self).__init__()
-        key_tensor.register_buffer(self, "values")
+class TensorDict(nn.Module):
+    """A module that returns a dict of tensors."""
+    def __init__(self, names, tensors):
+        super(TensorDict, self).__init__()
+        for key, val in zip(names, tensors):
+            self.register_buffer(key, val)
+        self.names = names
 
     def forward(self, *args, **kwargs):
-        return self.values
+        return {key: getattr(self, key) for key in self.names}
 
 
-def data_frame_to_key_tensor(df, **kwargs):
-    """Create a key tensor from a pandas dataframe."""
-    return KeyTensor(df.columns.values.astype(str), torch.tensor(df.values, **kwargs))
+def data_frame_to_tensor_dict(df, **kwargs):
+    """Create a dict of tensors from a pandas dataframe."""
+    return TensorDict(df.columns.values, [torch.tensor(val, **kwargs) for val in df.values.T])
