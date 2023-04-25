@@ -52,4 +52,5 @@ class TensorDict(nn.Module):
 
 def data_frame_to_tensor_dict(df, **kwargs):
     """Create a dict of tensors from a pandas dataframe."""
-    return TensorDict(df.columns.values, [torch.tensor(val, **kwargs) for val in df.values.T])
+    names = df.columns.values
+    return TensorDict(names, [torch.tensor(df[key].values, **kwargs) for key in names])
