@@ -52,10 +52,11 @@ class AstrochemProblem:
         return "Attributes: spec_table, rmat_1st, rmat_2nd, reaction_term, ab_0"
 
 
-def create_astrochem_problem(df_reac, params_env, ab_0, ab_0_dtype='list'):
+def create_astrochem_problem(df_reac, params_env, ab_0, spec_table_base=None, ab_0_min=0.):
     meta_params = MetaParameters()
     #
-    spec_table, rmat_1st, rmat_2nd = create_reaction_data(df_reac["reactants"], df_reac["products"])
+    spec_table, rmat_1st, rmat_2nd = create_reaction_data(
+        df_reac["reactants"], df_reac["products"], spec_table_base)
     formulae = df_reac["formula"].values.astype(str)
     # First order reactions
     params_reac = data_frame_to_tensor_dict(
@@ -69,25 +70,44 @@ def create_astrochem_problem(df_reac, params_env, ab_0, ab_0_dtype='list'):
         formulae[rmat_2nd.inds], rmat_2nd, params_env, params_reac, meta_params)
     #
     reaction_term = ReactionTerm(rmat_1st, rate_1st, rmat_2nd, rate_2nd)
-    # Initial condition
-    ab_0 = ab_0.copy()
-    ab_0_ = [0.]*len(spec_table)
-    for idx, spec in enumerate(spec_table.index):
-        if spec in ab_0:
-            ab_0_[idx] = ab_0.pop(spec)
-        elif spec == "GRAIN0":
-            ab_0_[idx] = meta_params.grain_ab_0
-    if len(ab_0) != 0:
-        raise ValueError("Invalid initial abundances.")
-
-    if ab_0_dtype == 'list':
-        pass
-    elif ab_0_dtype == 'numpy':
-        ab_0_ = np.asarray(ab_0_)
-    elif ab_0_dtype == 'torch':
-        ab_0_ = torch.tensor(ab_0_)
+    #
+    ab_0_ = dervie_initial_abundances(ab_0, spec_table, meta_params, ab_0_min)
 
     return AstrochemProblem(spec_table, rmat_1st, rmat_2nd, reaction_term, ab_0_)
+
+
+def dervie_initial_abundances(ab_0, spec_table, meta_params, ab_0_min=0.):
+    """Derive the initial abundances of grains and electrons.
+
+    Args:
+        ab_0 (dict): Initial abundance of each specie.
+        spec_table (pd.DataFrame): Specie table.
+        meta_params (MetaParameters): Meta parameters.
+        ab_0_min (float, optional): Mimimum initial abundances. Defaults to 0.
+        dtype (str, optional): Data type of the return abundances. Defaults to 'tuple'.
+
+    Returns:
+        tuple: Initial abundances.
+    """
+    if not all(np.in1d(list(ab_0.keys()), spec_table.index.values)):
+        raise ValueError("Find unrecognized species in 'ab_0'.")
+
+    ab_0_ = np.full(len(spec_table), ab_0_min)
+    ab_0_[spec_table.loc[ab_0.keys()]["index"].values] = list(ab_0.values())
+
+    # Derive the grain abundances
+    dtg_mass_ratio_0 = meta_params.dtg_mass_ratio_0
+    # TODO: Understand why the initial DTG mass ratio is modified.
+    if "He" in ab_0:
+        dtg_mass_ratio_0 *= 1 + 4*ab_0["He"]
+    ab_0_[spec_table.loc["GRAIN0", "index"]] = dtg_mass_ratio_0/meta_params.grain_mass
+    ab_0_[spec_table.loc["GRAIN-", "index"]]
+
+    # Derive the electron abundance aussming the system is neutral
+    ab_0_[spec_table.loc["e-", "index"]] = 0.
+    ab_0_[spec_table.loc["e-", "index"]] = np.sum(spec_table["charge"].values*ab_0_)
+
+    return ab_0_
 
 
 def compute_reaction_rates(problem, t_0=None):

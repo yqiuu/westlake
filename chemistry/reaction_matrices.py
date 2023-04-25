@@ -12,9 +12,11 @@ class ReactionMatrix:
     spec_p: object
 
 
-def create_reaction_data(reactants, products):
+def create_reaction_data(reactants, products, spec_table_base=None):
     rmat_1st, rmat_2nd = create_reaction_matrix(reactants, products)
     spec_table = create_specie_table(rmat_1st, rmat_2nd)
+    if spec_table_base is not None:
+        spec_table[spec_table_base.columns] = spec_table_base.loc[spec_table.index]
     rmat_1st, rmat_2nd = name_to_inds(spec_table, rmat_1st, rmat_2nd)
     return spec_table, rmat_1st, rmat_2nd
 
@@ -83,21 +85,21 @@ def create_specie_table(rmat_1st, rmat_2nd):
         np.unique(rmat_2nd.spec_p),
     ))
     spec = np.unique(spec)
-    table = pd.DataFrame(np.arange(len(spec)), index=spec, columns=['Index'])
-    table["IndexGrain"] = -1
+    table = pd.DataFrame(np.arange(len(spec)), index=spec, columns=['index'])
+    table["index_grain"] = -1
     spec_grain = list(filter(lambda spec: spec.startswith("J") or spec.startswith("K"), spec))
-    table.loc[spec_grain, "IndexGrain"] = np.arange(len(spec_grain))
+    table.loc[spec_grain, "index_grain"] = np.arange(len(spec_grain))
     return table
 
 
 def name_to_inds(spec_table, rmat_1st, rmat_2nd):
-    inds_1st_r = spec_table.loc[rmat_1st.spec_r, "Index"].values.ravel()
-    inds_1st_p = spec_table.loc[rmat_1st.spec_p, "Index"].values.ravel()
+    inds_1st_r = spec_table.loc[rmat_1st.spec_r, "index"].values.ravel()
+    inds_1st_p = spec_table.loc[rmat_1st.spec_p, "index"].values.ravel()
     rmat_1st = ReactionMatrix(rmat_1st.inds, rmat_1st.rate_sign, inds_1st_r, inds_1st_p)
 
-    inds_2nd_r = np.zeros(rmat_2nd.spec_r.shape, spec_table["Index"].dtype)
-    inds_2nd_r[:, 0] = spec_table.loc[rmat_2nd.spec_r[:, 0], "Index"].values.ravel()
-    inds_2nd_r[:, 1] = spec_table.loc[rmat_2nd.spec_r[:, 1], "Index"].values.ravel()
-    inds_2nd_p = spec_table.loc[rmat_2nd.spec_p, "Index"].values.ravel()
+    inds_2nd_r = np.zeros(rmat_2nd.spec_r.shape, spec_table["index"].dtype)
+    inds_2nd_r[:, 0] = spec_table.loc[rmat_2nd.spec_r[:, 0], "index"].values.ravel()
+    inds_2nd_r[:, 1] = spec_table.loc[rmat_2nd.spec_r[:, 1], "index"].values.ravel()
+    inds_2nd_p = spec_table.loc[rmat_2nd.spec_p, "index"].values.ravel()
     rmat_2nd = ReactionMatrix(rmat_2nd.inds, rmat_2nd.rate_sign, inds_2nd_r, inds_2nd_p)
     return rmat_1st, rmat_2nd
