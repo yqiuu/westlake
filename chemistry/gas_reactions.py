@@ -16,7 +16,7 @@ class CosmicRayIonization(nn.Module):
         super(CosmicRayIonization, self).__init__()
         self.register_buffer("rate_cr_ion", torch.tensor(rate_cr_ion, dtype=torch.float32))
 
-    def forward(self, params_env, params_reac):
+    def forward(self, params_env, params_reac, *args):
         """
         Args:
             params_reac (KeyTensor): (R, 5). Reaction parameters.
@@ -30,7 +30,7 @@ class CosmicRayIonization(nn.Module):
 
 
 class Photodissociation(nn.Module):
-    def forward(self, params_env, params_reac):
+    def forward(self, params_env, params_reac, *args):
         """
         Args:
             params_reac (KeyTensor): (R, 5). Reaction parameters.
@@ -47,7 +47,7 @@ class Photodissociation(nn.Module):
 
 
 class ModifiedArrhenius(nn.Module):
-    def forward(self, params_env, params_reac):
+    def forward(self, params_env, params_reac, T_gas, mask_T):
         """
         Args:
             params_reac (KeyTensor): (R, 5). Reaction parameters.
@@ -56,41 +56,28 @@ class ModifiedArrhenius(nn.Module):
         Returns:
             tensor: (B, R). Reaction rate.
         """
-        T_min, T_max, alpha, beta, gamma = params_reac.values()
-        T_gas = params_env["T_gas"]
-        if len(T_gas) != 1:
-            T_gas = T_gas[:, None]
-        # TODO: Check how to compute the rate if the temperature is beyond the
-        # range.
-        cond = (T_gas >= T_min) & (T_gas < T_max)
-        cond = cond.type(T_gas.dtype)
-        rate = alpha*(T_gas/300.)**beta*torch.exp(-gamma/T_gas)*cond
+        *_, alpha, beta, gamma = params_reac.values()
+        rate = alpha*(T_gas/300.)**beta*torch.exp(-gamma/T_gas)*mask_T
         return rate
     
 
 class Ionpol1(nn.Module):
-    def forward(self, params_env, params_reac):
-        T_min, T_max, alpha, beta, gamma = params_reac.values()
-        T_gas = params_env["T_gas"]
-        cond = (T_gas >= T_min) & (T_gas < T_max)
-        cond = cond.type(T_gas.dtype)
-        rate = alpha*beta*(0.62 + 0.4767*gamma*(300./T_gas).sqrt())*cond
+    def forward(self, params_env, params_reac, T_gas, mask_T):
+        *_, alpha, beta, gamma = params_reac.values()
+        rate = alpha*beta*(0.62 + 0.4767*gamma*(300./T_gas).sqrt())*mask_T
         return rate
     
 
 class Ionpol2(nn.Module):
-    def forward(self, params_env, params_reac):
-        T_min, T_max, alpha, beta, gamma = params_reac.values()
-        T_gas = params_env["T_gas"]
-        cond = (T_gas >= T_min) & (T_gas < T_max)
-        cond = cond.type(T_gas.dtype)
+    def forward(self, params_env, params_reac, T_gas, mask_T):
+        *_, alpha, beta, gamma = params_reac.values()
         inv_T_300 = 300./T_gas
-        rate = alpha*beta *(1 + 0.0967*gamma*inv_T_300.sqrt()+ gamma*gamma/10.526*inv_T_300)*cond
+        rate = alpha*beta *(1 + 0.0967*gamma*inv_T_300.sqrt()+ gamma*gamma/10.526*inv_T_300)*mask_T
         return rate
 
 
 class GasGrainReaction(nn.Module):
-    def forward(self, params_env, params_reac):
+    def forward(self, params_env, params_reac, *args):
         """
         Args:
             params_reac (KeyTensor): (R, 5). Reaction parameters.

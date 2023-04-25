@@ -33,7 +33,19 @@ class FormulaDictReactionRate(nn.Module):
     def forward(self, t_in):
         params_env = self.module_env(t_in)
         params_reac = self.params_reac()
-        rate = [formula(params_env, params_reac) for formula in self.formula_list]
+
+        is_unique, T_min, T_max, *_ = params_reac.values()
+        T_gas = params_env["T_gas"]
+        cond_ge = T_gas >= T_min
+        cond_lt = T_gas < T_max
+        mask_T = cond_ge & cond_lt | is_unique
+        mask_T = mask_T.type(T_gas.dtype)
+        # TODO: Check the shape of T_gas
+        T_gas = T_gas.repeat(is_unique.shape[0])
+        T_gas = torch.where(cond_ge, T_gas, T_min)
+        T_gas = torch.where(cond_lt, T_gas, T_max)
+
+        rate = [formula(params_env, params_reac, T_gas, mask_T) for formula in self.formula_list]
         rate = torch.vstack(rate).T
         rate = torch.sum(rate*self.mask, dim=-1)
         return rate

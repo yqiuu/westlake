@@ -59,12 +59,12 @@ def create_astrochem_problem(df_reac, params_env, ab_0, ab_0_dtype='list'):
     formulae = df_reac["formula"].values.astype(str)
     # First order reactions
     params_reac = data_frame_to_tensor_dict(
-        df_reac[["T_min", "T_max", "alpha", "beta", "gamma"]].iloc[rmat_1st.inds])
+        df_reac[["is_unique", "T_min", "T_max", "alpha", "beta", "gamma"]].iloc[rmat_1st.inds])
     rate_1st = create_gas_reaction_module_1st(
         formulae[rmat_1st.inds], rmat_1st, params_env, params_reac, meta_params)
     # Second order reactions
     params_reac = data_frame_to_tensor_dict(
-        df_reac[["T_min", "T_max", "alpha", "beta", "gamma"]].iloc[rmat_2nd.inds])
+        df_reac[["is_unique", "T_min", "T_max", "alpha", "beta", "gamma"]].iloc[rmat_2nd.inds])
     rate_2nd = create_gas_reaction_module_2nd(
         formulae[rmat_2nd.inds], rmat_2nd, params_env, params_reac, meta_params)
     #
