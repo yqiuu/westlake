@@ -16,7 +16,7 @@ class CosmicRayIonization(nn.Module):
         super(CosmicRayIonization, self).__init__()
         self.register_buffer("rate_cr_ion", torch.tensor(rate_cr_ion, dtype=torch.float32))
 
-    def forward(self, params_env, params_reac, *args):
+    def forward(self, params_env, params_reac, *args, **kwargs):
         """
         Args:
             params_reac (KeyTensor): (R, 5). Reaction parameters.
@@ -30,7 +30,7 @@ class CosmicRayIonization(nn.Module):
 
 
 class Photodissociation(nn.Module):
-    def forward(self, params_env, params_reac, *args):
+    def forward(self, params_env, params_reac, *args, **kwargs):
         """
         Args:
             params_reac (KeyTensor): (R, 5). Reaction parameters.
@@ -59,14 +59,14 @@ class ModifiedArrhenius(nn.Module):
         *_, alpha, beta, gamma = params_reac.values()
         rate = alpha*(T_gas/300.)**beta*torch.exp(-gamma/T_gas)*mask_T
         return rate
-    
+
 
 class Ionpol1(nn.Module):
     def forward(self, params_env, params_reac, T_gas, mask_T):
         *_, alpha, beta, gamma = params_reac.values()
         rate = alpha*beta*(0.62 + 0.4767*gamma*(300./T_gas).sqrt())*mask_T
         return rate
-    
+
 
 class Ionpol2(nn.Module):
     def forward(self, params_env, params_reac, T_gas, mask_T):
