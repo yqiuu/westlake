@@ -35,6 +35,7 @@ class FormulaDictReactionRate(nn.Module):
         self.register_buffer("ma", params_surf.ma)
         self.register_buffer("E_d", params_surf.E_d)
         self.register_buffer("freq_vib", compute_vibration_frequency(self.ma, self.E_d, meta_params))
+        self.register_buffer("factor_rate_acc", params_surf.factor_rate_acc)
 
 
     def forward(self, t_in):
@@ -52,7 +53,7 @@ class FormulaDictReactionRate(nn.Module):
         T_gas = torch.where(cond_ge, T_gas, T_min)
         T_gas = torch.where(cond_lt, T_gas, T_max)
 
-        kwargs = {"E_d": self.E_d, "freq_vib": self.freq_vib}
+        kwargs = {"E_d": self.E_d, "freq_vib": self.freq_vib, "factor_rate_acc": self.factor_rate_acc}
 
         rate = [formula(params_env, params_reac, T_gas, mask_T, **kwargs) for formula in self.formula_list]
         rate = torch.vstack(rate).T
