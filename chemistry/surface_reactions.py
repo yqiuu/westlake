@@ -12,9 +12,11 @@ class ThermalEvaporation(nn.Module):
         super(ThermalEvaporation, self).__init__()
         self.register_buffer("T_dust_0", torch.tensor(meta_params.T_dust_0))
 
-    def forward(self, params_env, params_reac, T_gas, mask_T, E_d, freq_vib, **kwargs):
-        rate = compute_evaporation_rate(params_reac["alpha"], E_d, freq_vib, self.T_dust_0)
-        return rate
+    def forward(self, params_env, params_reac, T_gas, mask_T, **kwargs):
+        return compute_evaporation_rate(
+            params_reac["alpha"], params_reac["freq_vib_r1"],
+            params_reac["E_deso_r1"], self.T_dust_0
+        )
 
 
 class CosmicRayEvaporation(nn.Module):
@@ -25,10 +27,11 @@ class CosmicRayEvaporation(nn.Module):
         self.register_buffer("prefactor", torch.tensor(prefactor))
         self.register_buffer("T_grain_cr_peak", torch.tensor(meta_params.T_grain_cr_peak))
 
-    def forward(self, params_env, params_reac, T_gas, mask_T, E_d, freq_vib, **kwargs):
-        prefactor = self.prefactor*params_reac["alpha"]
-        rate = compute_evaporation_rate(prefactor, E_d, freq_vib, self.T_grain_cr_peak)
-        return rate
+    def forward(self, params_env, params_reac, T_gas, mask_T, **kwargs):
+        return compute_evaporation_rate(
+            self.prefactor*params_reac["alpha"], params_reac["freq_vib_r1"],
+            params_reac["E_deso_r1"], self.T_grain_cr_peak
+        )
 
 
 class SurfaceAccretion(nn.Module):
@@ -36,9 +39,30 @@ class SurfaceAccretion(nn.Module):
         super(SurfaceAccretion, self).__init__()
         self.register_buffer("dtg_num_ratio_0", torch.tensor(meta_params.dtg_num_ratio_0))
 
-    def forward(self, params_env, params_reac, T_gas, mask_T, factor_rate_acc, **kwargs):
-        factor = factor_rate_acc*params_reac["alpha"]
-        return factor*params_env["T_gas"].sqrt()*params_env["den_H"]*self.dtg_num_ratio_0
+    def forward(self, params_env, params_reac, T_gas, mask_T, **kwargs):
+        return params_reac["alpha"]*params_reac["factor_rate_acc_r1"] \
+            *(params_env["T_gas"].sqrt()*params_env["den_H"]*self.dtg_num_ratio_0)
+
+
+class SurfaceReaction(nn.Module):
+    def __init__(self, meta_params):
+        super(SurfaceReaction, self).__init__()
+        self.register_buffer("T_dust_0", torch.tensor(meta_params.T_dust_0))
+        self.register_buffer("num_sites_per_grain", torch.tensor(meta_params.num_sites_per_grain))
+        self.register_buffer("inv_dtg_num_ratio_0", torch.tensor(1./meta_params.dtg_num_ratio_0))
+
+    def forward(self, params_env, params_reac, T_gas, mask_T, E_barr_r1, E_barr_r2, freq_vib, **kwargs):
+        rate_diff_r1 = compute_thermal_hoping_rate(
+            params_reac["E_barr_r1"], params_reac["freq_vib_r1"],
+            self.T_dust_0, self.num_sites_per_grain
+        )
+        rate_diff_r2 = compute_thermal_hoping_rate(
+            params_reac["E_barr_r2"], params_reac["freq_vib_r2"],
+            self.T_dust_0, self.num_sites_per_grain
+        )
+        barr = 1.
+        return params_reac["alpha"]*barr*(rate_diff_r1 + rate_diff_r2) \
+            *self.inv_dtg_num_ratio_0/params_env["den_H"]
 
 
 class DummyZero(nn.Module):
@@ -46,7 +70,7 @@ class DummyZero(nn.Module):
         return torch.zeros_like(params_reac["alpha"])
 
 
-def compute_evaporation_rate(factor, E_d, freq_vib, T_dust):
+def compute_evaporation_rate(factor, freq_vib, E_d, T_dust):
     return factor*freq_vib*torch.exp(-E_d/T_dust)
 
 

@@ -18,7 +18,7 @@ class FixedReactionRate(nn.Module):
 
 class FormulaDictReactionRate(nn.Module):
     def __init__(self, formula_dict, formula,
-                 rmat, module_env, params_reac, params_surf, meta_params):
+                 rmat, module_env, params_reac, meta_params):
         super(FormulaDictReactionRate, self).__init__()
 
         lookup = {key: idx for idx, key in enumerate(formula_dict.keys())}
@@ -31,11 +31,6 @@ class FormulaDictReactionRate(nn.Module):
         else:
             raise ValueError("Unknown 'module_env'.")
         self.params_reac = params_reac
-        #
-        self.register_buffer("ma", params_surf.ma)
-        self.register_buffer("E_d", params_surf.E_d)
-        self.register_buffer("freq_vib", compute_vibration_frequency(self.ma, self.E_d, meta_params))
-        self.register_buffer("factor_rate_acc", params_surf.factor_rate_acc)
 
 
     def forward(self, t_in):
@@ -53,9 +48,7 @@ class FormulaDictReactionRate(nn.Module):
         T_gas = torch.where(cond_ge, T_gas, T_min)
         T_gas = torch.where(cond_lt, T_gas, T_max)
 
-        kwargs = {"E_d": self.E_d, "freq_vib": self.freq_vib, "factor_rate_acc": self.factor_rate_acc}
-
-        rate = [formula(params_env, params_reac, T_gas, mask_T, **kwargs) for formula in self.formula_list]
+        rate = [formula(params_env, params_reac, T_gas, mask_T) for formula in self.formula_list]
         rate = torch.vstack(rate).T
         rate = torch.sum(rate*self.mask, dim=-1)
         return rate
