@@ -50,8 +50,27 @@ def compute_evaporation_rate(factor, E_d, freq_vib, T_dust):
     return factor*freq_vib*torch.exp(-E_d/T_dust)
 
 
-def compute_vibration_frequency(ma, E_d, meta_params):
-    return torch.sqrt(FACTOR_VIB_FREQ*meta_params.site_density*E_d/ma)
+def compute_thermal_hoping_rate(E_barr, freq_vib, T_dust, num_sites_per_grain):
+    return freq_vib*torch.exp(-E_barr/T_dust)/num_sites_per_grain
+
+
+def compute_surface_params(spec_table, meta_params, special_dict=None):
+    """Compute surface parameters.
+
+    This is an inplace operation.
+
+    Args:
+        spec_table (pd.DataFrame): Specie table.
+        meta_params (MetaPrameters): Meta parameters.
+        special_dict (dict, optional): Defaults to None.
+    """
+    compute_vibration_frequency(spec_table, meta_params)
+    compute_factor_rate_acc(spec_table, meta_params, special_dict)
+
+
+def compute_vibration_frequency(spec_table, meta_params):
+    spec_table["freq_vib"] \
+        = np.sqrt(FACTOR_VIB_FREQ*meta_params.site_density*spec_table["E_deso"]/spec_table["ma"])
 
 
 def compute_factor_rate_acc(spec_table, meta_params, special_dict=None):
@@ -71,4 +90,23 @@ def compute_factor_rate_acc(spec_table, meta_params, special_dict=None):
     cond = spec_table.index.map(lambda name: name.startswith("J"))
     inds = spec_table[cond].index.map(lambda name: name[1:])
     spec_table.loc[inds, "factor_rate_acc"] = spec_table.loc[cond, "factor_rate_acc"].values
-    return spec_table
+
+
+def assign_surface_params(df_reac, spec_table):
+    """Assigin surface parameters.
+
+    This is an inplace operation.
+
+    Args:
+        df_reac (pd.DataFrame): Data frame of reactions.
+        spec_table (pd.DataFrame): Specie table.
+    """
+    columns = ["E_deso", "E_barr", "freq_vib", "factor_rate_acc"]
+    for col in columns:
+        df_reac[f"{col}_r1"] = spec_table.loc[df_reac["reactant_1"], col].values
+
+    columns = ["E_barr", "freq_vib"]
+    df_tmp = df_reac.loc[df_reac["reactant_2"] != "", "reactant_2"]
+    for col in columns:
+        df_reac.loc[df_tmp.index, f"{col}_r2"] = spec_table.loc[df_tmp, col].values
+    df_reac.fillna(0., inplace=True)
