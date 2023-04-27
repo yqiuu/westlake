@@ -12,8 +12,8 @@ class ReactionMatrix:
     spec_p: object
 
 
-def create_reaction_data(reactants, products, spec_table_base=None):
-    rmat_1st, rmat_2nd = create_reaction_matrix(reactants, products)
+def create_reaction_data(reactant_1, reactant_2, products, spec_table_base=None):
+    rmat_1st, rmat_2nd = create_reaction_matrix(reactant_1, reactant_2, products)
     spec_table = create_specie_table(rmat_1st, rmat_2nd)
     if spec_table_base is not None:
         spec_table[spec_table_base.columns] = spec_table_base.loc[spec_table.index]
@@ -21,7 +21,7 @@ def create_reaction_data(reactants, products, spec_table_base=None):
     return spec_table, rmat_1st, rmat_2nd
 
 
-def create_reaction_matrix(reactants, products):
+def create_reaction_matrix(reactant_1, reactant_2, products):
     inds_1st = []
     rate_1st = []
     spec_1st_r = []
@@ -32,11 +32,11 @@ def create_reaction_matrix(reactants, products):
     spec_2nd_r = []
     spec_2nd_p = []
 
-    for idx, (reac, prod) in enumerate(zip(reactants, products)):
-        if type(reac) is str:
-            reac = reac.split(";")
+    for idx, (reac_1, reac_2, prod) in enumerate(zip(reactant_1, reactant_2, products)):
+        if reac_2 == "":
+            reac = (reac_1,)
         else:
-            raise ValueError
+            reac = (reac_1, reac_2)
 
         if type(prod) is str:
             prod = prod.split(";")
