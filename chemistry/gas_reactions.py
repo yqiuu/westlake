@@ -56,21 +56,27 @@ class ModifiedArrhenius(nn.Module):
         Returns:
             tensor: (B, R). Reaction rate.
         """
-        *_, alpha, beta, gamma = params_reac.values()
+        alpha = params_reac["alpha"]
+        beta = params_reac["beta"]
+        gamma = params_reac["gamma"]
         rate = alpha*(T_gas/300.)**beta*torch.exp(-gamma/T_gas)*mask_T
         return rate
 
 
 class Ionpol1(nn.Module):
     def forward(self, params_env, params_reac, T_gas, mask_T):
-        *_, alpha, beta, gamma = params_reac.values()
+        alpha = params_reac["alpha"]
+        beta = params_reac["beta"]
+        gamma = params_reac["gamma"]
         rate = alpha*beta*(0.62 + 0.4767*gamma*(300./T_gas).sqrt())*mask_T
         return rate
 
 
 class Ionpol2(nn.Module):
     def forward(self, params_env, params_reac, T_gas, mask_T):
-        *_, alpha, beta, gamma = params_reac.values()
+        alpha = params_reac["alpha"]
+        beta = params_reac["beta"]
+        gamma = params_reac["gamma"]
         inv_T_300 = 300./T_gas
         rate = alpha*beta *(1 + 0.0967*gamma*inv_T_300.sqrt()+ gamma*gamma/10.526*inv_T_300)*mask_T
         return rate
