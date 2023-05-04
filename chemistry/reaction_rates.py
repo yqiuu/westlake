@@ -10,7 +10,7 @@ class FixedReactionRate(nn.Module):
     def __init__(self, rmat, rate):
         super(FixedReactionRate, self).__init__()
         rate = rmat.rate_sign*rate[rmat.inds]
-        self.register_buffer("rate", torch.tensor(rate, dtype=torch.float32))
+        self.register_buffer("rate", torch.tensor(rate, dtype=torch.get_default_dtype()))
 
     def forward(self, t_in):
         return self.rate
@@ -23,7 +23,7 @@ class FormulaDictReactionRate(nn.Module):
         lookup = {key: idx for idx, key in enumerate(formula_dict.keys())}
         mask = F.one_hot(torch.tensor([lookup[name] for name in formula]), len(lookup))
         mask *= rmat.rate_sign[:, None]
-        self.register_buffer("mask", mask.type(torch.float32)) # (R, F)
+        self.register_buffer("mask", mask.type(torch.get_default_dtype())) # (R, F)
         self.formula_list = nn.ModuleList(formula_dict.values())
         if isinstance(module_env, TensorDict) or isinstance(module_env, nn.Module):
             self.module_env = module_env

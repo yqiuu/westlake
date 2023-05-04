@@ -14,7 +14,7 @@ class CosmicRayIonization(nn.Module):
     """
     def __init__(self, rate_cr_ion):
         super(CosmicRayIonization, self).__init__()
-        self.register_buffer("rate_cr_ion", torch.tensor(rate_cr_ion, dtype=torch.float32))
+        self.register_buffer("rate_cr_ion", torch.tensor(rate_cr_ion))
 
     def forward(self, params_env, params_reac, *args, **kwargs):
         """
