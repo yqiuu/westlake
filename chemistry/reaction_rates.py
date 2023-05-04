@@ -17,8 +17,7 @@ class FixedReactionRate(nn.Module):
 
 
 class FormulaDictReactionRate(nn.Module):
-    def __init__(self, formula_dict, formula,
-                 rmat, module_env, params_reac, meta_params):
+    def __init__(self, formula_dict, formula, rmat, module_env, params_reac):
         super(FormulaDictReactionRate, self).__init__()
 
         lookup = {key: idx for idx, key in enumerate(formula_dict.keys())}

@@ -1,10 +1,12 @@
 import math
 
 import numpy as np
+import pandas as pd
 import torch
 from torch import nn
+from astropy import units, constants
 
-from .constants import M_ATOM, K_B, FACTOR_VIB_FREQ
+from .constants import M_ATOM, K_B, H_BAR, FACTOR_VIB_FREQ
 
 
 class ThermalEvaporation(nn.Module):
@@ -51,7 +53,7 @@ class SurfaceReaction(nn.Module):
         self.register_buffer("num_sites_per_grain", torch.tensor(meta_params.num_sites_per_grain))
         self.register_buffer("inv_dtg_num_ratio_0", torch.tensor(1./meta_params.dtg_num_ratio_0))
 
-    def forward(self, params_env, params_reac, T_gas, mask_T, E_barr_r1, E_barr_r2, freq_vib, **kwargs):
+    def forward(self, params_env, params_reac, T_gas, mask_T, **kwargs):
         rate_diff_r1 = compute_thermal_hoping_rate(
             params_reac["E_barr_r1"], params_reac["freq_vib_r1"],
             self.T_dust_0, self.num_sites_per_grain
@@ -61,8 +63,8 @@ class SurfaceReaction(nn.Module):
             self.T_dust_0, self.num_sites_per_grain
         )
         barr = 1.
-        return params_reac["alpha"]*barr*(rate_diff_r1 + rate_diff_r2) \
-            *self.inv_dtg_num_ratio_0/params_env["den_H"]
+        return params_reac["alpha"]*params_reac["branching_ratio"]*barr\
+            *(rate_diff_r1 + rate_diff_r2)*self.inv_dtg_num_ratio_0/params_env["den_H"]
 
 
 class DummyZero(nn.Module):
@@ -90,6 +92,7 @@ def compute_surface_params(spec_table, meta_params, special_dict=None):
     """
     compute_vibration_frequency(spec_table, meta_params)
     compute_factor_rate_acc(spec_table, meta_params, special_dict)
+    compute_rate_tunneling(spec_table, meta_params)
 
 
 def compute_vibration_frequency(spec_table, meta_params):
@@ -111,9 +114,25 @@ def compute_factor_rate_acc(spec_table, meta_params, special_dict=None):
     factor = math.pi*grain_radius*grain_radius*math.sqrt(8.*K_B/math.pi/M_ATOM)
     spec_table["factor_rate_acc"] = factor*sticking_coeff/np.sqrt(spec_table["ma"])
 
+    # TODO: Understanding
     cond = spec_table.index.map(lambda name: name.startswith("J"))
     inds = spec_table[cond].index.map(lambda name: name[1:])
     spec_table.loc[inds, "factor_rate_acc"] = spec_table.loc[cond, "factor_rate_acc"].values
+
+
+def compute_barrier_energy(spec_table, meta_params, speical_dict=None):
+    spec_table["E_barr"] = meta_params.surf_diff_to_deso_ratio*spec_table["E_deso"]
+    if speical_dict is not None:
+        for key, val in speical_dict.items():
+            spec_table.loc[key, "E_barr"] = val
+
+
+def compute_rate_tunneling(spec_table, meta_params):
+    spec_table["rate_tunneling_a"] = spec_table["dE_band"]*(.25*K_B/H_BAR)
+
+    exponent = -2.*meta_params.diffusion_barrier_thickness/H_BAR \
+        *np.sqrt(2*K_B*M_ATOM**spec_table["ma"])
+    spec_table["rate_tunneling_b"] = spec_table["freq_vib"]*np.exp(exponent)
 
 
 def assign_surface_params(df_reac, spec_table):
@@ -134,3 +153,57 @@ def assign_surface_params(df_reac, spec_table):
     for col in columns:
         df_reac.loc[df_tmp.index, f"{col}_r2"] = spec_table.loc[df_tmp, col].values
     df_reac.fillna(0., inplace=True)
+
+
+def assign_activation_energy(df_reac, df_act):
+    index = np.intersect1d(df_reac["key"], df_act.index)
+    df_tmp = pd.DataFrame(df_reac.index, index=df_reac["key"])
+    df_reac["E_act"] = 0.
+    df_reac.loc[df_tmp.loc[index, df_reac.index.name], "E_act"] = df_act.loc[index, "E_act"].values
+
+
+def compute_branching_ratio(df_reac, spec_table, meta_params):
+    df_reac["branching_ratio"] = 1.
+    df_reac.loc[df_reac["reactant_1"] == df_reac["reactant_2"], "branching_ratio"] = .5
+
+    u_dHf = units.imperial.kilocal.cgs.scale/K_B/constants.N_A.value # Convert kilocal/mol to K
+    cond = df_reac["formula"] == 'surface reaction'
+    df_tmp = df_reac[cond]
+
+    prod_first = [] # List of the first product. TODO: Check the order
+
+    # TODO: Understanding
+    df_deso = spec_table["E_deso"].copy()
+    cond = df_deso.index.map(lambda name: name.startswith("J"))
+    inds = df_deso[cond].index.map(lambda name: name[1:])
+    df_deso.loc[inds] = df_deso.loc[cond].values
+    lookup_E_deso = df_deso.to_dict()
+    E_deso_max = np.zeros(len(df_tmp))
+
+    lookup_dHf = spec_table["dHf"].to_dict()
+    dHf_sum = spec_table.loc[df_tmp["reactant_1"], "dHf"].values \
+        + spec_table.loc[df_tmp["reactant_2"], "dHf"].values
+    for i_reac, prods in enumerate(df_tmp["products"].values):
+        prods = prods.split(";")
+        prod_first.append(prods[0])
+        for name in prods:
+            dHf_sum[i_reac] += lookup_dHf[name]
+        E_deso_max[i_reac] = max([lookup_E_deso[key] for key in prods])
+    dHf_sum *= u_dHf # To K
+    dHf_sum -= df_tmp["E_act"].values
+
+    num_atoms = spec_table.loc[prod_first, "num_atoms"].values
+
+    frac_deso = np.zeros_like(E_deso_max)
+    cond = dHf_sum != 0.
+    frac_deso[cond] = 1. - E_deso_max[cond]/dHf_sum[cond]
+    cond = num_atoms == 2
+    frac_deso[cond] = frac_deso[cond]**(3*num_atoms[cond] - 5)
+    cond = num_atoms > 2
+    frac_deso[cond] = frac_deso[cond]**(3*num_atoms[cond] - 6)
+    frac_deso *= meta_params.vib_to_dissip_freq_ratio
+    frac_deso = frac_deso/(1. + frac_deso)
+
+    cond = list(map(lambda name: name.startswith("J"), prod_first))
+    frac_deso[cond] = 1 - frac_deso[cond]
+    df_reac.loc[df_tmp.index, "branching_ratio"] *= frac_deso

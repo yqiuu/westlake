@@ -56,11 +56,12 @@ def create_astrochem_problem(df_reac, params_env, ab_0, spec_table_base=None, ab
     meta_params = MetaParameters()
     #
     spec_table, rmat_1st, rmat_2nd = create_reaction_data(
-        df_reac["reactants"], df_reac["products"], spec_table_base)
+        df_reac["reactant_1"], df_reac["reactant_2"], df_reac["products"], spec_table_base)
     formulae = df_reac["formula"].values.astype(str)
     # First order reactions
     params_reac = data_frame_to_tensor_dict(
-        df_reac[["is_unique", "T_min", "T_max", "alpha", "beta", "gamma"]].iloc[rmat_1st.inds])
+        df_reac[["is_unique", "T_min", "T_max", "alpha", "beta", "gamma"]].iloc[rmat_1st.inds],
+    )
     rate_1st = create_gas_reaction_module_1st(
         formulae[rmat_1st.inds], rmat_1st, params_env, params_reac, meta_params)
     # Second order reactions
