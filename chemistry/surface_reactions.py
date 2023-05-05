@@ -101,6 +101,18 @@ def compute_vibration_frequency(spec_table, meta_params):
 
 
 def compute_factor_rate_acc(spec_table, meta_params, special_dict=None):
+    """Compute the factor to calculate surface accretion rates.
+
+    For surface accretion, the product is a surface specie, while the reactant
+    is a normal specie. In practice, we need to set the factor to the
+    corresponding normal specie.
+
+    Args:
+        spec_table (pd.Dataframe): Specie table.
+        meta_params (MetaParams): Meta parameters.
+        special_dict (dict | None, optional): A dict to specify special cases.
+        Defaults to None.
+    """
     charge = spec_table["charge"].values
     sticking_coeff = np.zeros_like(spec_table["ma"].values)
     sticking_coeff[charge == 0] = meta_params.sticking_coeff_neutral
@@ -114,10 +126,12 @@ def compute_factor_rate_acc(spec_table, meta_params, special_dict=None):
     factor = math.pi*grain_radius*grain_radius*math.sqrt(8.*K_B/math.pi/M_ATOM)
     spec_table["factor_rate_acc"] = factor*sticking_coeff/np.sqrt(spec_table["ma"])
 
-    # TODO: Understanding
-    cond = spec_table.index.map(lambda name: name.startswith("J"))
-    inds = spec_table[cond].index.map(lambda name: name[1:])
-    spec_table.loc[inds, "factor_rate_acc"] = spec_table.loc[cond, "factor_rate_acc"].values
+    # Set the factor to the corresponding normal specie. The second condition
+    # below ensures that the corresponding normal speice exists.
+    cond = spec_table.index.map(lambda name: name.startswith("J")).values \
+        & np.isin(spec_table.index.map(lambda name: name[1:]).values, spec_table.index)
+    spec = spec_table[cond].index.map(lambda name: name[1:])
+    spec_table.loc[spec, "factor_rate_acc"] = spec_table.loc[cond, "factor_rate_acc"].values
 
 
 def compute_barrier_energy(spec_table, meta_params, speical_dict=None):
