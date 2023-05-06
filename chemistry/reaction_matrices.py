@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 import pandas as pd
@@ -6,6 +6,7 @@ import pandas as pd
 
 @dataclass
 class ReactionMatrix:
+    order: int
     inds: object
     rate_sign: object
     spec_r: object
@@ -63,12 +64,14 @@ def create_reaction_matrix(reactant_1, reactant_2, products):
             raise ValueError
 
     rmat_1st = ReactionMatrix(
+        1, # reaction order
         np.asarray(inds_1st),
         np.asarray(rate_1st),
         np.asarray(spec_1st_r),
         np.asarray(spec_1st_p),
     )
     rmat_2nd = ReactionMatrix(
+        2, # reaction order
         np.asarray(inds_2nd),
         np.asarray(rate_2nd),
         np.asarray(spec_2nd_r),
@@ -95,11 +98,11 @@ def create_specie_table(rmat_1st, rmat_2nd):
 def name_to_inds(spec_table, rmat_1st, rmat_2nd):
     inds_1st_r = spec_table.loc[rmat_1st.spec_r, "index"].values.ravel()
     inds_1st_p = spec_table.loc[rmat_1st.spec_p, "index"].values.ravel()
-    rmat_1st = ReactionMatrix(rmat_1st.inds, rmat_1st.rate_sign, inds_1st_r, inds_1st_p)
+    rmat_1st = replace(rmat_1st, spec_r=inds_1st_r, spec_p=inds_1st_p)
 
     inds_2nd_r = np.zeros(rmat_2nd.spec_r.shape, spec_table["index"].dtype)
     inds_2nd_r[:, 0] = spec_table.loc[rmat_2nd.spec_r[:, 0], "index"].values.ravel()
     inds_2nd_r[:, 1] = spec_table.loc[rmat_2nd.spec_r[:, 1], "index"].values.ravel()
     inds_2nd_p = spec_table.loc[rmat_2nd.spec_p, "index"].values.ravel()
-    rmat_2nd = ReactionMatrix(rmat_2nd.inds, rmat_2nd.rate_sign, inds_2nd_r, inds_2nd_p)
+    rmat_2nd = replace(rmat_2nd, spec_r=inds_2nd_r, spec_p=inds_2nd_p)
     return rmat_1st, rmat_2nd
