@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from .utils import data_frame_to_tensor_dict
 from .meta_params import MetaParameters
 from .reaction_matrices import ReactionMatrix, create_reaction_data
-from .gas_reactions import create_gas_reaction_module_1st, create_gas_reaction_module_2nd
 
 
 class ReactionTerm(nn.Module):

@@ -9,6 +9,24 @@ from astropy import units, constants
 from .constants import M_ATOM, K_B, H_BAR, FACTOR_VIB_FREQ
 
 
+def builtin_surface_reactions_1st(meta_params):
+    return {
+        'thermal evaporation': ThermalEvaporation(meta_params),
+        'CR evaporation': CosmicRayEvaporation(meta_params),
+        'complexes reaction': NoReaction(),
+        'UV photodesorption': NoReaction(),
+        'CR photodesorption': NoReaction(),
+        'surface accretion': SurfaceAccretion(meta_params),
+    }
+
+
+def builtin_surface_reactions_2nd(meta_params):
+    return {
+        'surface reaction': SurfaceReaction(meta_params),
+        'Eley-Rideal': NoReaction(),
+    }
+
+
 class ThermalEvaporation(nn.Module):
     def __init__(self, meta_params):
         super(ThermalEvaporation, self).__init__()
@@ -67,7 +85,7 @@ class SurfaceReaction(nn.Module):
             *(rate_diff_r1 + rate_diff_r2)*self.inv_dtg_num_ratio_0/params_env["den_H"]
 
 
-class DummyZero(nn.Module):
+class NoReaction(nn.Module):
     def forward(self, params_env, params_reac, *args, **kwargs):
         return torch.zeros_like(params_reac["alpha"])
 
@@ -188,9 +206,10 @@ def compute_branching_ratio(df_reac, spec_table, meta_params):
 
     # TODO: Understanding
     df_deso = spec_table["E_deso"].copy()
-    cond = df_deso.index.map(lambda name: name.startswith("J"))
-    inds = df_deso[cond].index.map(lambda name: name[1:])
-    df_deso.loc[inds] = df_deso.loc[cond].values
+    cond = spec_table.index.map(lambda name: name.startswith("J")).values \
+        & np.isin(spec_table.index.map(lambda name: name[1:]).values, spec_table.index)
+    spec = spec_table[cond].index.map(lambda name: name[1:])
+    df_deso.loc[spec] = df_deso.loc[cond].values
     lookup_E_deso = df_deso.to_dict()
     E_deso_max = np.zeros(len(df_tmp))
 

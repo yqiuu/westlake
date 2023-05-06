@@ -2,8 +2,21 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from .utils import data_frame_to_tensor_dict
-from .reaction_rates import FormulaDictReactionRate
+
+def builtin_gas_reactions_1st(meta_params):
+    return {
+        "CR ionization": CosmicRayIonization(meta_params.rate_cr_ion),
+        "photodissociation": Photodissociation(),
+    }
+
+
+def builtin_gas_reactions_2nd(meta_params):
+    return {
+        "modified Arrhenius": ModifiedArrhenius(),
+        "ionpol1": Ionpol1(),
+        "ionpol2": Ionpol2(),
+        "gas grain": GasGrainReaction(),
+    }
 
 
 class CosmicRayIonization(nn.Module):
@@ -95,29 +108,3 @@ class GasGrainReaction(nn.Module):
         T_gas = params_env["T_gas"]
         rate = params_reac["alpha"]*(T_gas/300.)**params_reac["beta"]
         return rate
-
-
-def create_gas_reaction_module_1st(formula, rmat, module_env, params_reac, meta_params):
-    return FormulaDictReactionRate(
-        builtin_gas_reaction_formulae_1st(meta_params), formula, rmat, module_env, params_reac)
-
-
-def create_gas_reaction_module_2nd(formula, rmat, module_env, params_reac, meta_params):
-    return FormulaDictReactionRate(
-        builtin_gas_reaction_formulae_2nd(meta_params), formula, rmat, module_env, params_reac)
-
-
-def builtin_gas_reaction_formulae_1st(meta_params):
-    return {
-        "CR ionization": CosmicRayIonization(meta_params.rate_cr_ion),
-        "photodissociation": Photodissociation(),
-    }
-
-
-def builtin_gas_reaction_formulae_2nd(meta_params):
-    return {
-        "modified Arrhenius": ModifiedArrhenius(),
-        "ionpol1": Ionpol1(),
-        "ionpol2": Ionpol2(),
-        "gas grain": GasGrainReaction(),
-    }

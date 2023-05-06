@@ -19,7 +19,6 @@ class FixedReactionRate(nn.Module):
 class FormulaDictReactionRate(nn.Module):
     def __init__(self, formula_dict, formula, rmat, module_env, params_reac):
         super(FormulaDictReactionRate, self).__init__()
-
         lookup = {key: idx for idx, key in enumerate(formula_dict.keys())}
         mask = F.one_hot(torch.tensor([lookup[name] for name in formula]), len(lookup))
         mask *= rmat.rate_sign[:, None]
