@@ -9,6 +9,8 @@ class MetaParameters:
     """Meta parameters.
 
     Args:
+        ab_0_min (float): Minimum initial abundances.
+
         T_dust_0 (float): Initial dust temperature [K].
         site_density (float): Site density on one grain [cm^-2].
         grain_density (float): Grain mass density [g cm^-3].
@@ -28,6 +30,9 @@ class MetaParameters:
         frequency to the frequency at which energy is lost to the grain surface
         (Garrod el al. 2007).
     """
+    # Initial abundances
+    ab_0_min: float = 0.
+
     # Grain parameters
     T_dust_0: float = 10.
     site_density: float = 1.5e15
@@ -63,8 +68,8 @@ class MetaParameters:
         return 4.*math.pi*self.grain_radius**2*self.site_density
 
 
-def modified_dtg_mass_ratio_0(ab_He, dtg_mass_ratio_0=None):
-    """Modify the initial DTG mass ration using the He abundance."""
+def fixed_dtg_mass_ratio_0(ab_He, dtg_mass_ratio_0=None):
+    """Fix the initial DTG mass ratio using the He abundance."""
     if dtg_mass_ratio_0 is None:
         dtg_mass_ratio_0 = MetaParameters.dtg_mass_ratio_0
     return dtg_mass_ratio_0*(1 + 4*ab_He)

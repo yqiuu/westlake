@@ -76,7 +76,7 @@ def create_astrochem_problem(df_reac, params_env, ab_0, spec_table_base=None, ab
     return AstrochemProblem(spec_table, rmat_1st, rmat_2nd, reaction_term, ab_0_)
 
 
-def dervie_initial_abundances(ab_0, spec_table, meta_params, ab_0_min=0.):
+def dervie_initial_abundances(ab_0_dict, spec_table, meta_params):
     """Derive the initial abundances of grains and electrons.
 
     Args:
@@ -89,25 +89,21 @@ def dervie_initial_abundances(ab_0, spec_table, meta_params, ab_0_min=0.):
     Returns:
         tuple: Initial abundances.
     """
-    if not all(np.in1d(list(ab_0.keys()), spec_table.index.values)):
+    if not all(np.in1d(list(ab_0_dict.keys()), spec_table.index.values)):
         raise ValueError("Find unrecognized species in 'ab_0'.")
 
-    ab_0_ = np.full(len(spec_table), ab_0_min)
-    ab_0_[spec_table.loc[ab_0.keys()]["index"].values] = list(ab_0.values())
+    ab_0 = np.full(len(spec_table), meta_params.ab_0_min)
+    ab_0[spec_table.loc[ab_0_dict.keys()]["index"].values] = list(ab_0_dict.values())
 
     # Derive the grain abundances
-    dtg_mass_ratio_0 = meta_params.dtg_mass_ratio_0
-    # TODO: Understand why the initial DTG mass ratio is modified.
-    if "He" in ab_0:
-        dtg_mass_ratio_0 *= 1 + 4*ab_0["He"]
-    ab_0_[spec_table.loc["GRAIN0", "index"]] = dtg_mass_ratio_0/meta_params.grain_mass
-    ab_0_[spec_table.loc["GRAIN-", "index"]]
+    ab_0[spec_table.loc["GRAIN0", "index"]] = meta_params.dtg_mass_ratio_0/meta_params.grain_mass
+    ab_0[spec_table.loc["GRAIN-", "index"]] = 0.
 
     # Derive the electron abundance aussming the system is neutral
-    ab_0_[spec_table.loc["e-", "index"]] = 0.
-    ab_0_[spec_table.loc["e-", "index"]] = np.sum(spec_table["charge"].values*ab_0_)
+    ab_0[spec_table.loc["e-", "index"]] = 0.
+    ab_0[spec_table.loc["e-", "index"]] = np.sum(spec_table["charge"].values*ab_0)
 
-    return ab_0_
+    return ab_0
 
 
 def compute_reaction_rates(problem, t_0=None):
