@@ -22,13 +22,16 @@ class MetaParameters:
         rate_fe_ion: (float): Fe-ion-grain encounter [s^-1].
         tau_cr_peak (float): Duration of peak grain temperature [s^-1].
         T_grain_cr_peak (float): Peak grain temperature due to cosmic ray
-        heating [K].
+            heating [K].
         sticking_coeff_neutral (float):
         sticking_coeff_positive (float):
         sticking_coeff_negative (float):
         vib_to_dissip_freq_ratio (float): The ratio of the surface-molecule bond
-        frequency to the frequency at which energy is lost to the grain surface
-        (Garrod el al. 2007).
+            frequency to the frequency at which energy is lost to the grain
+            surface (Garrod el al. 2007).
+
+        rtol (float): Relative tolerance.
+        atol (float): Ababsolute tolerance.
     """
     # Initial abundances
     ab_0_min: float = 0.
@@ -51,6 +54,9 @@ class MetaParameters:
     vib_to_dissip_freq_ratio: float = 1e-2
     surf_diff_to_deso_ratio: float = 0.4
 
+    # Numerics
+    rtol: float = 1e-5
+    atol: float = 1e-25
 
     @property
     def grain_mass(self):
