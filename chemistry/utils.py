@@ -49,6 +49,9 @@ class TensorDict(nn.Module):
     def forward(self, *args, **kwargs):
         return {key: getattr(self, key) for key in self.names}
 
+    def indexing(self, inds):
+        return TensorDict(self.names, [val[inds].clone() for val in self().values()])
+
 
 def data_frame_to_tensor_dict(df, **kwargs):
     """Create a dict of tensors from a pandas dataframe."""
