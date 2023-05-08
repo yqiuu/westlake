@@ -189,9 +189,9 @@ def assign_surface_params(df_reac, spec_table):
 
 def assign_activation_energy(df_reac, df_act):
     index = np.intersect1d(df_reac["key"], df_act.index)
-    df_tmp = pd.DataFrame(df_reac.index, index=df_reac["key"])
+    df_tmp = pd.DataFrame(df_reac.index, index=df_reac["key"], columns=["index"])
     df_reac["E_act"] = 0.
-    df_reac.loc[df_tmp.loc[index, df_reac.index.name], "E_act"] = df_act.loc[index, "E_act"].values
+    df_reac.loc[df_tmp.loc[index, "index"], "E_act"] = df_act.loc[index, "E_act"].values
 
 
 def compute_branching_ratio(df_reac, spec_table, meta_params):
