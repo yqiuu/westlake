@@ -6,12 +6,24 @@ import pandas as pd
 
 @dataclass
 class ReactionMatrix:
+    """A set of parameters that define the kinetic equation.
+
+    Args:
+        order (int): Number of reactants.
+        inds_id (list): Index in the reaction dataframe.
+        inds_k (list): Index in the reaction dataframe for computing the rates.
+        rate_sign (list): Sign of the rates. This aligns with ``inds_k``.
+        inds_r (list): Index in the specie table for gathering the reactants.
+            For second order reactions, each element is a pair of indices.
+        inds_p (list): Index in the specie table for gathering the products.
+    """
     order: int
-    inds_id: np.ndarray
-    inds_k: np.ndarray
-    rate_sign: np.ndarray
-    inds_r: np.ndarray
-    inds_p: np.ndarray
+    inds_id: list
+    inds_k: list
+    rate_sign: list
+    inds_r: list
+    inds_p: list
+
 
 
 def create_reaction_data(reactant_1, reactant_2, products, spec_table_base=None):
