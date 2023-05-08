@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from torch import nn
 
@@ -53,7 +54,16 @@ class TensorDict(nn.Module):
         return TensorDict(self.names, [val[inds].clone() for val in self().values()])
 
 
-def data_frame_to_tensor_dict(df, **kwargs):
-    """Create a dict of tensors from a pandas dataframe."""
+def data_frame_to_tensor_dict(df):
+    """Create a TensorDict from a pandas dataframe."""
     names = df.columns.values
-    return TensorDict(names, [torch.tensor(df[key].values, **kwargs) for key in names])
+    tensors = []
+    dtype_float = torch.get_default_dtype()
+    for key in names:
+        arr = df[key].values
+        if np.issubdtype(arr.dtype, np.floating):
+            dtype = dtype_float
+        else:
+            dtype = None
+        tensors.append(torch.tensor(arr, dtype=dtype))
+    return TensorDict(names, tensors)
