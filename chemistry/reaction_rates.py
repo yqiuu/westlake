@@ -19,9 +19,10 @@ class FixedReactionRate(nn.Module):
 
 
 class FormulaDictReactionModule(nn.Module):
-    def __init__(self, formula_dict, inds_fm_dict,
+    def __init__(self, order, formula_dict, inds_fm_dict,
                  inds_reac, inds_k, rate_sign, module_env, params_reac):
         super(FormulaDictReactionModule, self).__init__()
+        self.order = order
         for i_fm, inds in enumerate(inds_fm_dict.values()):
             setattr(self, f"_params_reac_{i_fm}", params_reac.indexing(inds))
         self.formula_list = nn.ModuleList([formula_dict[key] for key in inds_fm_dict])
@@ -34,14 +35,17 @@ class FormulaDictReactionModule(nn.Module):
             raise ValueError("Unknown 'module_env'.")
 
     def forward(self, t_in):
-        return self.compute_rates(t_in)[self.inds_k]*self.rate_sign
+        params_env = self.module_env(t_in)
+        rates = self.compute_rates(params_env)
+        if self.order == 2:
+            rates = rates*params_env["den_H"]
+        return rates[self.inds_k]*self.rate_sign
 
     def compute_rates_reac(self, t_in):
-        return self.compute_rates(t_in)[self.inds_reac]
-
-    def compute_rates(self, t_in):
         params_env = self.module_env(t_in)
+        return self.compute_rates(params_env)[self.inds_reac]
 
+    def compute_rates(self, params_env):
         def compute_rates_sub(i_fm):
             params_reac_sub = getattr(self, f"_params_reac_{i_fm}")()
             return self.formula_list[i_fm](params_env, params_reac_sub)
@@ -72,6 +76,6 @@ def create_formula_dict_reaction_module(df_reac, rmat, formula_dict, module_env,
     inds_k = lookup_sub.loc[rmat.inds_k, "index_fm"].values
 
     return FormulaDictReactionModule(
-        formula_dict, inds_fm_dict, inds_reac, inds_k, rmat.rate_sign,
+        rmat.order, formula_dict, inds_fm_dict, inds_reac, inds_k, rmat.rate_sign,
         module_env, data_frame_to_tensor_dict(df_sub[param_names])
     )
