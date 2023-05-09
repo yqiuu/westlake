@@ -1,6 +1,8 @@
 import math
 from dataclasses import dataclass
 
+from astropy import units
+
 from .constants import M_ATOM
 
 
@@ -30,6 +32,8 @@ class MetaParameters:
             frequency to the frequency at which energy is lost to the grain
             surface (Garrod el al. 2007).
 
+        to_second: A unit factor that converts the desired unit to second. The
+            default value converts year to second.
         rtol (float): Relative tolerance.
         atol (float): Ababsolute tolerance.
     """
@@ -53,6 +57,9 @@ class MetaParameters:
     sticking_coeff_negative: float = 0.
     vib_to_dissip_freq_ratio: float = 1e-2
     surf_diff_to_deso_ratio: float = 0.4
+
+    #
+    to_second: float = units.year.to(units.second)
 
     # Numerics
     rtol: float = 1e-5
