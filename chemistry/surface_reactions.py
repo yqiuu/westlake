@@ -30,18 +30,17 @@ def builtin_surface_reactions_2nd(meta_params):
 class ThermalEvaporation(nn.Module):
     def __init__(self, meta_params):
         super(ThermalEvaporation, self).__init__()
-        self.register_buffer("T_dust_0", torch.tensor(meta_params.T_dust_0))
 
     def forward(self, params_env, params_reac, **params_extra):
         return compute_evaporation_rate(
             params_reac["alpha"], params_reac["freq_vib_r1"],
-            params_reac["E_deso_r1"], self.T_dust_0
+            params_reac["E_deso_r1"], params_env["T_dust"]
         )
 
 
 class CosmicRayEvaporation(nn.Module):
     def __init__(self, meta_params):
-        super().__init__()
+        super(CosmicRayEvaporation, self).__init__()
         prefactor = (meta_params.rate_cr_ion + meta_params.rate_x_ion)/1.3e-17 \
             *(meta_params.rate_fe_ion*meta_params.tau_cr_peak)
         self.register_buffer("prefactor", torch.tensor(prefactor))
@@ -67,18 +66,17 @@ class SurfaceAccretion(nn.Module):
 class SurfaceReaction(nn.Module):
     def __init__(self, meta_params):
         super(SurfaceReaction, self).__init__()
-        self.register_buffer("T_dust_0", torch.tensor(meta_params.T_dust_0))
         self.register_buffer("num_sites_per_grain", torch.tensor(meta_params.num_sites_per_grain))
         self.register_buffer("inv_dtg_num_ratio_0", torch.tensor(1./meta_params.dtg_num_ratio_0))
 
     def forward(self, params_env, params_reac, **params_extra):
         rate_diff_r1 = compute_thermal_hoping_rate(
             params_reac["E_barr_r1"], params_reac["freq_vib_r1"],
-            self.T_dust_0, self.num_sites_per_grain
+            params_env["T_dust"], self.num_sites_per_grain
         )
         rate_diff_r2 = compute_thermal_hoping_rate(
             params_reac["E_barr_r2"], params_reac["freq_vib_r2"],
-            self.T_dust_0, self.num_sites_per_grain
+            params_env["T_dust"], self.num_sites_per_grain
         )
         barr = 1.
         return params_reac["alpha"]*params_reac["branching_ratio"]*barr\
