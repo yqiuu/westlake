@@ -4,6 +4,7 @@ from .reaction_rates import *
 from .surface_reactions import *
 from .gas_reactions import *
 from .astrochem import *
+from .medium import *
 from .splines import *
 from .solver import *
 from .equation import *

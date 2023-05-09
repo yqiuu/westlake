@@ -3,17 +3,17 @@ import torch
 from torch import nn
 
 
-class LinearInterp(nn.Module):
+class LinearInterpolation(nn.Module):
     """Linear interpolation of a key tensor.
 
     Args:
         x_node (tensor): (N,). x data.
-        y_node (KeyTensor): (N, X). y_data.
+        y_node (tensor): (N, X). y_data.
     """
     def __init__(self, x_node, y_node):
-        super(LinearInterp, self).__init__()
+        super(LinearInterpolation, self).__init__()
         self.register_buffer("x_node", x_node)
-        y_node.register_buffer(self, "y_node")
+        self.register_buffer("y_node", y_node)
 
     def forward(self, x_in):
         # x_in (B,)
@@ -31,11 +31,9 @@ class LinearInterp(nn.Module):
         x_local = (x_in - xn_0)/(xn_1 - xn_0)
         x_local = x_local[:, None]
 
-        yn_0 = self.y_node.get()[inds_0]
-        yn_1 = self.y_node.get()[inds_1]
+        yn_0 = self.y_node[inds_0]
+        yn_1 = self.y_node[inds_1]
         y_out = yn_0*(1 - x_local) + yn_1*x_local
-        y_out = self.y_node.new(y_out)
-
         return y_out
 
 
