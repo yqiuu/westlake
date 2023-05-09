@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 
 
 # Get version
-exec(open('chemistry/version.py', 'r').read())
+exec(open('westlake/version.py', 'r').read())
 #
 setup(
-    name='chemistry',
+    name='westlake',
     version=__version__,
     author='Yisheng Qiu',
     packages=find_packages(),
