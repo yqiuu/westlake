@@ -32,7 +32,7 @@ class ThermalEvaporation(nn.Module):
         super(ThermalEvaporation, self).__init__()
         self.register_buffer("T_dust_0", torch.tensor(meta_params.T_dust_0))
 
-    def forward(self, params_env, params_reac, T_gas, mask_T, **kwargs):
+    def forward(self, params_env, params_reac, **params_extra):
         return compute_evaporation_rate(
             params_reac["alpha"], params_reac["freq_vib_r1"],
             params_reac["E_deso_r1"], self.T_dust_0
@@ -47,7 +47,7 @@ class CosmicRayEvaporation(nn.Module):
         self.register_buffer("prefactor", torch.tensor(prefactor))
         self.register_buffer("T_grain_cr_peak", torch.tensor(meta_params.T_grain_cr_peak))
 
-    def forward(self, params_env, params_reac, T_gas, mask_T, **kwargs):
+    def forward(self, params_env, params_reac, **params_extra):
         return compute_evaporation_rate(
             self.prefactor*params_reac["alpha"], params_reac["freq_vib_r1"],
             params_reac["E_deso_r1"], self.T_grain_cr_peak
@@ -59,7 +59,7 @@ class SurfaceAccretion(nn.Module):
         super(SurfaceAccretion, self).__init__()
         self.register_buffer("dtg_num_ratio_0", torch.tensor(meta_params.dtg_num_ratio_0))
 
-    def forward(self, params_env, params_reac, T_gas, mask_T, **kwargs):
+    def forward(self, params_env, params_reac, **params_extra):
         return params_reac["alpha"]*params_reac["factor_rate_acc_r1"] \
             *(params_env["T_gas"].sqrt()*params_env["den_H"]*self.dtg_num_ratio_0)
 
@@ -71,7 +71,7 @@ class SurfaceReaction(nn.Module):
         self.register_buffer("num_sites_per_grain", torch.tensor(meta_params.num_sites_per_grain))
         self.register_buffer("inv_dtg_num_ratio_0", torch.tensor(1./meta_params.dtg_num_ratio_0))
 
-    def forward(self, params_env, params_reac, T_gas, mask_T, **kwargs):
+    def forward(self, params_env, params_reac, **params_extra):
         rate_diff_r1 = compute_thermal_hoping_rate(
             params_reac["E_barr_r1"], params_reac["freq_vib_r1"],
             self.T_dust_0, self.num_sites_per_grain
@@ -86,7 +86,7 @@ class SurfaceReaction(nn.Module):
 
 
 class NoReaction(nn.Module):
-    def forward(self, params_env, params_reac, *args, **kwargs):
+    def forward(self, params_env, params_reac, **params_extra):
         return torch.zeros_like(params_reac["alpha"])
 
 

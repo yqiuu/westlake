@@ -44,17 +44,7 @@ class FormulaDictReactionModule(nn.Module):
 
         def compute_rates_sub(i_fm):
             params_reac_sub = getattr(self, f"_params_reac_{i_fm}")()
-            is_unique, T_min, T_max, *_ = params_reac_sub.values()
-            T_gas = params_env["T_gas"]
-            cond_ge = T_gas >= T_min
-            cond_lt = T_gas < T_max
-            mask_T = cond_ge & cond_lt | is_unique
-            mask_T = mask_T.type(T_gas.dtype)
-            # TODO: Check the shape of T_gas
-            T_gas = T_gas.repeat(is_unique.shape[0])
-            T_gas = torch.where(cond_ge, T_gas, T_min)
-            T_gas = torch.where(cond_lt, T_gas, T_max)
-            return self.formula_list[i_fm](params_env, params_reac_sub, T_gas, mask_T)
+            return self.formula_list[i_fm](params_env, params_reac_sub)
 
         return torch.concat([compute_rates_sub(i_fm) for i_fm in range(len(self.formula_list))])
 

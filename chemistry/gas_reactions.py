@@ -29,7 +29,7 @@ class CosmicRayIonization(nn.Module):
         super(CosmicRayIonization, self).__init__()
         self.register_buffer("rate_cr_ion", torch.tensor(rate_cr_ion))
 
-    def forward(self, params_env, params_reac, *args, **kwargs):
+    def forward(self, params_env, params_reac, **params_extra):
         """
         Args:
             params_reac (KeyTensor): (R, 5). Reaction parameters.
@@ -43,7 +43,7 @@ class CosmicRayIonization(nn.Module):
 
 
 class Photodissociation(nn.Module):
-    def forward(self, params_env, params_reac, *args, **kwargs):
+    def forward(self, params_env, params_reac, **params_extra):
         """
         Args:
             params_reac (KeyTensor): (R, 5). Reaction parameters.
@@ -60,7 +60,7 @@ class Photodissociation(nn.Module):
 
 
 class ModifiedArrhenius(nn.Module):
-    def forward(self, params_env, params_reac, T_gas, mask_T):
+    def forward(self, params_env, params_reac, **params_extra):
         """
         Args:
             params_reac (KeyTensor): (R, 5). Reaction parameters.
@@ -72,31 +72,34 @@ class ModifiedArrhenius(nn.Module):
         alpha = params_reac["alpha"]
         beta = params_reac["beta"]
         gamma = params_reac["gamma"]
+        T_gas, mask_T = clamp_gas_temperature(params_env, params_reac)
         rate = alpha*(T_gas/300.)**beta*torch.exp(-gamma/T_gas)*mask_T
         return rate
 
 
 class Ionpol1(nn.Module):
-    def forward(self, params_env, params_reac, T_gas, mask_T):
+    def forward(self, params_env, params_reac, **params_extra):
         alpha = params_reac["alpha"]
         beta = params_reac["beta"]
         gamma = params_reac["gamma"]
+        T_gas, mask_T = clamp_gas_temperature(params_env, params_reac)
         rate = alpha*beta*(0.62 + 0.4767*gamma*(300./T_gas).sqrt())*mask_T
         return rate
 
 
 class Ionpol2(nn.Module):
-    def forward(self, params_env, params_reac, T_gas, mask_T):
+    def forward(self, params_env, params_reac, **params_extra):
         alpha = params_reac["alpha"]
         beta = params_reac["beta"]
         gamma = params_reac["gamma"]
+        T_gas, mask_T = clamp_gas_temperature(params_env, params_reac)
         inv_T_300 = 300./T_gas
         rate = alpha*beta *(1 + 0.0967*gamma*inv_T_300.sqrt()+ gamma*gamma/10.526*inv_T_300)*mask_T
         return rate
 
 
 class GasGrainReaction(nn.Module):
-    def forward(self, params_env, params_reac, *args):
+    def forward(self, params_env, params_reac, **params_extra):
         """
         Args:
             params_reac (KeyTensor): (R, 5). Reaction parameters.
@@ -108,3 +111,19 @@ class GasGrainReaction(nn.Module):
         T_gas = params_env["T_gas"]
         rate = params_reac["alpha"]*(T_gas/300.)**params_reac["beta"]
         return rate
+
+
+def clamp_gas_temperature(params_env, params_reac):
+    is_unique = params_reac["is_unique"]
+    T_min = params_reac["T_min"]
+    T_max = params_reac["T_max"]
+    T_gas = params_env["T_gas"]
+    cond_ge = T_gas >= T_min
+    cond_lt = T_gas < T_max
+    mask_T = cond_ge & cond_lt | is_unique
+    mask_T = mask_T.type(T_gas.dtype)
+    # TODO: Check the shape of T_gas
+    T_gas = T_gas.repeat(is_unique.shape[0])
+    T_gas = torch.where(cond_ge, T_gas, T_min)
+    T_gas = torch.where(cond_lt, T_gas, T_max)
+    return T_gas, mask_T
