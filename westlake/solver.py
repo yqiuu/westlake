@@ -15,7 +15,7 @@ def solve_kinetic(reaction_term, t_span, ab_0, meta_params=None, t_eval=None, de
         if y_in.ndim == 2:
             y_in = y_in.T
         y_out = reaction_term(t_in, y_in)
-        if y_in.ndim == 2:
+        if y_out.ndim == 2:
             y_out = y_out.T
         return y_out.cpu().numpy()
 
