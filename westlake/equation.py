@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torch import nn
+from torch.nn.functional import one_hot
 
 from dataclasses import dataclass
 
@@ -21,6 +22,11 @@ class ReactionTerm(nn.Module):
         self.register_buffer("inds_2p", torch.tensor(rmat_2nd.inds_p))
         self.rate_2 = rate_2nd
 
+        n_spec = max(max(rmat_1st.inds_p), max(rmat_2nd.inds_p)) + 1
+        self.register_buffer("inds_1pr", self.inds_1p*n_spec + self.inds_1r)
+        self.register_buffer(
+            "inds_2pr", torch.ravel(self.inds_2p[:, None]*n_spec + self.inds_2r[:, [1, 0]]))
+
     def forward(self, t_in, y_in):
         y_out = torch.zeros_like(y_in)
         if y_in.dim() == 1:
@@ -38,6 +44,15 @@ class ReactionTerm(nn.Module):
             y_out.scatter_add_(1, inds_2p, term_2)
         return y_out
 
+    def jacobian(self, t_in, y_in):
+        n_spec = y_in.shape[-1]
+        jac = torch.zeros(n_spec*n_spec, dtype=y_in.dtype, device=y_in.device)
+        term_1 = self.rate_1(t_in).squeeze()
+        jac.scatter_add_(0, self.inds_1pr, term_1)
+        term_2 = y_in[self.inds_2r]*self.rate_2(t_in).view(-1, 1)
+        jac.scatter_add_(0, self.inds_2pr, term_2.ravel())
+        jac = jac.reshape(n_spec, n_spec)
+        return jac
 
 
 @dataclass(frozen=True)

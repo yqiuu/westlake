@@ -30,7 +30,7 @@ def solve_kinetic(reaction_term, t_span, ab_0,
         t_in = torch.atleast_1d(t_in)
         y_in = torch.tensor(y_in, dtype=dtype, device=device)
         y_in = torch.atleast_1d(y_in)
-        jac_out = jacobian(lambda y_in: reaction_term(t_in, y_in), y_in)
+        jac_out = reaction_term.jacobian(t_in, y_in)
         return jac_out.cpu().numpy()
 
     t_span = tuple(t*u_factor for t in t_span)
