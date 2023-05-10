@@ -96,19 +96,23 @@ def compute_thermal_hoping_rate(E_barr, freq_vib, T_dust, num_sites_per_grain):
     return freq_vib*torch.exp(-E_barr/T_dust)/num_sites_per_grain
 
 
-def compute_surface_params(spec_table, meta_params, special_dict=None):
-    """Compute surface parameters.
-
-    This is an inplace operation.
+def prepare_surface_params(df_surf, spec_table, meta_params, specials_deso=None):
+    """Prepare surface parameters.
 
     Args:
+        df_surf_ret (pd.DataFrame): Surface parameters.
         spec_table (pd.DataFrame): Specie table.
         meta_params (MetaPrameters): Meta parameters.
         special_dict (dict, optional): Defaults to None.
     """
-    compute_vibration_frequency(spec_table, meta_params)
-    compute_factor_rate_acc(spec_table, meta_params, special_dict)
-    compute_rate_tunneling(spec_table, meta_params)
+    df_surf_ret = spec_table[["charge", "num_atoms", "ma"]].copy()
+    df_surf_ret = df_surf_ret.join(df_surf)
+    df_surf_ret.fillna(0., inplace=True)
+    compute_vibration_frequency(df_surf_ret, meta_params)
+    compute_factor_rate_acc(df_surf_ret, meta_params)
+    compute_barrier_energy(df_surf_ret, meta_params, specials_deso)
+    compute_rate_tunneling(df_surf_ret, meta_params)
+    return df_surf_ret
 
 
 def compute_vibration_frequency(spec_table, meta_params):
@@ -116,7 +120,7 @@ def compute_vibration_frequency(spec_table, meta_params):
         = np.sqrt(FACTOR_VIB_FREQ*meta_params.site_density*spec_table["E_deso"]/spec_table["ma"])
 
 
-def compute_factor_rate_acc(spec_table, meta_params, special_dict=None):
+def compute_factor_rate_acc(spec_table, meta_params):
     """Compute the factor to calculate surface accretion rates.
 
     For surface accretion, the product is a surface specie, while the reactant
@@ -134,9 +138,6 @@ def compute_factor_rate_acc(spec_table, meta_params, special_dict=None):
     sticking_coeff[charge == 0] = meta_params.sticking_coeff_neutral
     sticking_coeff[charge > 0] = meta_params.sticking_coeff_positive
     sticking_coeff[charge < -1] = meta_params.sticking_coeff_negative
-    if special_dict is not None:
-        for key, val in spec_table.items():
-            sticking_coeff[spec_table == key] = val
 
     grain_radius = meta_params.grain_radius
     factor = math.pi*grain_radius*grain_radius*math.sqrt(8.*K_B/math.pi/M_ATOM)
@@ -150,10 +151,10 @@ def compute_factor_rate_acc(spec_table, meta_params, special_dict=None):
     spec_table.loc[spec, "factor_rate_acc"] = spec_table.loc[cond, "factor_rate_acc"].values
 
 
-def compute_barrier_energy(spec_table, meta_params, speical_dict=None):
+def compute_barrier_energy(spec_table, meta_params, specials=None):
     spec_table["E_barr"] = meta_params.surf_diff_to_deso_ratio*spec_table["E_deso"]
-    if speical_dict is not None:
-        for key, val in speical_dict.items():
+    if specials is not None:
+        for key, val in specials.items():
             spec_table.loc[key, "E_barr"] = val
 
 
