@@ -97,7 +97,7 @@ def compute_thermal_hoping_rate(E_barr, freq_vib, T_dust, num_sites_per_grain):
 
 
 def prepare_surface_reaction_params(df_reac, df_surf, df_act, spec_table, meta_params,
-                                    use_builtin_spec_params=True, specials_deso=None):
+                                    use_builtin_spec_params=True, specials_barr=None):
     """Prepare surface reaction parameters.
 
     Assign the surface reaction parameters to the input reaction dataframe. This
@@ -110,16 +110,16 @@ def prepare_surface_reaction_params(df_reac, df_surf, df_act, spec_table, meta_p
         spec_table (pd.DataFrame):
         meta_params (MetaPrameters):
         use_builtin_spec_params (bool, optional): Defaults to True.
-        specials_deso (dict | None, optional): Defaults to None.
+        specials_barr (dict | None, optional): Defaults to None.
     """
     if use_builtin_spec_params:
-        df_surf = prepare_surface_specie_params(df_surf, spec_table, meta_params, specials_deso)
+        df_surf = prepare_surface_specie_params(df_surf, spec_table, meta_params, specials_barr)
     assign_surface_params(df_reac, df_surf)
     assign_activation_energy(df_reac, df_act)
     compute_branching_ratio(df_reac, df_surf, meta_params)
 
 
-def prepare_surface_specie_params(df_surf, spec_table, meta_params, specials_deso=None):
+def prepare_surface_specie_params(df_surf, spec_table, meta_params, specials_barr=None):
     """Prepare surface specie parameters.
 
     Args:
@@ -133,7 +133,7 @@ def prepare_surface_specie_params(df_surf, spec_table, meta_params, specials_des
     df_surf_ret.fillna(0., inplace=True)
     compute_vibration_frequency(df_surf_ret, meta_params)
     compute_factor_rate_acc(df_surf_ret, meta_params)
-    compute_barrier_energy(df_surf_ret, meta_params, specials_deso)
+    compute_barrier_energy(df_surf_ret, meta_params, specials_barr)
     compute_rate_tunneling(df_surf_ret, meta_params)
     return df_surf_ret
 
