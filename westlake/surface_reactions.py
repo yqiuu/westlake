@@ -96,8 +96,31 @@ def compute_thermal_hoping_rate(E_barr, freq_vib, T_dust, num_sites_per_grain):
     return freq_vib*torch.exp(-E_barr/T_dust)/num_sites_per_grain
 
 
-def prepare_surface_params(df_surf, spec_table, meta_params, specials_deso=None):
-    """Prepare surface parameters.
+def prepare_surface_reaction_params(df_reac, df_surf, df_act, spec_table, meta_params,
+                                    use_builtin_spec_params=True, specials_deso=None):
+    """Prepare surface reaction parameters.
+
+    Assign the surface reaction parameters to the input reaction dataframe. This
+    is an inplace operation.
+
+    Args:
+        df_reac (pd.DataFrame):
+        df_surf (pd.DataFrame):
+        df_act (pd.DataFrame):
+        spec_table (pd.DataFrame):
+        meta_params (MetaPrameters):
+        use_builtin_spec_params (bool, optional): Defaults to True.
+        specials_deso (dict | None, optional): Defaults to None.
+    """
+    if use_builtin_spec_params:
+        df_surf = prepare_surface_specie_params(df_surf, spec_table, meta_params, specials_deso)
+    assign_surface_params(df_reac, df_surf)
+    assign_activation_energy(df_reac, df_act)
+    compute_branching_ratio(df_reac, df_surf, meta_params)
+
+
+def prepare_surface_specie_params(df_surf, spec_table, meta_params, specials_deso=None):
+    """Prepare surface specie parameters.
 
     Args:
         df_surf_ret (pd.DataFrame): Surface parameters.
