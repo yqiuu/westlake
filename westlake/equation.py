@@ -77,7 +77,7 @@ def create_astrochem_problem(df_reac, params_env, ab_0, spec_table_base=None, ab
     return AstrochemProblem(spec_table, rmat_1st, rmat_2nd, reaction_term, ab_0_)
 
 
-def reproduce_reaction_rates(reaction_term, t_in=None):
+def reproduce_reaction_rates(reaction_term, rmat_1st, rmat_2nd, t_in=None):
     if t_in is None:
         t_in = torch.tensor([0.])
 
@@ -86,8 +86,8 @@ def reproduce_reaction_rates(reaction_term, t_in=None):
     n_reac = len(inds_reac_1st) + len(inds_reac_2nd)
     rates = torch.zeros([len(t_in), n_reac])
     with torch.no_grad():
-        rates[:, inds_reac_1st] = reaction_term.rate_1.compute_rates_reac(t_in)
-        rates[:, inds_reac_2nd] = reaction_term.rate_2.compute_rates_reac(t_in)
+        rates[:, rmat_1st.inds_id] = reaction_term.rate_1.compute_rates_reac(t_in)
+        rates[:, rmat_2nd.inds_id] = reaction_term.rate_2.compute_rates_reac(t_in)
     rates = rates.T.squeeze()
     return rates
 
