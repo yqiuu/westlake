@@ -258,6 +258,8 @@ def compute_branching_ratio(df_reac, spec_table, meta_params):
     frac_deso[cond] = frac_deso[cond]**(3*num_atoms[cond] - 6)
     frac_deso *= meta_params.vib_to_dissip_freq_ratio
     frac_deso = frac_deso/(1. + frac_deso)
+    frac_deso[frac_deso < 0.] = 0.
+    frac_deso[frac_deso > 1.] = 1.
 
     cond = list(map(lambda name: name.startswith("J"), prod_first))
     frac_deso[cond] = 1 - frac_deso[cond]
