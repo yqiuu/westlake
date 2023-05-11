@@ -39,18 +39,24 @@ class FormulaDictReactionModule(nn.Module):
         rates = self.compute_rates(params_env)
         if self.order == 2:
             rates = rates*params_env["den_H"]
-        return rates[self.inds_k]*self.rate_sign
+        return rates[:, self.inds_k]*self.rate_sign
 
     def compute_rates_reac(self, t_in):
+        # out: (B, R)
         params_env = self.module_env(t_in)
-        return self.compute_rates(params_env)[self.inds_reac]
+        return self.compute_rates(params_env)[:, self.inds_reac]
 
     def compute_rates(self, params_env):
+        batch_size = next(iter(params_env.values())).shape[0]
         def compute_rates_sub(i_fm):
             params_reac_sub = getattr(self, f"_params_reac_{i_fm}")()
-            return self.formula_list[i_fm](params_env, params_reac_sub)
+            rates = self.formula_list[i_fm](params_env, params_reac_sub)
+            if rates.dim() == 1:
+                rates = rates.repeat(batch_size, 1)
+            return rates
 
-        return torch.concat([compute_rates_sub(i_fm) for i_fm in range(len(self.formula_list))])
+        return torch.concat(
+            [compute_rates_sub(i_fm) for i_fm in range(len(self.formula_list))], dim=-1)
 
 
 def create_formula_dict_reaction_module(df_reac, rmat, formula_dict, module_env, param_names):

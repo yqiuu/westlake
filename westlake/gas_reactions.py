@@ -53,8 +53,6 @@ class Photodissociation(nn.Module):
             tensor: (R,). Reaction rate.
         """
         Av = params_env["Av"]
-        if len(Av) != 1:
-            Av = Av[:, None]
         rate = params_reac["alpha"]*torch.exp(-params_reac["gamma"]*Av)
         return rate
 
@@ -115,15 +113,14 @@ class GasGrainReaction(nn.Module):
 
 def clamp_gas_temperature(params_env, params_reac):
     is_unique = params_reac["is_unique"]
-    T_min = params_reac["T_min"]
-    T_max = params_reac["T_max"]
-    T_gas = params_env["T_gas"]
+    T_min = params_reac["T_min"] # (R,) Number of reactions
+    T_max = params_reac["T_max"] # (R,)
+    T_gas = params_env["T_gas"] # (B, 1)
     cond_ge = T_gas >= T_min
     cond_lt = T_gas < T_max
     mask_T = cond_ge & cond_lt | is_unique
     mask_T = mask_T.type(T_gas.dtype)
-    # TODO: Check the shape of T_gas
-    T_gas = T_gas.repeat(is_unique.shape[0])
+    T_gas = T_gas.repeat(1, is_unique.shape[0]) # (B, R)
     T_gas = torch.where(cond_ge, T_gas, T_min)
     T_gas = torch.where(cond_lt, T_gas, T_max)
     return T_gas, mask_T

@@ -24,9 +24,9 @@ class ReactionTerm(nn.Module):
     def forward(self, t_in, y_in):
         y_out = torch.zeros_like(y_in)
         if y_in.dim() == 1:
-            term_1 = y_in[self.inds_1r]*self.rate_1(t_in)
+            term_1 = y_in[self.inds_1r]*self.rate_1(t_in).squeeze()
             y_out.scatter_add_(0, self.inds_1p, term_1)
-            term_2 = y_in[self.inds_2r].prod(dim=-1)*self.rate_2(t_in)
+            term_2 = y_in[self.inds_2r].prod(dim=-1)*self.rate_2(t_in).squeeze()
             y_out.scatter_add_(0, self.inds_2p, term_2)
         else:
             batch_size = y_in.shape[0]
@@ -37,6 +37,7 @@ class ReactionTerm(nn.Module):
             term_2 = y_in[:, self.inds_2r].prod(dim=-1)*self.rate_2(t_in)
             y_out.scatter_add_(1, inds_2p, term_2)
         return y_out
+
 
 
 @dataclass(frozen=True)
@@ -74,6 +75,21 @@ def create_astrochem_problem(df_reac, params_env, ab_0, spec_table_base=None, ab
     ab_0_ = dervie_initial_abundances(ab_0, spec_table, meta_params, ab_0_min)
 
     return AstrochemProblem(spec_table, rmat_1st, rmat_2nd, reaction_term, ab_0_)
+
+
+def reproduce_reaction_rates(reaction_term, t_in=None):
+    if t_in is None:
+        t_in = torch.tensor([0.])
+
+    inds_reac_1st = reaction_term.rate_1.inds_reac
+    inds_reac_2nd = reaction_term.rate_2.inds_reac
+    n_reac = len(inds_reac_1st) + len(inds_reac_2nd)
+    rates = torch.zeros([len(t_in), n_reac])
+    with torch.no_grad():
+        rates[:, inds_reac_1st] = reaction_term.rate_1.compute_rates_reac(t_in)
+        rates[:, inds_reac_2nd] = reaction_term.rate_2.compute_rates_reac(t_in)
+    rates = rates.T.squeeze()
+    return rates
 
 
 def dervie_initial_abundances(ab_0_dict, spec_table, meta_params):

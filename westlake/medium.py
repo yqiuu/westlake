@@ -25,7 +25,7 @@ class InterpolationMedium(nn.Module):
 
     def forward(self, t_in, params_med=None):
         params_p = self.interp(t_in)
-        return {col: params_p[:, i_col] for i_col, col in enumerate(self.columns)}
+        return {col: params_p[:, i_col, None] for i_col, col in enumerate(self.columns)}
 
 
 class CoevolutionMedium(nn.Module):
