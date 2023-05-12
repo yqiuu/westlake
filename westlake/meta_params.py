@@ -19,6 +19,8 @@ class MetaParameters:
         grain_radius (float): Grain radius [cm].
         dtg_mass_ratio_0 (float): Initial dust to gas mass ratio.
         diffusion_barrier_thickness (float): Diffusion_barrier_thickness [cm].
+        chemical_barrier_thickness (float): Grain reaction activation energy
+            barrier width [cm].
         rate_cr_ion (float): Cosmic ray ionisation rate [s^-1].
         rate_x_ion: (float): X-ray ionisation rate [s^-1].
         rate_fe_ion: (float): Fe-ion-grain encounter [s^-1].
@@ -47,6 +49,7 @@ class MetaParameters:
     grain_radius: float = 1e-5
     dtg_mass_ratio_0: float = 1e-2
     diffusion_barrier_thickness: float = 1e-8
+    chemical_barrier_thickness: float = 1e-8
     rate_cr_ion: float = 1.3e-17
     rate_x_ion: float = 0.
     rate_fe_ion: float = 3e-14

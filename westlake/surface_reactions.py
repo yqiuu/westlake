@@ -79,9 +79,12 @@ class SurfaceReaction(nn.Module):
             params_reac["E_barr_r2"], params_reac["freq_vib_r2"],
             params_env["T_dust"], self.num_sites_per_grain
         )
-        barr = 1.
-        return params_reac["alpha"]*params_reac["branching_ratio"]*barr\
-            *(rate_diff_r1 + rate_diff_r2)*self.inv_dtg_num_ratio_0/params_env["den_H"]
+        rate_diff = rate_diff_r1 + rate_diff_r2
+        log_prob = -params_reac["E_act"]/params_env["T_dust"] # (B, R)
+        log_prob = torch.maximum(log_prob, params_reac["log_prob_surf_tunl"].unsqueeze(0))
+        prob = log_prob.exp()
+        return params_reac["alpha"]*params_reac["branching_ratio"]/params_env["den_H"] \
+            *self.inv_dtg_num_ratio_0*rate_diff*prob
 
 
 class NoReaction(nn.Module):
@@ -118,6 +121,7 @@ def prepare_surface_reaction_params(df_reac, df_surf, df_act, spec_table, meta_p
     assign_surface_params(df_reac, df_surf)
     assign_activation_energy(df_reac, df_act)
     compute_branching_ratio(df_reac, df_surf, meta_params)
+    assign_surface_tunneling_probability(df_reac, df_surf, meta_params)
 
 
 def prepare_surface_specie_params(df_surf, spec_table, meta_params, specials_barr=None):
@@ -131,7 +135,6 @@ def prepare_surface_specie_params(df_surf, spec_table, meta_params, specials_bar
     """
     df_surf_ret = spec_table[["charge", "num_atoms", "ma"]].copy()
     df_surf_ret = df_surf_ret.join(df_surf)
-    #df_surf_ret.fillna(0., inplace=True)
     assign_columns_to_normal_counterparts(df_surf_ret, ["E_deso", "dHf"])
     compute_vibration_frequency(df_surf_ret, meta_params)
     compute_factor_rate_acc(df_surf_ret, meta_params)
@@ -211,6 +214,30 @@ def assign_activation_energy(df_reac, df_act):
     df_reac["E_act"] = 0.
     df_reac.loc[df_tmp.loc[index, "index"], "E_act"] = df_act.loc[index, "E_act"].values
 
+    cond = df_reac["formula"] == 'surface reaction'
+    df_tmp = df_reac.loc[cond, ["key", "reactant_1", "reactant_2", "products", "E_act"]].copy()
+    df_tmp["index"] = df_tmp.index.values
+    df_lookup = df_tmp[["key", "index", "E_act"]].set_index("key")
+    lookup_idx = df_lookup["index"].to_dict()
+
+    inds = []
+    inds_surf = []
+    for idx, reac_1, reac_2, prods in zip(
+        df_tmp.index.values,
+        df_tmp["reactant_1"].values,
+        df_tmp["reactant_2"].values,
+        df_tmp["products"].values,
+    ):
+        if prods.startswith("J"):
+            continue
+        prods = prods.split(";")
+        prods = [f"J{prod}" for prod in prods]
+        prods = ";".join(prods)
+        key = f"{reac_1};{reac_2}>{prods}"
+        inds.append(idx)
+        inds_surf.append(lookup_idx[key])
+    df_reac.loc[inds, "E_act"] = df_reac.loc[inds_surf, "E_act"].values
+
 
 def compute_branching_ratio(df_reac, spec_table, meta_params):
     u_dHf = units.imperial.kilocal.cgs.scale/K_B/constants.N_A.value # Convert kilocal/mol to K
@@ -281,6 +308,22 @@ def compute_branching_ratio(df_reac, spec_table, meta_params):
     df_tmp["branching_ratio"] *= frac_deso
     df_reac["branching_ratio"] = 1.
     df_reac.loc[df_tmp.index, "branching_ratio"] = df_tmp["branching_ratio"].values
+
+
+def assign_surface_tunneling_probability(df_reac, df_surf, meta_params):
+    cond = df_reac["formula"] == "surface reaction"
+    df_sub = df_reac.loc[cond, ["reactant_1", "reactant_2", "E_act"]]
+    ma_1 = df_surf.loc[df_sub["reactant_1"], "ma"].values
+    ma_2 = df_surf.loc[df_sub["reactant_2"], "ma"].values
+    ma_reduce = ma_1*ma_2/(ma_1 + ma_2)
+    log_prob_surf_tunl = compute_surface_tunneling_probability(
+        ma_reduce, df_sub["E_act"].values, meta_params.chemical_barrier_thickness)
+    df_reac["log_prob_surf_tunl"] = -np.inf
+    df_reac.loc[df_sub.index, "log_prob_surf_tunl"] = log_prob_surf_tunl
+
+
+def compute_surface_tunneling_probability(ma_reduce, E_act, barrier_thickness):
+    return -2.*barrier_thickness/H_BAR*np.sqrt(2.*ma_reduce*M_ATOM*K_B*E_act)
 
 
 def assign_columns_to_normal_counterparts(df_surf, columns):
