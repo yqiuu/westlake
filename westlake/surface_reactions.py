@@ -101,7 +101,8 @@ def compute_thermal_hoping_rate(E_barr, freq_vib, T_dust, num_sites_per_grain):
 
 
 def prepare_surface_reaction_params(df_reac, df_surf, df_act, spec_table, meta_params,
-                                    use_builtin_spec_params=True, specials_barr=None):
+                                    use_builtin_spec_params=True,
+                                    specials_ma=None, specials_barr=None):
     """Prepare surface reaction parameters.
 
     Assign the surface reaction parameters to the input reaction dataframe. This
@@ -117,14 +118,16 @@ def prepare_surface_reaction_params(df_reac, df_surf, df_act, spec_table, meta_p
         specials_barr (dict | None, optional): Defaults to None.
     """
     if use_builtin_spec_params:
-        df_surf = prepare_surface_specie_params(df_surf, spec_table, meta_params, specials_barr)
+        df_surf = prepare_surface_specie_params(
+            df_surf, spec_table, meta_params, specials_ma, specials_barr)
     assign_surface_params(df_reac, df_surf)
     assign_activation_energy(df_reac, df_act)
     compute_branching_ratio(df_reac, df_surf, meta_params)
     assign_surface_tunneling_probability(df_reac, df_surf, meta_params)
 
 
-def prepare_surface_specie_params(df_surf, spec_table, meta_params, specials_barr=None):
+def prepare_surface_specie_params(df_surf, spec_table, meta_params,
+                                  specials_ma=None, specials_barr=None):
     """Prepare surface specie parameters.
 
     Args:
@@ -134,18 +137,30 @@ def prepare_surface_specie_params(df_surf, spec_table, meta_params, specials_bar
         special_dict (dict, optional): Defaults to None.
     """
     df_surf_ret = spec_table[["charge", "num_atoms", "ma"]].copy()
-    df_surf_ret = df_surf_ret.join(df_surf)
+    df_surf_ret = df_surf_ret.join(df_surf[["E_deso", "E_barr", "dE_band", "dHf"]])
     assign_columns_to_normal_counterparts(df_surf_ret, ["E_deso", "dHf"])
-    compute_vibration_frequency(df_surf_ret, meta_params)
+    assign_vibration_frequency(df_surf_ret, meta_params, specials_ma)
     compute_factor_rate_acc(df_surf_ret, meta_params)
     compute_barrier_energy(df_surf_ret, meta_params, specials_barr)
     compute_rate_tunneling(df_surf_ret, meta_params)
     return df_surf_ret
 
 
-def compute_vibration_frequency(spec_table, meta_params):
-    spec_table["freq_vib"] \
-        = np.sqrt(FACTOR_VIB_FREQ*meta_params.site_density*spec_table["E_deso"]/spec_table["ma"])
+def assign_vibration_frequency(df_surf, meta_params, specials_ma=None):
+    df_surf["freq_vib"] = compute_vibration_frequency(
+        df_surf["ma"].values, df_surf["E_deso"].values, meta_params.site_density)
+
+    if specials_ma is not None:
+        specials_ma = specials_ma[np.isin(specials_ma.index.values, df_surf.index.values)]
+        df_surf.loc[specials_ma.index, "freq_vib"] = compute_vibration_frequency(
+            specials_ma["ma"].values,
+            df_surf.loc[specials_ma.index, "E_deso"].values,
+            meta_params.site_density
+        )
+
+
+def compute_vibration_frequency(ma, E_deso, site_density):
+    return np.sqrt(FACTOR_VIB_FREQ*site_density*E_deso/ma)
 
 
 def compute_factor_rate_acc(spec_table, meta_params):
