@@ -1,4 +1,5 @@
 import math
+from collections import defaultdict
 
 import numpy as np
 import pandas as pd
@@ -130,7 +131,8 @@ def prepare_surface_specie_params(df_surf, spec_table, meta_params, specials_bar
     """
     df_surf_ret = spec_table[["charge", "num_atoms", "ma"]].copy()
     df_surf_ret = df_surf_ret.join(df_surf)
-    df_surf_ret.fillna(0., inplace=True)
+    #df_surf_ret.fillna(0., inplace=True)
+    assign_columns_to_normal_counterparts(df_surf_ret, ["E_deso", "dHf"])
     compute_vibration_frequency(df_surf_ret, meta_params)
     compute_factor_rate_acc(df_surf_ret, meta_params)
     compute_barrier_energy(df_surf_ret, meta_params, specials_barr)
@@ -165,13 +167,7 @@ def compute_factor_rate_acc(spec_table, meta_params):
     grain_radius = meta_params.grain_radius
     factor = math.pi*grain_radius*grain_radius*math.sqrt(8.*K_B/math.pi/M_ATOM)
     spec_table["factor_rate_acc"] = factor*sticking_coeff/np.sqrt(spec_table["ma"])
-
-    # Set the factor to the corresponding normal specie. The second condition
-    # below ensures that the corresponding normal speice exists.
-    cond = spec_table.index.map(lambda name: name.startswith("J")).values \
-        & np.isin(spec_table.index.map(lambda name: name[1:]).values, spec_table.index)
-    spec = spec_table[cond].index.map(lambda name: name[1:])
-    spec_table.loc[spec, "factor_rate_acc"] = spec_table.loc[cond, "factor_rate_acc"].values
+    assign_columns_to_normal_counterparts(spec_table, "factor_rate_acc")
 
 
 def compute_barrier_energy(spec_table, meta_params, specials=None):
@@ -217,38 +213,54 @@ def assign_activation_energy(df_reac, df_act):
 
 
 def compute_branching_ratio(df_reac, spec_table, meta_params):
-    df_reac["branching_ratio"] = 1.
-    df_reac.loc[df_reac["reactant_1"] == df_reac["reactant_2"], "branching_ratio"] = .5
-
     u_dHf = units.imperial.kilocal.cgs.scale/K_B/constants.N_A.value # Convert kilocal/mol to K
     cond = df_reac["formula"] == 'surface reaction'
-    df_tmp = df_reac[cond]
+    df_tmp = df_reac.loc[cond, ["reactant_1", "reactant_2", "products", "E_act"]].copy()
+
+    inds_dict = defaultdict(list)
+    counts_dict = defaultdict(int)
+    for idx, reac_1, reac_2, prods in zip(
+        df_tmp.index.values,
+        df_tmp["reactant_1"].values,
+        df_tmp["reactant_2"].values,
+        df_tmp["products"].values,
+    ):
+        reacs = f"{reac_1};{reac_2}"
+        inds_dict[reacs].append(idx)
+        if prods.startswith("J"):
+            counts_dict[reacs] += 1
+    branching_ratios = []
+    for inds, n_reac in zip(inds_dict.values(), counts_dict.values()):
+        if n_reac == 0:
+            raise ValueError("A surface reaction has no surface spiece products.")
+        branching_ratios.extend(len(inds)*[1./n_reac])
+    df_tmp["branching_ratio"] = 1.
+    inds = sum(inds_dict.values(), start=[])
+    df_tmp.loc[inds, "branching_ratio"] = branching_ratios
+    df_tmp.loc[df_tmp["reactant_1"] == df_tmp["reactant_2"], "branching_ratio"] *= .5
 
     prod_first = [] # List of the first product. TODO: Check the order
 
     # TODO: Understanding
-    df_deso = spec_table["E_deso"].copy()
-    cond = spec_table.index.map(lambda name: name.startswith("J")).values \
-        & np.isin(spec_table.index.map(lambda name: name[1:]).values, spec_table.index)
-    spec = spec_table[cond].index.map(lambda name: name[1:])
-    df_deso.loc[spec] = df_deso.loc[cond].values
-    lookup_E_deso = df_deso.to_dict()
+    lookup_E_deso = spec_table["E_deso"].to_dict()
     E_deso_max = np.zeros(len(df_tmp))
-
     lookup_dHf = spec_table["dHf"].to_dict()
     dHf_sum = spec_table.loc[df_tmp["reactant_1"], "dHf"].values \
         + spec_table.loc[df_tmp["reactant_2"], "dHf"].values
     for i_reac, prods in enumerate(df_tmp["products"].values):
         prods = prods.split(";")
         prod_first.append(prods[0])
-        for name in prods:
-            dHf_sum[i_reac] += lookup_dHf[name]
+        if len(prods) == 1:
+            for name in prods:
+                dHf_sum[i_reac] -= lookup_dHf[name]
+        else:
+            # We will set the branching ratio to be 0 for dHf_sum < 0.
+            dHf_sum[i_reac] = -1.
         E_deso_max[i_reac] = max([lookup_E_deso[key] for key in prods])
     dHf_sum *= u_dHf # To K
     dHf_sum -= df_tmp["E_act"].values
 
     num_atoms = spec_table.loc[prod_first, "num_atoms"].values
-
     frac_deso = np.zeros_like(E_deso_max)
     cond = dHf_sum != 0.
     frac_deso[cond] = 1. - E_deso_max[cond]/dHf_sum[cond]
@@ -258,9 +270,29 @@ def compute_branching_ratio(df_reac, spec_table, meta_params):
     frac_deso[cond] = frac_deso[cond]**(3*num_atoms[cond] - 6)
     frac_deso *= meta_params.vib_to_dissip_freq_ratio
     frac_deso = frac_deso/(1. + frac_deso)
+
+    frac_deso[(dHf_sum <= 0.) | np.isnan(dHf_sum)] = 0.
     frac_deso[frac_deso < 0.] = 0.
     frac_deso[frac_deso > 1.] = 1.
 
     cond = list(map(lambda name: name.startswith("J"), prod_first))
+
     frac_deso[cond] = 1 - frac_deso[cond]
-    df_reac.loc[df_tmp.index, "branching_ratio"] *= frac_deso
+    df_tmp["branching_ratio"] *= frac_deso
+    df_reac["branching_ratio"] = 1.
+    df_reac.loc[df_tmp.index, "branching_ratio"] = df_tmp["branching_ratio"].values
+
+
+def assign_columns_to_normal_counterparts(df_surf, columns):
+    """Assign properties from the surface species to their normal counterparts.
+
+    This is an inplace operation.
+
+    Args:
+        df_surf (pd.DataFrame): Surface parameter dataframe.
+        columns (str | list): Property names.
+    """
+    cond = df_surf.index.map(lambda name: name.startswith("J")).values \
+        & np.isin(df_surf.index.map(lambda name: name[1:]).values, df_surf.index)
+    spec = df_surf[cond].index.map(lambda name: name[1:])
+    df_surf.loc[spec, columns] = df_surf.loc[cond, columns].values
