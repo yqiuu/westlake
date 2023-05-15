@@ -15,10 +15,10 @@ class SequentialMedium(nn.ModuleList):
 
 
 class InterpolationMedium(nn.Module):
-    def __init__(self, tau, params, columns):
+    def __init__(self, tau, params, columns, meta_params):
         super(InterpolationMedium, self).__init__()
         self.interp = LinearInterpolation(
-            torch.tensor(tau, dtype=torch.get_default_dtype()),
+            torch.tensor(tau*meta_params.to_second, dtype=torch.get_default_dtype()),
             torch.tensor(params, dtype=torch.get_default_dtype()),
         )
         self.columns = columns
