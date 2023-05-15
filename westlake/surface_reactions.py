@@ -61,7 +61,7 @@ class SurfaceAccretion(nn.Module):
 
     def forward(self, params_env, params_reac, **params_extra):
         return params_reac["alpha"]*params_reac["factor_rate_acc_r1"] \
-            *(params_env["T_gas"].sqrt()*params_env["den_H"]*self.dtg_num_ratio_0)
+            *(params_env["T_gas"].sqrt()*params_env["den_gas"]*self.dtg_num_ratio_0)
 
 
 class SurfaceReaction(nn.Module):
@@ -83,7 +83,7 @@ class SurfaceReaction(nn.Module):
         log_prob = -params_reac["E_act"]/params_env["T_dust"] # (B, R)
         log_prob = torch.maximum(log_prob, params_reac["log_prob_surf_tunl"].unsqueeze(0))
         prob = log_prob.exp()
-        return params_reac["alpha"]*params_reac["branching_ratio"]/params_env["den_H"] \
+        return params_reac["alpha"]*params_reac["branching_ratio"]/params_env["den_gas"] \
             *self.inv_dtg_num_ratio_0*rate_diff*prob
 
 

@@ -38,7 +38,7 @@ class FormulaDictReactionModule(nn.Module):
         params_env = self.module_env(t_in)
         rates = self.compute_rates(params_env)
         if self.order == 2:
-            rates = rates*params_env["den_H"]
+            rates = rates*params_env["den_gas"]
         return rates[:, self.inds_k]*self.rate_sign
 
     def compute_rates_reac(self, t_in):
