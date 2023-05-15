@@ -65,8 +65,8 @@ class MetaParameters:
     to_second: float = units.year.to(units.second)
 
     # Numerics
-    rtol: float = 1e-5
-    atol: float = 1e-25
+    rtol: float = 1e-4
+    atol: float = 1e-30
 
     @property
     def grain_mass(self):
