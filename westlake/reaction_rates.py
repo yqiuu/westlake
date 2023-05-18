@@ -8,11 +8,11 @@ from torch import nn
 from .utils import TensorDict, data_frame_to_tensor_dict
 
 
-class FixedReactionRate(nn.Module):
+class ConstantReactionRate(nn.Module):
     def __init__(self, rmat, rate):
-        super(FixedReactionRate, self).__init__()
-        rate = rmat.rate_sign*rate[rmat.inds]
-        self.register_buffer("rate", torch.tensor(rate, dtype=torch.get_default_dtype()))
+        super(ConstantReactionRate, self).__init__()
+        rate = torch.tensor(rmat.rate_sign*rate[rmat.inds_k], dtype=torch.get_default_dtype())
+        self.register_buffer("rate", rate)
 
     def forward(self, t_in):
         return self.rate
