@@ -14,6 +14,19 @@ class SequentialMedium(nn.ModuleList):
         return params_med
 
 
+class StaticMedium(nn.Module):
+    def __init__(self, params_dict):
+        super(StaticMedium, self).__init__()
+        params_med = torch.tensor(
+            list(params_dict.values()), dtype=torch.get_default_dtype()).reshape(-1, 1, 1)
+        self.register_buffer("params_med", params_med)
+        self.columns = tuple(params_dict.keys())
+
+    def forward(self, t_in=None, params_med=None):
+        params = self.params_med
+        return {col: params[i_col] for i_col, col in enumerate(self.columns)}
+
+
 class InterpolationMedium(nn.Module):
     def __init__(self, tau, params, columns, meta_params):
         super(InterpolationMedium, self).__init__()
