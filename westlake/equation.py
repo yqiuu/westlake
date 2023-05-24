@@ -2,54 +2,74 @@ import numpy as np
 import pandas as pd
 import torch
 from torch import nn
-from torch.nn.functional import one_hot
 
 from dataclasses import dataclass
 
-from .utils import data_frame_to_tensor_dict
+from .utils import TensorDict, data_frame_to_tensor_dict
 from .meta_params import MetaParameters
 from .reaction_matrices import ReactionMatrix, create_reaction_data
 
 
 class ReactionTerm(nn.Module):
-    def __init__(self, rmat_1st, rate_1st, rmat_2nd, rate_2nd):
+    def __init__(self, rmat_1st, rmod_1st, rmat_2nd, rmod_2nd, module_med):
         super(ReactionTerm, self).__init__()
+        if isinstance(module_med, TensorDict) or isinstance(module_med, nn.Module):
+            self.module_med = module_med
+        else:
+            raise ValueError("Unknown 'module_med'.")
+
+        self.rmod_1st = rmod_1st
+        self.rmod_2nd = rmod_2nd
+
+        # Save indices for assembling equations.
         self.register_buffer("inds_1r", torch.tensor(rmat_1st.inds_r))
         self.register_buffer("inds_1p", torch.tensor(rmat_1st.inds_p))
-        self.rate_1 = rate_1st
-
         self.register_buffer("inds_2r", torch.tensor(rmat_2nd.inds_r)) # (N, 2)
         self.register_buffer("inds_2p", torch.tensor(rmat_2nd.inds_p))
-        self.rate_2 = rate_2nd
 
+        # Save indices for computing jacobian.
         n_spec = max(max(rmat_1st.inds_p), max(rmat_2nd.inds_p)) + 1
         self.register_buffer("inds_1pr", self.inds_1p*n_spec + self.inds_1r)
         self.register_buffer(
             "inds_2pr", torch.ravel(self.inds_2p[:, None]*n_spec + self.inds_2r[:, [1, 0]]))
 
-    def forward(self, t_in, y_in):
+    def compute_rates(self, t_in, y_in, **params_extra):
+        params_med = self.module_med(t_in, **params_extra)
+        rates_1st = self.rmod_1st(t_in, params_med)
+        rates_2nd = self.rmod_2nd(t_in, params_med)
+        return rates_1st, rates_2nd
+
+    def forward(self, t_in, y_in, **params_extra):
+        rates_1st, rates_2nd = self.compute_rates(t_in, y_in, **params_extra)
+        return self.assemble_equation(y_in, rates_1st, rates_2nd)
+
+    def assemble_equation(self, y_in, rates_1st, rates_2nd):
         y_out = torch.zeros_like(y_in)
         if y_in.dim() == 1:
-            term_1 = y_in[self.inds_1r]*self.rate_1(t_in).squeeze()
+            term_1 = y_in[self.inds_1r]*rates_1st.squeeze()
             y_out.scatter_add_(0, self.inds_1p, term_1)
-            term_2 = y_in[self.inds_2r].prod(dim=-1)*self.rate_2(t_in).squeeze()
+            term_2 = y_in[self.inds_2r].prod(dim=-1)*rates_2nd.squeeze()
             y_out.scatter_add_(0, self.inds_2p, term_2)
         else:
             batch_size = y_in.shape[0]
             inds_1p = self.inds_1p.repeat(batch_size, 1)
             inds_2p = self.inds_2p.repeat(batch_size, 1)
-            term_1 = y_in[:, self.inds_1r]*self.rate_1(t_in)
+            term_1 = y_in[:, self.inds_1r]*rates_1st
             y_out.scatter_add_(1, inds_1p, term_1)
-            term_2 = y_in[:, self.inds_2r].prod(dim=-1)*self.rate_2(t_in)
+            term_2 = y_in[:, self.inds_2r].prod(dim=-1)*rates_2nd
             y_out.scatter_add_(1, inds_2p, term_2)
         return y_out
 
-    def jacobian(self, t_in, y_in):
+    def jacobian(self, t_in, y_in, **params_extra):
+        rates_1st, rates_2nd = self.compute_rates(t_in, y_in, **params_extra)
+        return self.assemble_jacobian(y_in, rates_1st, rates_2nd)
+
+    def assemble_jacobian(self, y_in, rates_1st, rates_2nd):
         n_spec = y_in.shape[-1]
         jac = torch.zeros(n_spec*n_spec, dtype=y_in.dtype, device=y_in.device)
-        term_1 = self.rate_1(t_in).squeeze()
+        term_1 = rates_1st.squeeze()
         jac.scatter_add_(0, self.inds_1pr, term_1)
-        term_2 = y_in[self.inds_2r]*self.rate_2(t_in).view(-1, 1)
+        term_2 = y_in[self.inds_2r]*rates_2nd.view(-1, 1)
         jac.scatter_add_(0, self.inds_2pr, term_2.ravel())
         jac = jac.reshape(n_spec, n_spec)
         return jac
@@ -67,7 +87,7 @@ class AstrochemProblem:
         return "Attributes: spec_table, rmat_1st, rmat_2nd, reaction_term, ab_0"
 
 
-def create_astrochem_problem(df_reac, params_env, ab_0, spec_table_base=None, ab_0_min=0.):
+def create_astrochem_problem(df_reac, params_med, ab_0, spec_table_base=None, ab_0_min=0.):
     meta_params = MetaParameters()
     #
     spec_table, rmat_1st, rmat_2nd = create_reaction_data(
@@ -78,12 +98,12 @@ def create_astrochem_problem(df_reac, params_env, ab_0, spec_table_base=None, ab
         df_reac[["is_unique", "T_min", "T_max", "alpha", "beta", "gamma"]].iloc[rmat_1st.inds],
     )
     rate_1st = create_gas_reaction_module_1st(
-        formulae[rmat_1st.inds], rmat_1st, params_env, params_reac, meta_params)
+        formulae[rmat_1st.inds], rmat_1st, params_med, params_reac, meta_params)
     # Second order reactions
     params_reac = data_frame_to_tensor_dict(
         df_reac[["is_unique", "T_min", "T_max", "alpha", "beta", "gamma"]].iloc[rmat_2nd.inds])
     rate_2nd = create_gas_reaction_module_2nd(
-        formulae[rmat_2nd.inds], rmat_2nd, params_env, params_reac, meta_params)
+        formulae[rmat_2nd.inds], rmat_2nd, params_med, params_reac, meta_params)
     #
     reaction_term = ReactionTerm(rmat_1st, rate_1st, rmat_2nd, rate_2nd)
     #
@@ -96,13 +116,14 @@ def reproduce_reaction_rates(reaction_term, rmat_1st, rmat_2nd, t_in=None):
     if t_in is None:
         t_in = torch.tensor([0.])
 
-    inds_reac_1st = reaction_term.rate_1.inds_reac
-    inds_reac_2nd = reaction_term.rate_2.inds_reac
+    inds_reac_1st = reaction_term.rmod_1st.inds_reac
+    inds_reac_2nd = reaction_term.rmod_2nd.inds_reac
     n_reac = len(inds_reac_1st) + len(inds_reac_2nd)
     rates = torch.zeros([len(t_in), n_reac])
     with torch.no_grad():
-        rates[:, rmat_1st.inds_id] = reaction_term.rate_1.compute_rates_reac(t_in)
-        rates[:, rmat_2nd.inds_id] = reaction_term.rate_2.compute_rates_reac(t_in)
+        params_med = reaction_term.module_med(t_in)
+        rates[:, rmat_1st.inds_id] = reaction_term.rmod_1st.compute_rates_reac(t_in, params_med)
+        rates[:, rmat_2nd.inds_id] = reaction_term.rmod_2nd.compute_rates_reac(t_in, params_med)
     rates = rates.T.squeeze()
     return rates
 

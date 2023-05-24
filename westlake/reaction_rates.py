@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 from torch import nn
 
-from .utils import TensorDict, data_frame_to_tensor_dict
+from .utils import data_frame_to_tensor_dict
 
 
 class ConstantReactionRate(nn.Module):
@@ -19,38 +19,32 @@ class ConstantReactionRate(nn.Module):
 
 
 class FormulaDictReactionModule(nn.Module):
-    def __init__(self, order, formula_dict, inds_fm_dict,
-                 inds_reac, inds_k, rate_sign, module_env, params_reac):
+    def __init__(self, rmat, formula_dict, inds_fm_dict, inds_reac, inds_k, params_reac):
         super(FormulaDictReactionModule, self).__init__()
-        self.order = order
+        self.order = rmat.order
         for i_fm, inds in enumerate(inds_fm_dict.values()):
             setattr(self, f"_params_reac_{i_fm}", params_reac.indexing(inds))
         self.formula_list = nn.ModuleList([formula_dict[key] for key in inds_fm_dict])
+        self.register_buffer(
+            "rate_sign", torch.tensor(rmat.rate_sign, dtype=torch.get_default_dtype()))
         self.register_buffer("inds_reac", torch.tensor(inds_reac))
         self.register_buffer("inds_k", torch.tensor(inds_k))
-        self.register_buffer("rate_sign", torch.tensor(rate_sign, dtype=torch.get_default_dtype()))
-        if isinstance(module_env, TensorDict) or isinstance(module_env, nn.Module):
-            self.module_env = module_env
-        else:
-            raise ValueError("Unknown 'module_env'.")
 
-    def forward(self, t_in):
-        params_env = self.module_env(t_in)
-        rates = self.compute_rates(params_env)
+    def forward(self, t_in, params_med):
+        rates = self.compute_rates(params_med)
         if self.order == 2:
-            rates = rates*params_env["den_gas"]
+            rates = rates*params_med["den_gas"]
         return rates[:, self.inds_k]*self.rate_sign
 
-    def compute_rates_reac(self, t_in):
+    def compute_rates_reac(self, t_in, params_med):
         # out: (B, R)
-        params_env = self.module_env(t_in)
-        return self.compute_rates(params_env)[:, self.inds_reac]
+        return self.compute_rates(params_med)[:, self.inds_reac]
 
-    def compute_rates(self, params_env):
-        batch_size = next(iter(params_env.values())).shape[0]
+    def compute_rates(self, params_med):
+        batch_size = next(iter(params_med.values())).shape[0]
         def compute_rates_sub(i_fm):
             params_reac_sub = getattr(self, f"_params_reac_{i_fm}")()
-            rates = self.formula_list[i_fm](params_env, params_reac_sub)
+            rates = self.formula_list[i_fm](params_med, params_reac_sub)
             if rates.dim() == 1:
                 rates = rates.repeat(batch_size, 1)
             return rates
@@ -59,7 +53,7 @@ class FormulaDictReactionModule(nn.Module):
             [compute_rates_sub(i_fm) for i_fm in range(len(self.formula_list))], dim=-1)
 
 
-def create_formula_dict_reaction_module(df_reac, rmat, formula_dict, module_env, param_names):
+def create_formula_dict_reaction_module(df_reac, rmat, formula_dict, param_names):
     df_sub = df_reac.iloc[rmat.inds_id]
 
     # The code below construct the following variables.
@@ -82,6 +76,6 @@ def create_formula_dict_reaction_module(df_reac, rmat, formula_dict, module_env,
     inds_k = lookup_sub.loc[rmat.inds_k, "index_fm"].values
 
     return FormulaDictReactionModule(
-        rmat.order, formula_dict, inds_fm_dict, inds_reac, inds_k, rmat.rate_sign,
-        module_env, data_frame_to_tensor_dict(df_sub[param_names])
+        rmat, formula_dict, inds_fm_dict, inds_reac, inds_k,
+        data_frame_to_tensor_dict(df_sub[param_names])
     )
