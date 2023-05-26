@@ -14,7 +14,7 @@ class ConstantReactionRate(nn.Module):
         rate = torch.tensor(rmat.rate_sign*rate[rmat.inds_k], dtype=torch.get_default_dtype())
         self.register_buffer("rate", rate)
 
-    def forward(self, t_in):
+    def forward(self, t_in, params_med=None):
         return self.rate
 
 

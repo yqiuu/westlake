@@ -11,9 +11,10 @@ from .reaction_matrices import ReactionMatrix, create_reaction_data
 
 
 class ReactionTerm(nn.Module):
-    def __init__(self, rmat_1st, rmod_1st, rmat_2nd, rmod_2nd, module_med):
+    def __init__(self, rmat_1st, rmod_1st, rmat_2nd, rmod_2nd, module_med=None):
         super(ReactionTerm, self).__init__()
-        if isinstance(module_med, TensorDict) or isinstance(module_med, nn.Module):
+        if module_med is None \
+            or isinstance(module_med, TensorDict) or isinstance(module_med, nn.Module):
             self.module_med = module_med
         else:
             raise ValueError("Unknown 'module_med'.")
@@ -34,7 +35,10 @@ class ReactionTerm(nn.Module):
             "inds_2pr", torch.ravel(self.inds_2p[:, None]*n_spec + self.inds_2r[:, [1, 0]]))
 
     def compute_rates(self, t_in, y_in, **params_extra):
-        params_med = self.module_med(t_in, **params_extra)
+        if self.module_med is None:
+            params_med = None
+        else:
+            params_med = self.module_med(t_in, **params_extra)
         rates_1st = self.rmod_1st(t_in, params_med)
         rates_2nd = self.rmod_2nd(t_in, params_med)
         return rates_1st, rates_2nd
