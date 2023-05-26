@@ -111,7 +111,7 @@ def prepare_surface_reaction_params(df_reac, df_surf, df_act, spec_table, meta_p
     Args:
         df_reac (pd.DataFrame):
         df_surf (pd.DataFrame):
-        df_act (pd.DataFrame):
+        df_act (pd.DataFrame | None):
         spec_table (pd.DataFrame):
         meta_params (MetaPrameters):
         use_builtin_spec_params (bool, optional): Defaults to True.
@@ -224,9 +224,12 @@ def assign_surface_params(df_reac, spec_table):
 
 
 def assign_activation_energy(df_reac, df_act):
+    df_reac["E_act"] = 0.
+    if df_act is None:
+        return
+
     index = np.intersect1d(df_reac["key"], df_act.index)
     df_tmp = pd.DataFrame(df_reac.index, index=df_reac["key"], columns=["index"])
-    df_reac["E_act"] = 0.
     df_reac.loc[df_tmp.loc[index, "index"], "E_act"] = df_act.loc[index, "E_act"].values
 
     cond = df_reac["formula"] == 'surface reaction'
