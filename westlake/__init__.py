@@ -7,4 +7,5 @@ from .astrochem import *
 from .medium import *
 from .solver import *
 from .equation import *
+from .assemblers import *
 from .meta_params import *

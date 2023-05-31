@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from .utils import TensorDict, data_frame_to_tensor_dict
 from .meta_params import MetaParameters
 from .reaction_matrices import ReactionMatrix
+from .assemblers import Assembler
 
 
 class ReactionTerm(nn.Module):
@@ -19,20 +20,18 @@ class ReactionTerm(nn.Module):
         else:
             raise ValueError("Unknown 'module_med'.")
 
+        self.asm_1st = Assembler(rmat_1st)
+        self.asm_2nd = Assembler(rmat_2nd)
         self.rmod_1st = rmod_1st
         self.rmod_2nd = rmod_2nd
 
-        # Save indices for assembling equations.
-        self.register_buffer("inds_1r", torch.tensor(rmat_1st.inds_r))
-        self.register_buffer("inds_1p", torch.tensor(rmat_1st.inds_p))
-        self.register_buffer("inds_2r", torch.tensor(rmat_2nd.inds_r)) # (N, 2)
-        self.register_buffer("inds_2p", torch.tensor(rmat_2nd.inds_p))
+    def forward(self, t_in, y_in, **params_extra):
+        rates_1st, rates_2nd = self.compute_rates(t_in, y_in, **params_extra)
+        return self.asm_1st(y_in, rates_1st) + self.asm_2nd(y_in, rates_2nd)
 
-        # Save indices for computing jacobian.
-        n_spec = max(max(rmat_1st.inds_p), max(rmat_2nd.inds_p)) + 1
-        self.register_buffer("inds_1pr", self.inds_1p*n_spec + self.inds_1r)
-        self.register_buffer(
-            "inds_2pr", torch.ravel(self.inds_2p[:, None]*n_spec + self.inds_2r[:, [1, 0]]))
+    def jacobian(self, t_in, y_in, **params_extra):
+        rates_1st, rates_2nd = self.compute_rates(t_in, y_in, **params_extra)
+        return self.asm_1st.jacobain(y_in, rates_1st) + self.asm_2nd.jacobain(y_in, rates_2nd)
 
     def compute_rates(self, t_in, y_in, **params_extra):
         if self.module_med is None:
@@ -42,41 +41,6 @@ class ReactionTerm(nn.Module):
         rates_1st = self.rmod_1st(t_in, params_med)
         rates_2nd = self.rmod_2nd(t_in, params_med)
         return rates_1st, rates_2nd
-
-    def forward(self, t_in, y_in, **params_extra):
-        rates_1st, rates_2nd = self.compute_rates(t_in, y_in, **params_extra)
-        return self.assemble_equation(y_in, rates_1st, rates_2nd)
-
-    def assemble_equation(self, y_in, rates_1st, rates_2nd):
-        y_out = torch.zeros_like(y_in)
-        if y_in.dim() == 1:
-            term_1 = y_in[self.inds_1r]*rates_1st.squeeze()
-            y_out.scatter_add_(0, self.inds_1p, term_1)
-            term_2 = y_in[self.inds_2r].prod(dim=-1)*rates_2nd.squeeze()
-            y_out.scatter_add_(0, self.inds_2p, term_2)
-        else:
-            batch_size = y_in.shape[0]
-            inds_1p = self.inds_1p.repeat(batch_size, 1)
-            inds_2p = self.inds_2p.repeat(batch_size, 1)
-            term_1 = y_in[:, self.inds_1r]*rates_1st
-            y_out.scatter_add_(1, inds_1p, term_1)
-            term_2 = y_in[:, self.inds_2r].prod(dim=-1)*rates_2nd
-            y_out.scatter_add_(1, inds_2p, term_2)
-        return y_out
-
-    def jacobian(self, t_in, y_in, **params_extra):
-        rates_1st, rates_2nd = self.compute_rates(t_in, y_in, **params_extra)
-        return self.assemble_jacobian(y_in, rates_1st, rates_2nd)
-
-    def assemble_jacobian(self, y_in, rates_1st, rates_2nd):
-        n_spec = y_in.shape[-1]
-        jac = torch.zeros(n_spec*n_spec, dtype=y_in.dtype, device=y_in.device)
-        term_1 = rates_1st.squeeze()
-        jac.scatter_add_(0, self.inds_1pr, term_1)
-        term_2 = y_in[self.inds_2r]*rates_2nd.view(-1, 1)
-        jac.scatter_add_(0, self.inds_2pr, term_2.ravel())
-        jac = jac.reshape(n_spec, n_spec)
-        return jac
 
 
 @dataclass(frozen=True)
