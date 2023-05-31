@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from .utils import TensorDict, data_frame_to_tensor_dict
 from .meta_params import MetaParameters
-from .reaction_matrices import ReactionMatrix, create_reaction_data
+from .reaction_matrices import ReactionMatrix
 
 
 class ReactionTerm(nn.Module):

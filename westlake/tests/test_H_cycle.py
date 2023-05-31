@@ -28,7 +28,7 @@ def solve_H_cycle():
     df_spec = pd.read_hdf(fname, key="specie")
     df_act = None
 
-    df_spec, rmat_1st, rmat_2nd = westlake.create_reaction_data(
+    df_spec, rmat_1st, rmat_2nd = westlake.create_reaction_matrices(
         df_reac["reactant_1"], df_reac["reactant_2"], df_reac["products"], df_spec)
     meta_params = westlake.MetaParameters(atol=ATOL)
     westlake.prepare_surface_reaction_params(
