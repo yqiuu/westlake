@@ -31,16 +31,6 @@ class FormulaDictReactionModule(nn.Module):
         self.register_buffer("inds_k", torch.tensor(inds_k))
 
     def forward(self, t_in, params_med):
-        rates = self.compute_rates(params_med)
-        if self.order == 2:
-            rates = rates*params_med["den_gas"]
-        return rates[:, self.inds_k]*self.rate_sign
-
-    def compute_rates_reac(self, t_in, params_med):
-        # out: (B, R)
-        return self.compute_rates(params_med)[:, self.inds_reac]
-
-    def compute_rates(self, params_med):
         batch_size = next(iter(params_med.values())).shape[0]
         def compute_rates_sub(i_fm):
             params_reac_sub = getattr(self, f"_params_reac_{i_fm}")()
@@ -51,6 +41,10 @@ class FormulaDictReactionModule(nn.Module):
 
         return torch.concat(
             [compute_rates_sub(i_fm) for i_fm in range(len(self.formula_list))], dim=-1)
+
+    def compute_rates_reac(self, t_in, params_med):
+        # out: (B, R)
+        return self.forward(t_in, params_med)[:, self.inds_reac]
 
 
 class FormulaDictReactionFactory:

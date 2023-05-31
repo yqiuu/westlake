@@ -20,27 +20,34 @@ class ReactionTerm(nn.Module):
         else:
             raise ValueError("Unknown 'module_med'.")
 
-        self.asm_1st = Assembler(rmat_1st)
-        self.asm_2nd = Assembler(rmat_2nd)
-        self.rmod_1st = rmod_1st
-        self.rmod_2nd = rmod_2nd
+        self.register_reactions("1st", rmat_1st, rmod_1st)
+        self.register_reactions("2nd", rmat_2nd, rmod_2nd)
+
+    def register_reactions(self, postfix, rmat, rmod):
+        inds_k = rmod.inds_k if hasattr(rmod, "inds_k") else None
+        setattr(self, f"asm_{postfix}", Assembler(rmat, inds_k))
+        setattr(self, f"rmod_{postfix}", rmod)
 
     def forward(self, t_in, y_in, **params_extra):
-        rates_1st, rates_2nd = self.compute_rates(t_in, y_in, **params_extra)
-        return self.asm_1st(y_in, rates_1st) + self.asm_2nd(y_in, rates_2nd)
+        rates_1st, rates_2nd, den_norm = self.compute_rates(t_in, y_in, **params_extra)
+        return self.asm_1st(y_in, rates_1st, den_norm) \
+            + self.asm_2nd(y_in, rates_2nd, den_norm)
 
     def jacobian(self, t_in, y_in, **params_extra):
-        rates_1st, rates_2nd = self.compute_rates(t_in, y_in, **params_extra)
-        return self.asm_1st.jacobain(y_in, rates_1st) + self.asm_2nd.jacobain(y_in, rates_2nd)
+        rates_1st, rates_2nd, den_norm = self.compute_rates(t_in, y_in, **params_extra)
+        return self.asm_1st.jacobain(y_in, rates_1st, den_norm) \
+            + self.asm_2nd.jacobain(y_in, rates_2nd, den_norm)
 
     def compute_rates(self, t_in, y_in, **params_extra):
         if self.module_med is None:
             params_med = None
+            den_norm = None
         else:
             params_med = self.module_med(t_in, **params_extra)
+            den_norm = params_med['den_gas']
         rates_1st = self.rmod_1st(t_in, params_med)
         rates_2nd = self.rmod_2nd(t_in, params_med)
-        return rates_1st, rates_2nd
+        return rates_1st, rates_2nd, den_norm
 
 
 @dataclass(frozen=True)

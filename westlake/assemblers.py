@@ -3,8 +3,14 @@ from torch import nn
 
 
 class Assembler(nn.Module):
-    def __init__(self, rmat):
+    def __init__(self, rmat, inds_k):
         super(Assembler, self).__init__()
+        if inds_k is not None:
+            self.register_buffer("inds_k", torch.tensor(inds_k))
+            self.register_buffer(
+                "rate_sign", torch.tensor(rmat.rate_sign, dtype=torch.get_default_dtype()))
+        else:
+            self.inds_k = None
         # Save indices for assembling equations.
         self.register_buffer("inds_r", torch.tensor(rmat.inds_r))
         self.register_buffer("inds_p", torch.tensor(rmat.inds_p))
@@ -18,7 +24,8 @@ class Assembler(nn.Module):
         #
         self.order = rmat.order
 
-    def forward(self, y_in, rates):
+    def forward(self, y_in, rates, den_norm):
+        rates = self.assemble_rates(y_in, rates, den_norm)
         y_out = torch.zeros_like(y_in)
         if y_in.dim() == 1:
             terms = y_in[self.inds_r]
@@ -36,7 +43,8 @@ class Assembler(nn.Module):
             y_out.scatter_add_(1, inds_p, terms)
         return y_out
 
-    def jacobain(self, y_in, rates):
+    def jacobain(self, y_in, rates, den_norm):
+        rates = self.assemble_rates(y_in, rates, den_norm)
         n_spec = y_in.shape[-1]
         jac = torch.zeros(n_spec*n_spec, dtype=y_in.dtype, device=y_in.device)
         if self.order == 1:
@@ -47,3 +55,10 @@ class Assembler(nn.Module):
         jac.scatter_add_(0, self.inds_pr, terms)
         jac = jac.reshape(n_spec, n_spec)
         return jac
+
+    def assemble_rates(self, y_in, rates, den_norm):
+        if self.order == 2 and den_norm is not None:
+            rates = rates*den_norm
+        if self.inds_k is not None:
+            rates = rates[:, self.inds_k]*self.rate_sign
+        return rates
