@@ -18,6 +18,7 @@ def builtin_surface_reactions_1st(meta_params):
         'UV photodesorption': NoReaction(),
         'CR photodesorption': NoReaction(),
         'surface accretion': SurfaceAccretion(meta_params),
+        'surface H accretion': SurfaceHAccretion(meta_params),
     }
 
 
@@ -25,6 +26,7 @@ def builtin_surface_reactions_2nd(meta_params):
     return {
         'surface reaction': SurfaceReaction(meta_params),
         'Eley-Rideal': NoReaction(),
+        'surface H2 formation': SurfaceH2Formation(meta_params),
     }
 
 
@@ -62,6 +64,26 @@ class SurfaceAccretion(nn.Module):
     def forward(self, params_env, params_reac, **params_extra):
         return params_reac["alpha"]*params_reac["factor_rate_acc_r1"] \
             *(params_env["T_gas"].sqrt()*params_env["den_gas"]*self.dtg_num_ratio_0)
+
+
+class SurfaceHAccretion(nn.Module):
+    def __init__(self, meta_params):
+        super(SurfaceHAccretion, self).__init__()
+        self.register_buffer("dtg_num_ratio_0", torch.tensor(meta_params.dtg_num_ratio_0))
+
+    def forward(self, params_env, params_reac, **params_extra):
+        return params_reac["alpha"]*(params_env["T_gas"]/300)**params_reac["beta"] \
+            *self.dtg_num_ratio_0*params_env["den_gas"]
+
+
+class SurfaceH2Formation(nn.Module):
+    def __init__(self, meta_params):
+        super(SurfaceH2Formation, self).__init__()
+        self.register_buffer("inv_dtg_num_ratio_0", torch.tensor(1./meta_params.dtg_num_ratio_0))
+
+    def forward(self, params_env, params_reac, **params_extra):
+        return 1.186e7*params_reac["alpha"]*torch.exp(-225./params_env["T_gas"]) \
+            *self.inv_dtg_num_ratio_0/params_env["den_gas"]
 
 
 class SurfaceReaction(nn.Module):
