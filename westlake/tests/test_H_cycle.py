@@ -28,16 +28,13 @@ def solve_H_cycle():
     df_spec = pd.read_hdf(fname, key="specie")
     df_act = None
 
-    df_spec, rmat_1st, rmat_2nd = westlake.create_reaction_matrices(
+    reaction_matrix = westlake.ReactionMatrix(
         df_reac["reactant_1"], df_reac["reactant_2"], df_reac["products"], df_spec)
     meta_params = westlake.MetaParameters(atol=ATOL)
     westlake.prepare_surface_reaction_params(
         df_reac, df_surf, df_act, df_spec, meta_params, specials_barr={'JH': 230.})
     medium = westlake.StaticMedium({'Av': 10., "den_gas": 1e4, "T_gas": 10., "T_dust": 10.})
-
-    rmod_1st = westlake.create_astrochem_reactions(df_reac, rmat_1st, meta_params)
-    rmod_2nd = westlake.create_astrochem_reactions(df_reac, rmat_2nd, meta_params)
-    reaction_term = westlake.ReactionTerm(rmat_1st, rmod_1st, rmat_2nd, rmod_2nd, medium)
+    reaction_term = westlake.create_two_phase_model(reaction_matrix, df_reac, medium, meta_params)
 
     ab_0 = westlake.dervie_initial_abundances({'H2': .5,}, df_spec, meta_params)
     t_begin = 0.

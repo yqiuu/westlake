@@ -1,6 +1,7 @@
 from .reaction_rates import create_formula_dict_reaction_module
 from .gas_reactions import builtin_gas_reactions_1st, builtin_gas_reactions_2nd
 from .surface_reactions import builtin_surface_reactions_1st, builtin_surface_reactions_2nd
+from .equation import ReactionTerm
 
 
 def builtin_astrochem_reaction_param_names():
@@ -26,13 +27,15 @@ def builtin_astrochem_reactions_2nd(meta_params):
     }
 
 
-def create_astrochem_reactions(df_reac, rmat, meta_params, param_names=None, formula_dict=None):
+def create_two_phase_model(reaction_matrix, df_reac, medium, meta_params,
+                           param_names=None, formula_dict_1st=None, formula_dict_2nd=None):
+    rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
     if param_names is None:
         param_names = builtin_astrochem_reaction_param_names()
-    if formula_dict is None:
-        if rmat.order == 1:
-            formula_dict = builtin_astrochem_reactions_1st(meta_params)
-        if rmat.order == 2:
-            formula_dict = builtin_astrochem_reactions_2nd(meta_params)
-
-    return create_formula_dict_reaction_module(df_reac, rmat, formula_dict, param_names)
+    if formula_dict_1st is None:
+        formula_dict_1st = builtin_astrochem_reactions_1st(meta_params)
+    rmod_1st = create_formula_dict_reaction_module(df_reac, rmat_1st, formula_dict_1st, param_names)
+    if formula_dict_2nd is None:
+        formula_dict_2nd = builtin_astrochem_reactions_2nd(meta_params)
+    rmod_2nd = create_formula_dict_reaction_module(df_reac, rmat_2nd, formula_dict_2nd, param_names)
+    return ReactionTerm(rmat_1st, rmod_1st, rmat_2nd, rmod_2nd, medium)
