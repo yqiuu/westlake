@@ -254,6 +254,11 @@ def assign_activation_energy(df_reac, df_act):
     df_tmp = pd.DataFrame(df_reac.index, index=df_reac["key"], columns=["index"])
     df_reac.loc[df_tmp.loc[index, "index"], "E_act"] = df_act.loc[index, "E_act"].values
 
+    # When we have the following reactions:
+    # - JA + JB > X + Y
+    # - JA + JB > JX + JY
+    # The activation energy is only given for the second reaction. The code
+    # below assign the activation energy for the first reaction.
     cond = df_reac["formula"] == 'surface reaction'
     df_tmp = df_reac.loc[cond, ["key", "reactant_1", "reactant_2", "products", "E_act"]].copy()
     df_tmp["index"] = df_tmp.index.values
@@ -268,7 +273,7 @@ def assign_activation_energy(df_reac, df_act):
         df_tmp["reactant_2"].values,
         df_tmp["products"].values,
     ):
-        if prods.startswith("J"):
+        if prods.startswith("J") or prods.startswith("K"):
             continue
         prods = prods.split(";")
         prods = [f"J{prod}" for prod in prods]
@@ -294,7 +299,7 @@ def compute_branching_ratio(df_reac, spec_table, meta_params):
     ):
         reacs = f"{reac_1};{reac_2}"
         inds_dict[reacs].append(idx)
-        if prods.startswith("J"):
+        if prods.startswith("J") or prods.startswith("K"):
             counts_dict[reacs] += 1
     branching_ratios = []
     for inds, n_reac in zip(inds_dict.values(), counts_dict.values()):
