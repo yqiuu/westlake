@@ -19,6 +19,8 @@ def builtin_surface_reactions_1st(meta_params):
         'CR photodesorption': NoReaction(),
         'surface accretion': SurfaceAccretion(meta_params),
         'surface H accretion': SurfaceHAccretion(meta_params),
+        "surface to mantle": NoReaction(),
+        "mantle to surface": NoReaction(),
     }
 
 
