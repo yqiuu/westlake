@@ -211,7 +211,12 @@ def compute_factor_rate_acc(spec_table, meta_params):
 
 
 def compute_barrier_energy(spec_table, meta_params, specials=None):
-    spec_table["E_barr"] = meta_params.surf_diff_to_deso_ratio*spec_table["E_deso"]
+    cond = spec_table.index.map(lambda name: name.startswith("J"))
+    spec_table.loc[cond, "E_barr"] = meta_params.surf_diff_to_deso_ratio \
+        *spec_table.loc[cond, "E_deso"].values
+    cond = spec_table.index.map(lambda name: name.startswith("K"))
+    spec_table.loc[cond, "E_barr"] = meta_params.mant_diff_to_deso_ratio \
+        *spec_table.loc[cond, "E_deso"].values
     if specials is not None:
         for key, val in specials.items():
             spec_table.loc[key, "E_barr"] = val
@@ -351,6 +356,7 @@ def compute_branching_ratio(df_reac, spec_table, meta_params):
 
     frac_deso[cond] = 1 - frac_deso[cond]
     df_tmp["branching_ratio"] *= frac_deso
+
     df_reac["branching_ratio"] = 1.
     df_reac.loc[df_tmp.index, "branching_ratio"] = df_tmp["branching_ratio"].values
 

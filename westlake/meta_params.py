@@ -60,6 +60,7 @@ class MetaParameters:
     sticking_coeff_negative: float = 0.
     vib_to_dissip_freq_ratio: float = 1e-2
     surf_diff_to_deso_ratio: float = 0.4
+    mant_diff_to_deso_ratio: float = 0.8
 
     #
     to_second: float = units.year.to(units.second)
