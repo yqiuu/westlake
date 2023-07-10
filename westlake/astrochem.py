@@ -34,8 +34,8 @@ def create_two_phase_model(reaction_matrix, df_reac, medium, meta_params,
         param_names = builtin_astrochem_reaction_param_names()
     if formula_dict_1st is None:
         formula_dict_1st = builtin_astrochem_reactions_1st(meta_params)
-    rmod_1st = create_formula_dict_reaction_module(df_reac, rmat_1st, formula_dict_1st, param_names)
+    rmod_1st, rmat_1st = create_formula_dict_reaction_module(df_reac, rmat_1st, formula_dict_1st, param_names)
     if formula_dict_2nd is None:
         formula_dict_2nd = builtin_astrochem_reactions_2nd(meta_params)
-    rmod_2nd = create_formula_dict_reaction_module(df_reac, rmat_2nd, formula_dict_2nd, param_names)
+    rmod_2nd, rmat_2nd = create_formula_dict_reaction_module(df_reac, rmat_2nd, formula_dict_2nd, param_names)
     return ReactionTerm(rmat_1st, rmod_1st, rmat_2nd, rmod_2nd, medium)

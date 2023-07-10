@@ -3,14 +3,16 @@ from torch import nn
 
 
 class Assembler(nn.Module):
-    def __init__(self, rmat, inds_k):
+    def __init__(self, rmat):
         super(Assembler, self).__init__()
-        if inds_k is not None:
-            self.register_buffer("inds_k", torch.tensor(inds_k))
+        if rmat.rate_sign is None:
+            # If the rates are constant, the rate signs are included in the rates.
+            # Therefore, the rate_signs are unnecessary in this case.
+            self.inds_k = None
+        else:
+            self.register_buffer("inds_k", torch.tensor(rmat.inds_k))
             self.register_buffer(
                 "rate_sign", torch.tensor(rmat.rate_sign, dtype=torch.get_default_dtype()))
-        else:
-            self.inds_k = None
         # Save indices for assembling equations.
         self.register_buffer("inds_r", torch.tensor(rmat.inds_r))
         self.register_buffer("inds_p", torch.tensor(rmat.inds_p))

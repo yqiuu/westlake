@@ -1,4 +1,5 @@
 from collections import defaultdict
+from dataclasses import replace
 
 import numpy as np
 import pandas as pd
@@ -23,11 +24,15 @@ def create_constant_rate_model(reaction_matrix, df_reac):
     rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
     rate_1st = ConstantReactionRate(rmat_1st, df_reac["rate"].values)
     rate_2nd = ConstantReactionRate(rmat_2nd, df_reac["rate"].values)
+    # The rate signs are included in the rates, and therefore, they are
+    # unnecessary.
+    rmat_1st.rate_sign = None
+    rmat_2nd.rate_sign = None
     return ReactionTerm(rmat_1st, rate_1st, rmat_2nd, rate_2nd)
 
 
 class FormulaDictReactionModule(nn.Module):
-    def __init__(self, rmat, formula_dict, inds_fm_dict, inds_reac, inds_k, params_reac):
+    def __init__(self, rmat, formula_dict, inds_fm_dict, inds_reac, params_reac):
         super(FormulaDictReactionModule, self).__init__()
         self.order = rmat.order
         for i_fm, inds in enumerate(inds_fm_dict.values()):
@@ -36,7 +41,6 @@ class FormulaDictReactionModule(nn.Module):
         self.register_buffer(
             "rate_sign", torch.tensor(rmat.rate_sign, dtype=torch.get_default_dtype()))
         self.register_buffer("inds_reac", torch.tensor(inds_reac))
-        self.register_buffer("inds_k", torch.tensor(inds_k))
 
     def forward(self, t_in, params_med):
         batch_size = next(iter(params_med.values())).shape[0]
@@ -160,7 +164,9 @@ def create_formula_dict_reaction_module(df_reac, rmat, formula_dict, param_names
     inds_reac = lookup_sub.loc[rmat.inds_id, "index_fm"].values
     inds_k = lookup_sub.loc[rmat.inds_k, "index_fm"].values
 
-    return FormulaDictReactionModule(
-        rmat, formula_dict, inds_fm_dict, inds_reac, inds_k,
+    rmod = FormulaDictReactionModule(
+        rmat, formula_dict, inds_fm_dict, inds_reac,
         data_frame_to_tensor_dict(df_sub[param_names])
     )
+    rmat_new = replace(rmat, inds_k=inds_k)
+    return rmod, rmat_new

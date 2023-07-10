@@ -24,8 +24,7 @@ class ReactionTerm(nn.Module):
         self.register_reactions("2nd", rmat_2nd, rmod_2nd)
 
     def register_reactions(self, postfix, rmat, rmod):
-        inds_k = rmod.inds_k if hasattr(rmod, "inds_k") else None
-        setattr(self, f"asm_{postfix}", Assembler(rmat, inds_k))
+        setattr(self, f"asm_{postfix}", Assembler(rmat))
         setattr(self, f"rmod_{postfix}", rmod)
 
     def forward(self, t_in, y_in, **params_extra):
