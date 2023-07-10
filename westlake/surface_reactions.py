@@ -292,7 +292,6 @@ def assign_activation_energy(df_reac, df_act):
 
 
 def compute_branching_ratio(df_reac, spec_table, meta_params):
-    u_dHf = units.imperial.kilocal.cgs.scale/K_B/constants.N_A.value # Convert kilocal/mol to K
     cond = df_reac["formula"] == 'surface reaction'
     df_tmp = df_reac.loc[cond, ["reactant_1", "reactant_2", "products", "E_act"]].copy()
 
@@ -317,10 +316,21 @@ def compute_branching_ratio(df_reac, spec_table, meta_params):
     inds = sum(inds_dict.values(), start=[])
     df_tmp.loc[inds, "branching_ratio"] = branching_ratios
     df_tmp.loc[df_tmp["reactant_1"] == df_tmp["reactant_2"], "branching_ratio"] *= .5
+    df_reac["branching_ratio"] = 1.
+    df_reac.loc[df_tmp.index, "branching_ratio"] = df_tmp["branching_ratio"].values
 
-    prod_first = [] # List of the first product. TODO: Check the order
+    compute_branching_ratio_rrk_desorption(df_reac, spec_table, meta_params)
+
+
+def compute_branching_ratio_rrk_desorption(df_reac, spec_table, meta_params):
+    u_dHf = units.imperial.kilocal.cgs.scale/K_B/constants.N_A.value # Convert kilocal/mol to K
+    cond = (df_reac["formula"] == 'surface reaction') \
+        & df_reac["reactant_1"].map(lambda name: name.startswith("J"))
+    cols = ["reactant_1", "reactant_2", "products", "E_act", "branching_ratio"]
+    df_tmp = df_reac.loc[cond, cols].copy()
 
     # TODO: Understanding
+    prod_first = []
     lookup_E_deso = spec_table["E_deso"].to_dict()
     E_deso_max = np.zeros(len(df_tmp))
     lookup_dHf = spec_table["dHf"].to_dict()
@@ -358,8 +368,6 @@ def compute_branching_ratio(df_reac, spec_table, meta_params):
 
     frac_deso[cond] = 1 - frac_deso[cond]
     df_tmp["branching_ratio"] *= frac_deso
-
-    df_reac["branching_ratio"] = 1.
     df_reac.loc[df_tmp.index, "branching_ratio"] = df_tmp["branching_ratio"].values
 
 
