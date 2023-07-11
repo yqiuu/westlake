@@ -90,25 +90,16 @@ class SurfaceH2Formation(nn.Module):
 
 class SurfaceReaction(nn.Module):
     def __init__(self, meta_params):
-        super(SurfaceReaction, self).__init__()
-        self.register_buffer("num_sites_per_grain", torch.tensor(meta_params.num_sites_per_grain))
+        super().__init__()
         self.register_buffer("inv_dtg_num_ratio_0", torch.tensor(1./meta_params.dtg_num_ratio_0))
 
-    def forward(self, params_env, params_reac, **params_extra):
-        rate_diff_r1 = compute_thermal_hoping_rate(
-            params_reac["E_barr_r1"], params_reac["freq_vib_r1"],
-            params_env["T_dust"], self.num_sites_per_grain
-        )
-        rate_diff_r2 = compute_thermal_hoping_rate(
-            params_reac["E_barr_r2"], params_reac["freq_vib_r2"],
-            params_env["T_dust"], self.num_sites_per_grain
-        )
-        rate_diff = rate_diff_r1 + rate_diff_r2
-        log_prob = -params_reac["E_act"]/params_env["T_dust"] # (B, R)
+    def forward(self, params_med, params_reac, **params_extra):
+        rate_hopping = params_med["rate_hopping"][:, params_reac["inds_r"]].sum(dim=-1)
+        log_prob = -params_reac["E_act"]/params_med["T_dust"] # (B, R)
         log_prob = torch.maximum(log_prob, params_reac["log_prob_surf_tunl"].unsqueeze(0))
         prob = log_prob.exp()
-        return params_reac["alpha"]*params_reac["branching_ratio"]/params_env["den_gas"] \
-            *self.inv_dtg_num_ratio_0*rate_diff*prob
+        return params_reac["alpha"]*params_reac["branching_ratio"]/params_med["den_gas"] \
+            *self.inv_dtg_num_ratio_0*rate_hopping*prob
 
 
 class NoReaction(nn.Module):
@@ -120,11 +111,7 @@ def compute_evaporation_rate(factor, freq_vib, E_d, T_dust):
     return factor*freq_vib*torch.exp(-E_d/T_dust)
 
 
-def compute_thermal_hoping_rate(E_barr, freq_vib, T_dust, num_sites_per_grain):
-    return freq_vib*torch.exp(-E_barr/T_dust)/num_sites_per_grain
-
-
-def prepare_surface_reaction_params(df_reac, df_surf, df_act, spec_table, meta_params,
+def prepare_surface_reaction_params(df_reac, df_surf, df_act, df_spec, meta_params,
                                     use_builtin_spec_params=True,
                                     specials_ma=None, specials_barr=None):
     """Prepare surface reaction parameters.
@@ -143,8 +130,8 @@ def prepare_surface_reaction_params(df_reac, df_surf, df_act, spec_table, meta_p
     """
     if use_builtin_spec_params:
         df_surf = prepare_surface_specie_params(
-            df_surf, spec_table, meta_params, specials_ma, specials_barr)
-    assign_surface_params(df_reac, df_surf)
+            df_surf, df_spec, meta_params, specials_ma, specials_barr)
+    assign_surface_params(df_reac, df_spec, df_surf)
     assign_activation_energy(df_reac, df_act)
     compute_branching_ratio(df_reac, df_surf, meta_params)
     assign_surface_tunneling_probability(df_reac, df_surf, meta_params)
@@ -232,23 +219,28 @@ def compute_rate_tunneling(spec_table, meta_params):
     spec_table["rate_tunneling_b"] = spec_table["freq_vib"]*np.exp(exponent)
 
 
-def assign_surface_params(df_reac, spec_table):
+def assign_surface_params(df_reac, df_spec, df_surf):
     """Assigin surface parameters.
 
     This is an inplace operation.
 
     Args:
         df_reac (pd.DataFrame): Data frame of reactions.
-        spec_table (pd.DataFrame): Specie table.
+        df_spec (pd.DataFrame): Specie table.
+        df_surf (pd.DataFrame): Surface parameters of species.
     """
-    columns = ["E_deso", "E_barr", "freq_vib", "factor_rate_acc"]
-    for col in columns:
-        df_reac[f"{col}_r1"] = spec_table.loc[df_reac["reactant_1"], col].values
-
     columns = ["E_barr", "freq_vib"]
-    df_tmp = df_reac.loc[df_reac["reactant_2"] != "", "reactant_2"]
+    df_spec[columns] = df_surf[columns].values
+    df_spec.fillna(0., inplace=True)
+
+    columns = ["E_deso", "freq_vib", "factor_rate_acc"]
     for col in columns:
-        df_reac.loc[df_tmp.index, f"{col}_r2"] = spec_table.loc[df_tmp, col].values
+        df_reac[f"{col}_r1"] = df_surf.loc[df_reac["reactant_1"], col].values
+
+    #columns = ["E_barr", "freq_vib"]
+    #df_tmp = df_reac.loc[df_reac["reactant_2"] != "", "reactant_2"]
+    #for col in columns:
+    #    df_reac.loc[df_tmp.index, f"{col}_r2"] = df_surf.loc[df_tmp, col].values
     df_reac.fillna(0., inplace=True)
 
 

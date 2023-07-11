@@ -1,3 +1,12 @@
+"""Medium modules are used to compute any parameters that evolve with time.
+
+Args:
+    t_in (tensor): Time. (B, 1)
+    params_med (dict): Medium parameters. (B, X) for each element.
+
+Returns:
+    dict: Medium parameters. This should include input parameters.
+"""
 import torch
 from torch import nn
 
@@ -49,4 +58,19 @@ class CoevolutionMedium(nn.Module):
 
     def forward(self, t_in, params_med):
         params_med[self.name_new] = params_med[self.name_co]
+        return params_med
+
+
+class ThermalHoppingRate(nn.Module):
+    def __init__(self, E_barr, freq_vib, meta_params):
+        super().__init__()
+        self.register_buffer("E_barr", torch.tensor(E_barr, dtype=torch.get_default_dtype()))
+        self.register_buffer("freq_vib", torch.tensor(freq_vib, dtype=torch.get_default_dtype()))
+        self.register_buffer("inv_num_sites_per_grain",
+            torch.tensor(1./meta_params.num_sites_per_grain))
+
+    def forward(self, t_in, params_med):
+        params_med["rate_hopping"] = self.freq_vib \
+            * torch.exp(-self.E_barr/params_med["T_dust"]) \
+            * self.inv_num_sites_per_grain
         return params_med

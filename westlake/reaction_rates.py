@@ -142,7 +142,7 @@ class FormulaDictReactionFactory:
         return list(indices)
 
 
-def create_formula_dict_reaction_module(df_reac, rmat, formula_dict, param_names):
+def create_formula_dict_reaction_module(df_reac, df_spec, rmat, formula_dict, param_names):
     inds_id = np.unique(rmat.inds_id)
     df_sub = df_reac.iloc[inds_id]
 
@@ -165,9 +165,13 @@ def create_formula_dict_reaction_module(df_reac, rmat, formula_dict, param_names
     inds_reac = lookup_sub.loc[inds_id, "index_fm"].values
     inds_k = lookup_sub.loc[rmat.inds_k, "index_fm"].values
 
-    rmod = FormulaDictReactionModule(
-        rmat, formula_dict, inds_fm_dict, inds_reac,
-        data_frame_to_tensor_dict(df_sub[param_names])
-    )
+    params_reac = data_frame_to_tensor_dict(df_sub[param_names])
+    # inds_r is used to extract specie propeties.
+    inds_r = df_spec.loc[df_sub["reactant_1"], "index"].values
+    if rmat.order == 2:
+        inds_r = np.vstack([inds_r, df_spec.loc[df_sub["reactant_2"], "index"].values]).T
+    inds_r = torch.tensor(inds_r)
+    params_reac.add("inds_r", inds_r)
+    rmod = FormulaDictReactionModule(rmat, formula_dict, inds_fm_dict, inds_reac, params_reac)
     rmat_new = replace(rmat, inds_k=inds_k)
     return rmod, rmat_new
