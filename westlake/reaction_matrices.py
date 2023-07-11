@@ -14,20 +14,34 @@ class ReactionMat:
         order (int): Number of reactants.
         n_spec (int): Number of species including both first and second order
             reactions.
-        inds_id (list): Index in the reaction dataframe.
-        inds_k (list): Index in the reaction dataframe for computing the rates.
-        rate_sign (list): Sign of the rates. This aligns with ``inds_k``.
-        inds_r (list): Index in the specie table for gathering the reactants.
+        inds_id (array): Index in the reaction dataframe.
+        inds_k (array): Index in the reaction dataframe for computing the rates.
+        rate_sign (array): Sign of the rates. This aligns with ``inds_k``.
+        inds_r (array): Index in the specie table for gathering the reactants.
             For second order reactions, each element is a pair of indices.
-        inds_p (list): Index in the specie table for gathering the products.
+        inds_p (array): Index in the specie table for gathering the products.
     """
     order: int
     n_spec: int
-    inds_id: list
-    inds_k: list
-    rate_sign: list
-    inds_r: list
-    inds_p: list
+    inds_id: np.ndarray
+    inds_k: np.ndarray
+    rate_sign: np.ndarray
+    inds_r: np.ndarray
+    inds_p: np.ndarray
+
+    def split(self, cond):
+        return self._split_sub(cond), self._split_sub(~cond)
+
+    def _split_sub(self, cond):
+        inds_id = self.inds_id[cond]
+        inds_k = self.inds_k[cond]
+        if self.rate_sign is None:
+            rate_sign = None
+        else:
+            rate_sign = self.rate_sign[cond]
+        inds_r = self.inds_r[cond]
+        inds_p = self.inds_p[cond]
+        return ReactionMat(self.order, self.n_spec, inds_id, inds_k, rate_sign, inds_r, inds_p)
 
 
 class ReactionMatrix:
@@ -110,20 +124,20 @@ class ReactionMatrix:
         rmat_1st = ReactionMat(
             order=1,
             n_spec=n_spec,
-            inds_id=inds_id_1st,
-            inds_k=inds_k_1st,
-            rate_sign = rate_sign_1st,
-            inds_r=inds_r_1st,
-            inds_p=inds_p_1st,
+            inds_id=np.array(inds_k_1st),
+            inds_k=np.array(inds_k_1st),
+            rate_sign = np.array(rate_sign_1st),
+            inds_r=np.array(inds_r_1st),
+            inds_p=np.array(inds_p_1st),
         )
         rmat_2nd = ReactionMat(
             order=2,
             n_spec=n_spec,
-            inds_id=inds_id_2nd,
-            inds_k=inds_k_2nd,
-            rate_sign=rate_sign_2nd,
-            inds_r=inds_r_2nd,
-            inds_p=inds_p_2nd,
+            inds_id=np.array(inds_k_2nd),
+            inds_k=np.array(inds_k_2nd),
+            rate_sign=np.array(rate_sign_2nd),
+            inds_r=np.array(inds_r_2nd),
+            inds_p=np.array(inds_p_2nd),
         )
         return species, rmat_1st, rmat_2nd
 

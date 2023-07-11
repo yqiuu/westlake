@@ -49,6 +49,66 @@ class ReactionTerm(nn.Module):
         return rates_1st, rates_2nd, den_norm
 
 
+class ThreePhaseTerm(nn.Module):
+    def __init__(self, rmod_1st, rmat_1st_s2m, rmat_1st_m2s,
+                 rmat_1st_surf_gain, rmat_1st_surf_loss, rmat_1st_other,
+                 rmod_2nd, rmat_2nd_surf_gain, rmat_2nd_surf_loss, rmat_2nd_other,
+                 inds_surf, inds_mant, module_med=None):
+        super().__init__()
+        if module_med is None \
+            or isinstance(module_med, TensorDict) or isinstance(module_med, nn.Module):
+            self.module_med = module_med
+        else:
+            raise ValueError("Unknown 'module_med'.")
+        # First order reactions
+        self.rmod_1st = rmod_1st
+        #self.asm_1st_s2m = Assembler(rmat_1st_s2m)
+        #self.asm_1st_m2s = Assembler(rmat_1st_m2s)
+        self.asm_1st_surf_gain = Assembler(rmat_1st_surf_gain)
+        self.asm_1st_surf_loss = Assembler(rmat_1st_surf_loss)
+        self.asm_1st_other = Assembler(rmat_1st_other)
+        # Second order reactions
+        self.rmod_2nd = rmod_2nd
+        self.asm_2nd_surf_gain = Assembler(rmat_2nd_surf_gain)
+        self.asm_2nd_surf_loss = Assembler(rmat_2nd_surf_loss)
+        self.asm_2nd_other = Assembler(rmat_2nd_other)
+        #
+        self.register_buffer("inds_surf", torch.as_tensor(inds_surf))
+        self.register_buffer("inds_mant", torch.as_tensor(inds_mant))
+
+    def forward(self, t_in, y_in, **params_extra):
+        pass
+        #rates_1st, rates_2nd, den_norm = self.compute_rates(t_in, y_in, **params_extra)
+        #return self.asm_1st(y_in, rates_1st, den_norm) \
+        #    + self.asm_2nd(y_in, rates_2nd, den_norm)
+
+    def jacobian(self, t_in, y_in, **params_extra):
+        pass
+        #rates_1st, rates_2nd, den_norm = self.compute_rates(t_in, y_in, **params_extra)
+        #return self.asm_1st.jacobain(y_in, rates_1st, den_norm) \
+        #    + self.asm_2nd.jacobain(y_in, rates_2nd, den_norm)
+
+    def compute_rates(self, t_in, y_in, **params_extra):
+        if self.module_med is None:
+            params_med = None
+            den_norm = None
+        else:
+            params_med = self.module_med(t_in, **params_extra)
+            den_norm = params_med['den_gas']
+        rates_1st = self.rmod_1st(t_in, params_med)
+        rates_2nd = self.rmod_2nd(t_in, params_med)
+
+        dy_1st_loss = self.asm_1st_surf_loss(y_in, rates_1st, den_norm)[:, self.inds_surf]
+        dy_2st_loss = self.asm_2nd_surf_loss(y_in, rates_2nd, den_norm)[:, self.inds_surf]
+        dy_surf_loss = -torch.sum(dy_1st_loss + dy_2st_loss, dim=-1, keepdim=True)
+
+        y_surf = y_in[:, self.inds_surf].sum(dim=-1, keepdim=True)
+        y_mant = y_in[:, self.inds_mant].sum(dim=-1, keepdim=True)
+        rates = dy_surf_loss/torch.maximum(y_surf, y_mant)
+
+        return rates
+
+
 @dataclass(frozen=True)
 class AstrochemProblem:
     spec_table: pd.DataFrame
@@ -96,8 +156,8 @@ def reproduce_reaction_rates(reaction_term, rmat_1st, rmat_2nd, t_in=None):
     rates = torch.zeros([len(t_in), n_reac])
     with torch.no_grad():
         params_med = reaction_term.module_med(t_in)
-        rates[:, rmat_1st.inds_id] = reaction_term.rmod_1st.compute_rates_reac(t_in, params_med)
-        rates[:, rmat_2nd.inds_id] = reaction_term.rmod_2nd.compute_rates_reac(t_in, params_med)
+        rates[:, np.unique(rmat_1st.inds_id)] = reaction_term.rmod_1st.compute_rates_reac(t_in, params_med)
+        rates[:, np.unique(rmat_2nd.inds_id)] = reaction_term.rmod_2nd.compute_rates_reac(t_in, params_med)
     rates = rates.T.squeeze()
     return rates
 

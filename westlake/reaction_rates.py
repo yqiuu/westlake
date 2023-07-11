@@ -143,7 +143,8 @@ class FormulaDictReactionFactory:
 
 
 def create_formula_dict_reaction_module(df_reac, rmat, formula_dict, param_names):
-    df_sub = df_reac.iloc[rmat.inds_id]
+    inds_id = np.unique(rmat.inds_id)
+    df_sub = df_reac.iloc[inds_id]
 
     # The code below construct the following variables.
     #   1. inds_reac, index in the reaction dataframe for the outputs of the reaction module.
@@ -161,7 +162,7 @@ def create_formula_dict_reaction_module(df_reac, rmat, formula_dict, param_names
     # Link the indices in the outputs of the reaction module to those in the reaction dataframe.
     lookup_sub["index_fm"] = lookup_fm.loc[lookup_sub["index_sub"], "index_fm"].values
     #
-    inds_reac = lookup_sub.loc[rmat.inds_id, "index_fm"].values
+    inds_reac = lookup_sub.loc[inds_id, "index_fm"].values
     inds_k = lookup_sub.loc[rmat.inds_k, "index_fm"].values
 
     rmod = FormulaDictReactionModule(
