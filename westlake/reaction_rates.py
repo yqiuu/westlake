@@ -69,16 +69,24 @@ class SurfaceMantleTransition(nn.Module):
         self.register_buffer("inds_reac", torch.tensor(inds_reac))
         self.register_buffer("layer_factor",
             torch.tensor(1./(meta_params.dtg_num_ratio_0*meta_params.num_sites_per_grain)))
+        self.register_buffer("alpha_gain", self.layer_factor/meta_params.num_active_layers)
 
-    def forward(self, t_in, params_med, dy_surf_gain, dy_surf_loss, y_surf, y_mant):
+    def forward(self, t_in, params_med, y_in, inds_surf, inds_mant, dy_surf_gain, dy_surf_loss):
+        y_in = torch.atleast_2d(y_in)
+        y_surf = y_in[:, inds_surf]
+        y_mant = y_in[:, inds_mant]
         y_surf_tot = y_surf.sum(dim=-1, keepdim=True)
         y_mant_tot = y_mant.sum(dim=-1, keepdim=True)
 
         n_layer_mant = y_mant_tot*self.layer_factor
-        k_swap = params_med["rate_hopping"]/n_layer_mant.clamp_min(1.)
-        rates_m2s = k_swap[:, self._params_reac_m2s()["inds_r"]] \
+        k_swap_mant = params_med["rate_hopping"]/n_layer_mant.clamp_min(1.)
+        rates_m2s = k_swap_mant[:, self._params_reac_m2s()["inds_r"]] \
             + dy_surf_loss/torch.maximum(y_surf_tot, y_mant_tot)
-        return rates_m2s
+
+        # inds_mant must be bool indices
+        k_swap_surf = k_swap_mant*y_in*inds_mant.type(y_in.dtype)
+        rates_s2m = dy_surf_gain*self.alpha_gain
+        return rates_s2m
 
 
 class FormulaDictReactionFactory:

@@ -48,9 +48,7 @@ class ReactionMatrix:
     def __init__(self, indices, reactant_1, reactant_2, products, df_spec=None):
         species, self._rmat_1st, self._rmat_2nd \
             = self._derive_indices(indices, reactant_1, reactant_2, products)
-        df_spec_new = self._create_specie_table(species)
-        if df_spec is not None:
-            df_spec_new[df_spec.columns] = df_spec.loc[df_spec_new.index]
+        df_spec_new = self._create_specie_table(species, df_spec)
         self._df_spec = df_spec_new
 
     @property
@@ -149,7 +147,15 @@ class ReactionMatrix:
         )
         return species, rmat_1st, rmat_2nd
 
-    def _create_specie_table(self, species):
+    def _create_specie_table(self, species, df_spec):
+        if df_spec is not None:
+            assert species.issubset(set(df_spec.index.values))
+            if "index" not in df_spec.columns:
+                df_spec_new = df_spec.copy()
+                df_spec_new.insert(0, "index", np.arange(len(df_spec)))
+            else:
+                df_spec_new = df_spec
+            return df_spec_new
         species = list(species)
         species.sort()
         return pd.DataFrame(np.arange(len(species)), index=species, columns=['index'])

@@ -61,6 +61,7 @@ class MetaParameters:
     vib_to_dissip_freq_ratio: float = 1e-2
     surf_diff_to_deso_ratio: float = 0.4
     mant_diff_to_deso_ratio: float = 0.8
+    num_active_layers: float = 2.
 
     #
     to_second: float = units.year.to(units.second)

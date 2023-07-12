@@ -99,15 +99,16 @@ class ThreePhaseTerm(nn.Module):
         rates_1st = self.rmod_1st(t_in, params_med)
         rates_2nd = self.rmod_2nd(t_in, params_med)
 
-        y_in = torch.atleast_2d(y_in)
+        dy_1st_gain = self.asm_1st_surf_gain(y_in, rates_1st, den_norm)[:, self.inds_surf]
+        dy_2nd_gain = self.asm_2nd_surf_gain(y_in, rates_2nd, den_norm)[:, self.inds_surf]
+        dy_surf_gain = torch.sum(dy_1st_gain + dy_2nd_gain, dim=-1, keepdim=True)
+
         dy_1st_loss = self.asm_1st_surf_loss(y_in, rates_1st, den_norm)[:, self.inds_surf]
-        dy_2st_loss = self.asm_2nd_surf_loss(y_in, rates_2nd, den_norm)[:, self.inds_surf]
-        dy_surf_loss = -torch.sum(dy_1st_loss + dy_2st_loss, dim=-1, keepdim=True)
-        y_surf = y_in[:, self.inds_surf]
-        y_mant = y_in[:, self.inds_mant]
+        dy_2nd_loss = self.asm_2nd_surf_loss(y_in, rates_2nd, den_norm)[:, self.inds_surf]
+        dy_surf_loss = -torch.sum(dy_1st_loss + dy_2nd_loss, dim=-1, keepdim=True)
 
         rates = self.rmod_smt(
-            t_in, params_med, dy_surf_loss, dy_surf_loss, y_surf, y_mant
+            t_in, params_med, y_in, self.inds_surf, self.inds_mant, dy_surf_gain, dy_surf_loss,
         )
         return rates
 
