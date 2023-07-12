@@ -59,6 +59,28 @@ class FormulaDictReactionModule(nn.Module):
         return self.forward(t_in, params_med)[:, self.inds_reac]
 
 
+class SurfaceMantleTransition(nn.Module):
+    def __init__(self, rmat, inds_fm_dict, inds_reac, params_reac, meta_params):
+        super().__init__()
+        self._params_reac_m2s = params_reac.indexing(inds_fm_dict["surface to mantle"])
+        self._params_reac_s2m = params_reac.indexing(inds_fm_dict["mantle to surface"])
+        self.register_buffer(
+            "rate_sign", torch.tensor(rmat.rate_sign, dtype=torch.get_default_dtype()))
+        self.register_buffer("inds_reac", torch.tensor(inds_reac))
+        self.register_buffer("layer_factor",
+            torch.tensor(1./(meta_params.dtg_num_ratio_0*meta_params.num_sites_per_grain)))
+
+    def forward(self, t_in, params_med, dy_surf_gain, dy_surf_loss, y_surf, y_mant):
+        y_surf_tot = y_surf.sum(dim=-1, keepdim=True)
+        y_mant_tot = y_mant.sum(dim=-1, keepdim=True)
+
+        n_layer_mant = y_mant_tot*self.layer_factor
+        k_swap = params_med["rate_hopping"]/n_layer_mant.clamp_min(1.)
+        rates_m2s = k_swap[:, self._params_reac_m2s()["inds_r"]] \
+            + dy_surf_loss/torch.maximum(y_surf_tot, y_mant_tot)
+        return rates_m2s
+
+
 class FormulaDictReactionFactory:
     def __init__(self, df_reac, rmat):
         # The code below construct the following variables.
@@ -143,9 +165,28 @@ class FormulaDictReactionFactory:
 
 
 def create_formula_dict_reaction_module(df_reac, df_spec, rmat, formula_dict, param_names):
-    inds_id = np.unique(rmat.inds_id)
-    df_sub = df_reac.iloc[inds_id]
+    inds_id_uni = np.unique(rmat.inds_id)
+    df_sub = df_reac.loc[inds_id_uni]
 
+    inds_fm_dict, inds_reac, inds_k = prepare_formula_dict_indices(df_sub, rmat, inds_id_uni)
+    params_reac = prepare_params_reac(df_sub, df_spec, rmat, param_names)
+    rmod = FormulaDictReactionModule(rmat, formula_dict, inds_fm_dict, inds_reac, params_reac)
+    rmat_new = replace(rmat, inds_k=inds_k)
+    return rmod, rmat_new
+
+
+def create_surface_mantle_transition(df_reac, df_spec, rmat, param_names, meta_params):
+    inds_id_uni = np.unique(rmat.inds_id)
+    df_sub = df_reac.loc[inds_id_uni]
+
+    inds_fm_dict, inds_reac, inds_k = prepare_formula_dict_indices(df_sub, rmat, inds_id_uni)
+    params_reac = prepare_params_reac(df_sub, df_spec, rmat, param_names)
+    rmod = SurfaceMantleTransition(rmat, inds_fm_dict, inds_reac, params_reac, meta_params)
+    rmat_new = replace(rmat, inds_k=inds_k)
+    return rmod, rmat_new
+
+
+def prepare_formula_dict_indices(df_sub, rmat, inds_id_uni):
     # The code below construct the following variables.
     #   1. inds_reac, index in the reaction dataframe for the outputs of the reaction module.
     #   2. inds_k, index of the rates in the equation for the outputs of the reaction module. This
@@ -162,9 +203,12 @@ def create_formula_dict_reaction_module(df_reac, df_spec, rmat, formula_dict, pa
     # Link the indices in the outputs of the reaction module to those in the reaction dataframe.
     lookup_sub["index_fm"] = lookup_fm.loc[lookup_sub["index_sub"], "index_fm"].values
     #
-    inds_reac = lookup_sub.loc[inds_id, "index_fm"].values
+    inds_reac = lookup_sub.loc[inds_id_uni, "index_fm"].values
     inds_k = lookup_sub.loc[rmat.inds_k, "index_fm"].values
+    return inds_fm_dict, inds_reac, inds_k
 
+
+def prepare_params_reac(df_sub, df_spec, rmat, param_names):
     params_reac = data_frame_to_tensor_dict(df_sub[param_names])
     # inds_r is used to extract specie propeties.
     inds_r = df_spec.loc[df_sub["reactant_1"], "index"].values
@@ -172,6 +216,4 @@ def create_formula_dict_reaction_module(df_reac, df_spec, rmat, formula_dict, pa
         inds_r = np.vstack([inds_r, df_spec.loc[df_sub["reactant_2"], "index"].values]).T
     inds_r = torch.tensor(inds_r)
     params_reac.add("inds_r", inds_r)
-    rmod = FormulaDictReactionModule(rmat, formula_dict, inds_fm_dict, inds_reac, params_reac)
-    rmat_new = replace(rmat, inds_k=inds_k)
-    return rmod, rmat_new
+    return params_reac

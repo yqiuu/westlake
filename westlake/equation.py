@@ -50,8 +50,8 @@ class ReactionTerm(nn.Module):
 
 
 class ThreePhaseTerm(nn.Module):
-    def __init__(self, rmod_1st, rmat_1st_s2m, rmat_1st_m2s,
-                 rmat_1st_surf_gain, rmat_1st_surf_loss, rmat_1st_other,
+    def __init__(self, rmod_smt, rmat_smt,
+                 rmod_1st, rmat_1st_surf_gain, rmat_1st_surf_loss, rmat_1st_other,
                  rmod_2nd, rmat_2nd_surf_gain, rmat_2nd_surf_loss, rmat_2nd_other,
                  inds_surf, inds_mant, module_med=None):
         super().__init__()
@@ -60,10 +60,11 @@ class ThreePhaseTerm(nn.Module):
             self.module_med = module_med
         else:
             raise ValueError("Unknown 'module_med'.")
+        #
+        self.rmod_smt = rmod_smt
+        self.rmat_smt = rmat_smt
         # First order reactions
         self.rmod_1st = rmod_1st
-        #self.asm_1st_s2m = Assembler(rmat_1st_s2m)
-        #self.asm_1st_m2s = Assembler(rmat_1st_m2s)
         self.asm_1st_surf_gain = Assembler(rmat_1st_surf_gain)
         self.asm_1st_surf_loss = Assembler(rmat_1st_surf_loss)
         self.asm_1st_other = Assembler(rmat_1st_other)
@@ -73,8 +74,8 @@ class ThreePhaseTerm(nn.Module):
         self.asm_2nd_surf_loss = Assembler(rmat_2nd_surf_loss)
         self.asm_2nd_other = Assembler(rmat_2nd_other)
         #
-        self.register_buffer("inds_surf", torch.as_tensor(inds_surf))
-        self.register_buffer("inds_mant", torch.as_tensor(inds_mant))
+        self.register_buffer("inds_surf", torch.tensor(inds_surf))
+        self.register_buffer("inds_mant", torch.tensor(inds_mant))
 
     def forward(self, t_in, y_in, **params_extra):
         pass
@@ -98,14 +99,16 @@ class ThreePhaseTerm(nn.Module):
         rates_1st = self.rmod_1st(t_in, params_med)
         rates_2nd = self.rmod_2nd(t_in, params_med)
 
+        y_in = torch.atleast_2d(y_in)
         dy_1st_loss = self.asm_1st_surf_loss(y_in, rates_1st, den_norm)[:, self.inds_surf]
         dy_2st_loss = self.asm_2nd_surf_loss(y_in, rates_2nd, den_norm)[:, self.inds_surf]
         dy_surf_loss = -torch.sum(dy_1st_loss + dy_2st_loss, dim=-1, keepdim=True)
+        y_surf = y_in[:, self.inds_surf]
+        y_mant = y_in[:, self.inds_mant]
 
-        y_surf = y_in[:, self.inds_surf].sum(dim=-1, keepdim=True)
-        y_mant = y_in[:, self.inds_mant].sum(dim=-1, keepdim=True)
-        rates = dy_surf_loss/torch.maximum(y_surf, y_mant)
-
+        rates = self.rmod_smt(
+            t_in, params_med, dy_surf_loss, dy_surf_loss, y_surf, y_mant
+        )
         return rates
 
 

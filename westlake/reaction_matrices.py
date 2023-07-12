@@ -45,9 +45,9 @@ class ReactionMat:
 
 
 class ReactionMatrix:
-    def __init__(self, reactant_1, reactant_2, products, df_spec=None):
+    def __init__(self, indices, reactant_1, reactant_2, products, df_spec=None):
         species, self._rmat_1st, self._rmat_2nd \
-            = self._derive_indices(reactant_1, reactant_2, products)
+            = self._derive_indices(indices, reactant_1, reactant_2, products)
         df_spec_new = self._create_specie_table(species)
         if df_spec is not None:
             df_spec_new[df_spec.columns] = df_spec.loc[df_spec_new.index]
@@ -60,21 +60,29 @@ class ReactionMatrix:
     def create_index_matrices(self):
         """Convert specie names to indices for both reaction matrices."""
         df_spec = self._df_spec
+
         rmat_1st = self._rmat_1st
-        inds_r_1st = df_spec.loc[rmat_1st.inds_r, "index"].values.ravel()
-        inds_p_1st = df_spec.loc[rmat_1st.inds_p, "index"].values.ravel()
-        rmat_1st = replace(rmat_1st, inds_r=inds_r_1st, inds_p=inds_p_1st)
+        if len(rmat_1st.inds_id) > 0:
+            inds_r_1st = df_spec.loc[rmat_1st.inds_r, "index"].values.ravel()
+            inds_p_1st = df_spec.loc[rmat_1st.inds_p, "index"].values.ravel()
+            rmat_1st = replace(rmat_1st, inds_r=inds_r_1st, inds_p=inds_p_1st)
+        else:
+            rmat_1st = None
 
         rmat_2nd = self._rmat_2nd
-        inds_r_2nd_ = np.asarray(rmat_2nd.inds_r)
-        inds_r_2nd = np.zeros(inds_r_2nd_.shape, df_spec["index"].dtype)
-        inds_r_2nd[:, 0] = df_spec.loc[inds_r_2nd_[:, 0], "index"].values.ravel()
-        inds_r_2nd[:, 1] = df_spec.loc[inds_r_2nd_[:, 1], "index"].values.ravel()
-        inds_p_2nd = df_spec.loc[rmat_2nd.inds_p, "index"].values.ravel()
-        rmat_2nd = replace(rmat_2nd, inds_r=inds_r_2nd, inds_p=inds_p_2nd)
+        if len(rmat_2nd.inds_id) > 0:
+            inds_r_2nd_ = np.asarray(rmat_2nd.inds_r)
+            inds_r_2nd = np.zeros(inds_r_2nd_.shape, df_spec["index"].dtype)
+            inds_r_2nd[:, 0] = df_spec.loc[inds_r_2nd_[:, 0], "index"].values.ravel()
+            inds_r_2nd[:, 1] = df_spec.loc[inds_r_2nd_[:, 1], "index"].values.ravel()
+            inds_p_2nd = df_spec.loc[rmat_2nd.inds_p, "index"].values.ravel()
+            rmat_2nd = replace(rmat_2nd, inds_r=inds_r_2nd, inds_p=inds_p_2nd)
+        else:
+            rmat_2nd = None
+
         return rmat_1st, rmat_2nd
 
-    def _derive_indices(self, reactant_1, reactant_2, products):
+    def _derive_indices(self, indices, reactant_1, reactant_2, products):
         species = set()
 
         inds_id_1st = []
@@ -89,7 +97,7 @@ class ReactionMatrix:
         inds_r_2nd = []
         inds_p_2nd = []
 
-        for idx, (reac_1, reac_2, prod) in enumerate(zip(reactant_1, reactant_2, products)):
+        for idx, reac_1, reac_2, prod in zip(indices, reactant_1, reactant_2, products):
             if type(prod) is str:
                 prod = prod.split(";")
             else:
