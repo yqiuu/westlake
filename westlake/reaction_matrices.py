@@ -45,9 +45,13 @@ class ReactionMat:
 
 
 class ReactionMatrix:
-    def __init__(self, indices, reactant_1, reactant_2, products, df_spec=None):
-        species, self._rmat_1st, self._rmat_2nd \
-            = self._derive_indices(indices, reactant_1, reactant_2, products)
+    def __init__(self, df_reac, df_spec=None):
+        species, self._rmat_1st, self._rmat_2nd = self._derive_indices(
+            df_reac.index.values,
+            df_reac["reactant_1"].values,
+            df_reac["reactant_2"].values,
+            df_reac["products"].values,
+        )
         df_spec_new = self._create_specie_table(species, df_spec)
         self._df_spec = df_spec_new
 

@@ -54,26 +54,14 @@ def create_three_phase_model(df_reac, df_spec, medium, meta_params,
     cond = (df_reac["formula"] == "mantle to surface") \
         | (df_reac["formula"] == "surface to mantle")
     df_reac_sub = df_reac[cond]
-    reaction_matrix = ReactionMatrix(
-        df_reac_sub.index,
-        df_reac_sub["reactant_1"],
-        df_reac_sub["reactant_2"],
-        df_reac_sub["products"],
-        df_spec
-    )
+    reaction_matrix = ReactionMatrix(df_reac_sub, df_spec)
     rmat_1st, _ = reaction_matrix.create_index_matrices()
     rmod_smt, rmat_smt = create_surface_mantle_transition(
         df_reac_sub, df_spec, rmat_1st, param_names, meta_params
     )
 
     df_reac = df_reac[~cond]
-    reaction_matrix = ReactionMatrix(
-        df_reac.index,
-        df_reac["reactant_1"],
-        df_reac["reactant_2"],
-        df_reac["products"],
-        df_spec
-    )
+    reaction_matrix = ReactionMatrix(df_reac, df_spec)
     rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
     if formula_dict_1st is None:
         formula_dict_1st = builtin_astrochem_reactions_1st(meta_params)
