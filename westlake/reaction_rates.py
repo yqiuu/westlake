@@ -84,8 +84,8 @@ class SurfaceMantleTransition(nn.Module):
             + dy_surf_loss/torch.maximum(y_surf_tot, y_mant_tot)
 
         # inds_mant must be bool indices
-        k_swap_surf = k_swap_mant*y_in*inds_mant.type(y_in.dtype)
-        rates_s2m = dy_surf_gain*self.alpha_gain
+        k_swap_surf = k_swap_mant*y_in*inds_mant.type(y_in.dtype)/y_surf_tot
+        rates_s2m = k_swap_surf + dy_surf_gain*self.alpha_gain
         return rates_s2m
 
 
