@@ -31,6 +31,7 @@ def solve_H_cycle():
     reaction_matrix = westlake.ReactionMatrix(
         df_reac["reactant_1"], df_reac["reactant_2"], df_reac["products"], df_spec)
     meta_params = westlake.MetaParameters(atol=ATOL)
+    westlake.prepare_piecewise_rates(df_reac)
     westlake.prepare_surface_reaction_params(
         df_reac, df_surf, df_act, df_spec, meta_params, specials_barr={'JH': 230.})
     medium = westlake.StaticMedium({'Av': 10., "den_gas": 1e4, "T_gas": 10., "T_dust": 10.})

@@ -6,7 +6,8 @@ from .equation import ReactionTerm
 
 def builtin_astrochem_reaction_param_names():
     return [
-        "is_unique", "T_min", "T_max", "alpha", "beta", "gamma",
+        "is_leftmost", "is_rightmost", "T_min", "T_max",
+        "alpha", "beta", "gamma",
         "E_deso_r1", "E_barr_r1", "freq_vib_r1", "factor_rate_acc_r1",
         "E_barr_r2", "freq_vib_r2",
         "E_act", "branching_ratio", "log_prob_surf_tunl"
