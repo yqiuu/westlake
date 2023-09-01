@@ -16,7 +16,7 @@ def builtin_surface_reactions_1st(meta_params):
         'CR evaporation': CosmicRayEvaporation(meta_params),
         'complexes reaction': NoReaction(),
         'UV photodesorption': UVPhotodesorption(meta_params),
-        'CR photodesorption': NoReaction(),
+        'CR photodesorption': CRPhotodesorption(meta_params),
         'surface accretion': SurfaceAccretion(meta_params),
         'surface H accretion': SurfaceHAccretion(meta_params),
     }
@@ -64,6 +64,17 @@ class UVPhotodesorption(nn.Module):
 
     def forward(self, params_env, params_reac, **params_extra):
         return self.prefactor*params_reac["alpha"]*torch.exp(-2.*params_env["Av"])
+
+
+class CRPhotodesorption(nn.Module):
+    def __init__(self, meta_params):
+        super(CRPhotodesorption, self).__init__()
+        self.register_buffer("prefactor",
+            torch.tensor(1e4/meta_params.site_density*1.3e-17/meta_params.rate_cr_ion)
+        )
+
+    def forward(self, params_env, params_reac, **params_extra):
+        return self.prefactor*params_reac["alpha"]
 
 
 class SurfaceAccretion(nn.Module):
