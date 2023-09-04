@@ -134,7 +134,7 @@ class ReactionMatrix:
         rmat_1st = ReactionMat(
             order=1,
             n_spec=n_spec,
-            inds_id=np.array(inds_k_1st),
+            inds_id=np.array(inds_id_1st),
             inds_k=np.array(inds_k_1st),
             rate_sign = np.array(rate_sign_1st),
             inds_r=np.array(inds_r_1st),
@@ -143,7 +143,7 @@ class ReactionMatrix:
         rmat_2nd = ReactionMat(
             order=2,
             n_spec=n_spec,
-            inds_id=np.array(inds_k_2nd),
+            inds_id=np.array(inds_id_2nd),
             inds_k=np.array(inds_k_2nd),
             rate_sign=np.array(rate_sign_2nd),
             inds_r=np.array(inds_r_2nd),

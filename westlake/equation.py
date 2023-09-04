@@ -48,6 +48,21 @@ class ReactionTerm(nn.Module):
         rates_2nd = self.rmod_2nd(t_in, params_med)
         return rates_1st, rates_2nd, den_norm
 
+    def reproduce_reaction_rates(self, rmat_1st, rmat_2nd, t_in=None):
+        if t_in is None:
+            t_in = torch.tensor([0.])
+
+        inds_id_1st = rmat_1st.inds_id
+        inds_id_2nd = rmat_2nd.inds_id
+        n_reac = len(inds_id_1st) + len(inds_id_2nd)
+        rates = torch.zeros([len(t_in), n_reac])
+        with torch.no_grad():
+            params_med = self.module_med(t_in)
+            rates[:, inds_id_1st] = self.rmod_1st.compute_rates_reac(t_in, params_med)
+            rates[:, inds_id_2nd] = self.rmod_2nd.compute_rates_reac(t_in, params_med)
+        rates = rates.T.squeeze()
+        return rates
+
 
 class ThreePhaseTerm(nn.Module):
     def __init__(self, rmod_smt, rmat_smt,
@@ -148,22 +163,6 @@ def create_astrochem_problem(df_reac, params_med, ab_0, spec_table_base=None, ab
     ab_0_ = dervie_initial_abundances(ab_0, spec_table, meta_params, ab_0_min)
 
     return AstrochemProblem(spec_table, rmat_1st, rmat_2nd, reaction_term, ab_0_)
-
-
-def reproduce_reaction_rates(reaction_term, rmat_1st, rmat_2nd, t_in=None):
-    if t_in is None:
-        t_in = torch.tensor([0.])
-
-    inds_reac_1st = reaction_term.rmod_1st.inds_reac
-    inds_reac_2nd = reaction_term.rmod_2nd.inds_reac
-    n_reac = len(inds_reac_1st) + len(inds_reac_2nd)
-    rates = torch.zeros([len(t_in), n_reac])
-    with torch.no_grad():
-        params_med = reaction_term.module_med(t_in)
-        rates[:, np.unique(rmat_1st.inds_id)] = reaction_term.rmod_1st.compute_rates_reac(t_in, params_med)
-        rates[:, np.unique(rmat_2nd.inds_id)] = reaction_term.rmod_2nd.compute_rates_reac(t_in, params_med)
-    rates = rates.T.squeeze()
-    return rates
 
 
 def dervie_initial_abundances(ab_0_dict, spec_table, meta_params):

@@ -32,7 +32,7 @@ def create_constant_rate_model(reaction_matrix, df_reac):
 
 
 class FormulaDictReactionModule(nn.Module):
-    def __init__(self, rmat, formula_dict, inds_fm_dict, inds_reac, params_reac):
+    def __init__(self, rmat, formula_dict, inds_fm_dict, params_reac, inds_reac):
         super(FormulaDictReactionModule, self).__init__()
         self.order = rmat.order
         for i_fm, inds in enumerate(inds_fm_dict.values()):
@@ -89,96 +89,20 @@ class SurfaceMantleTransition(nn.Module):
         return rates_s2m
 
 
-class FormulaDictReactionFactory:
-    def __init__(self, df_reac, rmat):
-        # The code below construct the following variables.
-        #   1. inds_reac, index in the reaction dataframe for the outputs of the reaction module.
-        #   2. inds_k, index of the rates in the equation for the outputs of the reaction module.
-        #   This should align with rmat.rate_sign
-
-        df_sub = df_reac.iloc[rmat.inds_id]
-        # Link the indices in the df_sub to those in the reaction dataframe.
-        lookup_sub = pd.DataFrame(np.arange(len(df_sub)), index=df_sub.index, columns=["index_sub"])
-        # Link the indices in the outputs of the reaction module to those in the df_sub.
-        inds_fm_dict = defaultdict(list)
-        for i_fm, fm in enumerate(df_sub["formula"]):
-            inds_fm_dict[fm].append(i_fm)
-        inds_fm = np.asarray(sum(inds_fm_dict.values(), start=[]))
-        # Link the indices in the outputs of the reaction module to those in the reaction dataframe.
-        lookup_fm = pd.DataFrame(np.arange(len(inds_fm)), index=inds_fm, columns=["index_fm"])
-        lookup_sub["index_fm"] = lookup_fm.loc[lookup_sub["index_sub"], "index_fm"].values\
-
-        inds_reac = lookup_sub.loc[rmat.inds_id, "index_fm"].values
-        inds_k = lookup_sub.loc[rmat.inds_k, "index_fm"].values
-
-        # Construct indices for each formula
-        inds_fm_sub = []
-        for inds in inds_fm_dict.values():
-            if len(inds) != 0:
-                inds_fm_sub.extend(list(range(len(inds))))
-        lookup_sub["index_fm_sub"] = inds_fm_sub
-
-        # Set attributes
-        self._df_sub = df_sub
-        self._rmat = rmat
-        self._lookup = lookup_sub
-        self._inds_fm_dict = inds_fm_dict
-        self._inds_reac = inds_reac
-        self._inds_k = inds_k
-
-    def create(self, formula_dict, param_names):
-        """Create a FormulaDictReactionModule.
-
-        Args:
-            formula_dict (dict): A dictionary of formulae to compute reaction
-                rates.
-            param_names (list): Parameter names in the reaction dataframe that
-                are required when computing the reaction rates.
-
-        Returns:
-            FormulaDictReactionModule: reaction module.
-        """
-        return FormulaDictReactionModule(
-            self._rmat, formula_dict, self._inds_fm_dict, self._inds_reac, self._inds_k,
-            data_frame_to_tensor_dict(self._df_sub[param_names])
-        )
-
-    def find_indices_in_formula(self, formula, condition):
-        """Find indices of some specific reactions in the a reaction rate
-        module.
-
-        This is used to deal with special cases in reactions.
-
-        Args:
-            formula (str): Formula name in the reaction dataframe.
-            condition (callable): A callable that takes the reaction dataframe
-                and returns a bool array to to select reactions.
-
-        Raises:
-            KeyError: If no reactions are found.
-
-        Returns:
-            int | list: A list of indices or an integer if there is only one
-                matched reaction.
-        """
-        df_sub = self._df_sub
-        cond = (df_sub["formula"] == formula) & condition(df_sub)
-        indices = self._lookup.loc[df_sub.index[cond], "index_fm_sub"].values
-        n_ind = len(indices)
-        if n_ind == 0:
-            raise KeyError("Cannot find the indices that satisfy the condition.")
-        elif n_ind == 1:
-            return indices[0]
-        return list(indices)
-
-
 def create_formula_dict_reaction_module(df_reac, df_spec, rmat, formula_dict, param_names):
     inds_id_uni = np.unique(rmat.inds_id)
     df_sub = df_reac.loc[inds_id_uni]
 
-    inds_fm_dict, inds_reac, inds_k = prepare_formula_dict_indices(df_sub, rmat, inds_id_uni)
+    inds_fm_dict = defaultdict(list)
+    inds_id_fm_dict = defaultdict(list)
+    for i_fm, (idx, fm) in enumerate(zip(df_sub.index, df_sub["formula"])):
+        inds_fm_dict[fm].append(i_fm)
+        inds_id_fm_dict[fm].append(idx)
+    inds_id_fm = np.asarray(sum(inds_id_fm_dict.values(), start=[]))
+
+    inds_reac, inds_k = reindex(rmat, inds_id_fm)
     params_reac = prepare_params_reac(df_sub, df_spec, rmat, param_names)
-    rmod = FormulaDictReactionModule(rmat, formula_dict, inds_fm_dict, inds_reac, params_reac)
+    rmod = FormulaDictReactionModule(rmat, formula_dict, inds_fm_dict, params_reac, inds_reac)
     rmat_new = replace(rmat, inds_k=inds_k)
     return rmod, rmat_new
 
@@ -214,6 +138,13 @@ def prepare_formula_dict_indices(df_sub, rmat, inds_id_uni):
     inds_reac = lookup_sub.loc[inds_id_uni, "index_fm"].values
     inds_k = lookup_sub.loc[rmat.inds_k, "index_fm"].values
     return inds_fm_dict, inds_reac, inds_k
+
+
+def reindex(rmat, inds_id_fm):
+    lookup = pd.DataFrame(np.arange(len(inds_id_fm)), index=inds_id_fm, columns=["index_fm"])
+    inds_id = lookup.loc[rmat.inds_id, "index_fm"].values
+    inds_k = lookup.loc[rmat.inds_k, "index_fm"].values
+    return inds_id, inds_k
 
 
 def prepare_params_reac(df_sub, df_spec, rmat, param_names):
