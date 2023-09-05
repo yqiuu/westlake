@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torch import nn
+from torch.func import jacrev
 
 from dataclasses import dataclass
 
@@ -101,10 +102,7 @@ class ThreePhaseTerm(nn.Module):
             + self.asm_2nd(y_in, rates_2nd, den_norm)
 
     def jacobian(self, t_in, y_in, **params_extra):
-        rates_smt, rates_1st, rates_2nd, den_norm = self.compute_rates(t_in, y_in)
-        return self.asm_smt.jacobain(y_in, rates_smt, den_norm) \
-            + self.asm_1st.jacobain(y_in, rates_1st, den_norm) \
-            + self.asm_2nd.jacobain(y_in, rates_2nd, den_norm)
+        return jacrev(self, argnums=1)(t_in, y_in)
 
     def compute_rates(self, t_in, y_in, **params_extra):
         if self.module_med is None:
