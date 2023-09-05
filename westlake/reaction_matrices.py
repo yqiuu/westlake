@@ -23,6 +23,7 @@ class ReactionMat:
     """
     order: int
     n_spec: int
+    inds_id_uni: np.ndarray
     inds_id: np.ndarray
     inds_k: np.ndarray
     rate_sign: np.ndarray
@@ -41,7 +42,10 @@ class ReactionMat:
             rate_sign = self.rate_sign[cond]
         inds_r = self.inds_r[cond]
         inds_p = self.inds_p[cond]
-        return ReactionMat(self.order, self.n_spec, inds_id, inds_k, rate_sign, inds_r, inds_p)
+        return ReactionMat(
+            self.order, self.n_spec, self.inds_id_uni,
+            inds_id, inds_k, rate_sign, inds_r, inds_p
+        )
 
 
 class ReactionMatrix:
@@ -134,16 +138,18 @@ class ReactionMatrix:
         rmat_1st = ReactionMat(
             order=1,
             n_spec=n_spec,
-            inds_id=np.array(inds_id_1st),
+            inds_id_uni=np.array(inds_id_1st),
+            inds_id=np.array(inds_k_1st),
             inds_k=np.array(inds_k_1st),
-            rate_sign = np.array(rate_sign_1st),
+            rate_sign=np.array(rate_sign_1st),
             inds_r=np.array(inds_r_1st),
             inds_p=np.array(inds_p_1st),
         )
         rmat_2nd = ReactionMat(
             order=2,
             n_spec=n_spec,
-            inds_id=np.array(inds_id_2nd),
+            inds_id_uni=np.array(inds_id_2nd),
+            inds_id=np.array(inds_k_2nd),
             inds_k=np.array(inds_k_2nd),
             rate_sign=np.array(rate_sign_2nd),
             inds_r=np.array(inds_r_2nd),

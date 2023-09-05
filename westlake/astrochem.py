@@ -1,9 +1,15 @@
 from .reaction_rates import create_formula_dict_reaction_module, create_surface_mantle_transition
 from .gas_reactions import builtin_gas_reactions_1st, builtin_gas_reactions_2nd
-from .surface_reactions import builtin_surface_reactions_1st, builtin_surface_reactions_2nd
+from .surface_reactions import (
+    builtin_surface_reactions_1st,
+    builtin_surface_reactions_2nd,
+    prepare_surface_reaction_params
+)
 from .medium import SequentialMedium, ThermalHoppingRate
 from .reaction_matrices import ReactionMatrix
 from .equation import ReactionTerm, ThreePhaseTerm
+
+import pandas as pd
 
 
 def builtin_astrochem_reaction_param_names():
@@ -47,21 +53,26 @@ def create_two_phase_model(reaction_matrix, df_reac, medium, meta_params,
     return ReactionTerm(rmat_1st, rmod_1st, rmat_2nd, rmod_2nd, medium)
 
 
-def create_three_phase_model(df_reac, df_spec, medium, meta_params,
+def create_three_phase_model(df_reac, df_surf, df_act, df_spec, medium, meta_params,
                              param_names=None, formula_dict_1st=None, formula_dict_2nd=None):
     if param_names is None:
         param_names = builtin_astrochem_reaction_param_names()
-    cond = (df_reac["formula"] == "mantle to surface") \
-        | (df_reac["formula"] == "surface to mantle")
-    df_reac_sub = df_reac[cond]
+    df_reac_sub = pd.concat([
+        df_reac[df_reac["formula"] == "mantle to surface"],
+        df_reac[df_reac["formula"] == "surface to mantle"],
+    ], axis=0)
     reaction_matrix = ReactionMatrix(df_reac_sub, df_spec)
     rmat_1st, _ = reaction_matrix.create_index_matrices()
     rmod_smt, rmat_smt = create_surface_mantle_transition(
-        df_reac_sub, df_spec, rmat_1st, param_names, meta_params
+        df_reac_sub, reaction_matrix.df_spec, rmat_1st, param_names, meta_params
     )
 
-    df_reac = df_reac[~cond]
+    cond = (df_reac["formula"] != "mantle to surface") \
+        & (df_reac["formula"] != "surface to mantle")
+    df_reac = df_reac[cond]
     reaction_matrix = ReactionMatrix(df_reac, df_spec)
+    prepare_surface_reaction_params(
+        df_reac_sub, df_surf, df_act, reaction_matrix.df_spec, meta_params, specials_barr={'JH': 230.})
     rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
     if formula_dict_1st is None:
         formula_dict_1st = builtin_astrochem_reactions_1st(meta_params)
@@ -86,8 +97,8 @@ def create_three_phase_model(df_reac, df_spec, medium, meta_params,
 
     return ThreePhaseTerm(
         rmod_smt, rmat_smt,
-        rmod_1st, rmat_1st_surf_gain, rmat_1st_surf_loss, rmat_1st_other,
-        rmod_2nd, rmat_2nd_surf_gain, rmat_2nd_surf_loss, rmat_2nd_other,
+        rmod_1st, rmat_1st, rmat_1st_surf_gain, rmat_1st_surf_loss, rmat_1st_other,
+        rmod_2nd, rmat_2nd, rmat_2nd_surf_gain, rmat_2nd_surf_loss, rmat_2nd_other,
         inds_surf, inds_mant, medium
     )
 
