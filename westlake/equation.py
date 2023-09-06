@@ -23,6 +23,8 @@ class ReactionTerm(nn.Module):
 
         self.register_reactions("1st", rmat_1st, rmod_1st)
         self.register_reactions("2nd", rmat_2nd, rmod_2nd)
+        self.inds_id_1st = rmat_1st.inds_id_uni
+        self.inds_id_2nd = rmat_2nd.inds_id_uni
 
     def register_reactions(self, postfix, rmat, rmod):
         setattr(self, f"asm_{postfix}", Assembler(rmat))
@@ -49,12 +51,12 @@ class ReactionTerm(nn.Module):
         rates_2nd = self.rmod_2nd(t_in, params_med)
         return rates_1st, rates_2nd, den_norm
 
-    def reproduce_reaction_rates(self, rmat_1st, rmat_2nd, t_in=None):
+    def reproduce_reaction_rates(self, t_in=None):
         if t_in is None:
             t_in = torch.tensor([0.])
 
-        inds_id_1st = rmat_1st.inds_id
-        inds_id_2nd = rmat_2nd.inds_id
+        inds_id_1st = self.inds_id_1st
+        inds_id_2nd = self.inds_id_2nd
         n_reac = len(inds_id_1st) + len(inds_id_2nd)
         rates = torch.zeros([len(t_in), n_reac])
         with torch.no_grad():
@@ -94,6 +96,10 @@ class ThreePhaseTerm(nn.Module):
         #
         self.register_buffer("inds_surf", torch.tensor(inds_surf))
         self.register_buffer("inds_mant", torch.tensor(inds_mant))
+        #
+        self.inds_id_smt = rmat_smt.inds_id_uni
+        self.inds_id_1st = rmat_1st.inds_id_uni
+        self.inds_id_2nd = rmat_2nd.inds_id_uni
 
     def forward(self, t_in, y_in, **params_extra):
         rates_smt, rates_1st, rates_2nd, den_norm = self.compute_rates(t_in, y_in)
@@ -131,10 +137,10 @@ class ThreePhaseTerm(nn.Module):
         )
         return rates_smt, rates_1st, rates_2nd, den_norm
 
-    def reproduce_reaction_rates(self, rmat_1st_smt, rmat_1st, rmat_2nd, t_in, y_in):
-        inds_id_smt = rmat_1st_smt.inds_id_uni
-        inds_id_1st = rmat_1st.inds_id_uni
-        inds_id_2nd = rmat_2nd.inds_id_uni
+    def reproduce_reaction_rates(self, t_in, y_in):
+        inds_id_smt = self.inds_id_smt
+        inds_id_1st = self.inds_id_1st
+        inds_id_2nd = self.inds_id_2nd
         n_reac = len(inds_id_smt) + len(inds_id_1st) + len(inds_id_2nd)
         rates = torch.zeros([len(t_in), n_reac])
         with torch.no_grad():
