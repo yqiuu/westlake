@@ -5,6 +5,7 @@ from .surface_reactions import (
     builtin_surface_reactions_2nd,
     prepare_surface_reaction_params
 )
+from .preprocesses import prepare_piecewise_rates
 from .medium import SequentialMedium, ThermalHoppingRate
 from .reaction_matrices import ReactionMatrix
 from .equation import ReactionTerm, ThreePhaseTerm
@@ -16,8 +17,7 @@ def builtin_astrochem_reaction_param_names():
     return [
         "is_leftmost", "is_rightmost", "T_min", "T_max",
         "alpha", "beta", "gamma",
-        "E_deso_r1", "E_barr_r1", "freq_vib_r1", "factor_rate_acc_r1",
-        "E_barr_r2", "freq_vib_r2",
+        "E_deso_r1", "freq_vib_r1", "factor_rate_acc_r1",
         "E_act", "branching_ratio", "log_prob_surf_tunl"
     ]
 
@@ -57,6 +57,7 @@ def create_two_phase_model(reaction_matrix, df_reac, medium, meta_params,
 
 def create_three_phase_model(df_reac, df_surf, df_act, df_spec, medium, meta_params,
                              param_names=None, formula_dict_1st=None, formula_dict_2nd=None):
+    prepare_piecewise_rates(df_reac)
     if param_names is None:
         param_names = builtin_astrochem_reaction_param_names()
     df_reac_sub = pd.concat([
