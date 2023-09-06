@@ -45,6 +45,10 @@ class TensorDict(nn.Module):
             self.register_buffer(key, val)
         self.names = names
 
+    def add(self, key, tensor):
+        self.register_buffer(key, tensor)
+        self.names.append(key)
+
     def forward(self, *args, **kwargs):
         return {key: getattr(self, key) for key in self.names}
 
@@ -54,7 +58,7 @@ class TensorDict(nn.Module):
 
 def data_frame_to_tensor_dict(df):
     """Create a TensorDict from a pandas dataframe."""
-    names = df.columns.values
+    names = list(df.columns.values)
     tensors = []
     dtype_float = torch.get_default_dtype()
     for key in names:

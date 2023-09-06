@@ -19,6 +19,8 @@ def builtin_surface_reactions_1st(meta_params):
         'CR photodesorption': CRPhotodesorption(meta_params),
         'surface accretion': SurfaceAccretion(meta_params),
         'surface H accretion': SurfaceHAccretion(meta_params),
+        "surface to mantle": NoReaction(),
+        "mantle to surface": NoReaction(),
     }
 
 
@@ -109,25 +111,16 @@ class SurfaceH2Formation(nn.Module):
 
 class SurfaceReaction(nn.Module):
     def __init__(self, meta_params):
-        super(SurfaceReaction, self).__init__()
-        self.register_buffer("num_sites_per_grain", torch.tensor(meta_params.num_sites_per_grain))
+        super().__init__()
         self.register_buffer("inv_dtg_num_ratio_0", torch.tensor(1./meta_params.dtg_num_ratio_0))
 
-    def forward(self, params_env, params_reac, **params_extra):
-        rate_diff_r1 = compute_thermal_hoping_rate(
-            params_reac["E_barr_r1"], params_reac["freq_vib_r1"],
-            params_env["T_dust"], self.num_sites_per_grain
-        )
-        rate_diff_r2 = compute_thermal_hoping_rate(
-            params_reac["E_barr_r2"], params_reac["freq_vib_r2"],
-            params_env["T_dust"], self.num_sites_per_grain
-        )
-        rate_diff = rate_diff_r1 + rate_diff_r2
-        log_prob = -params_reac["E_act"]/params_env["T_dust"] # (B, R)
+    def forward(self, params_med, params_reac, **params_extra):
+        rate_hopping = params_med["rate_hopping"][:, params_reac["inds_r"]].sum(dim=-1)
+        log_prob = -params_reac["E_act"]/params_med["T_dust"] # (B, R)
         log_prob = torch.maximum(log_prob, params_reac["log_prob_surf_tunl"].unsqueeze(0))
         prob = log_prob.exp()
-        return params_reac["alpha"]*params_reac["branching_ratio"]/params_env["den_gas"] \
-            *self.inv_dtg_num_ratio_0*rate_diff*prob
+        return params_reac["alpha"]*params_reac["branching_ratio"]/params_med["den_gas"] \
+            *self.inv_dtg_num_ratio_0*rate_hopping*prob
 
 
 class NoReaction(nn.Module):
@@ -139,11 +132,7 @@ def compute_evaporation_rate(factor, freq_vib, E_d, T_dust):
     return factor*freq_vib*torch.exp(-E_d/T_dust)
 
 
-def compute_thermal_hoping_rate(E_barr, freq_vib, T_dust, num_sites_per_grain):
-    return freq_vib*torch.exp(-E_barr/T_dust)/num_sites_per_grain
-
-
-def prepare_surface_reaction_params(df_reac, df_surf, df_act, spec_table, meta_params,
+def prepare_surface_reaction_params(df_reac, df_surf, df_act, df_spec, meta_params,
                                     use_builtin_spec_params=True,
                                     specials_ma=None, specials_barr=None):
     """Prepare surface reaction parameters.
@@ -162,8 +151,8 @@ def prepare_surface_reaction_params(df_reac, df_surf, df_act, spec_table, meta_p
     """
     if use_builtin_spec_params:
         df_surf = prepare_surface_specie_params(
-            df_surf, spec_table, meta_params, specials_ma, specials_barr)
-    assign_surface_params(df_reac, df_surf)
+            df_surf, df_spec, meta_params, specials_ma, specials_barr)
+    assign_surface_params(df_reac, df_spec, df_surf)
     assign_activation_energy(df_reac, df_act)
     compute_branching_ratio(df_reac, df_surf, meta_params)
     assign_surface_tunneling_probability(df_reac, df_surf, meta_params)
@@ -232,7 +221,12 @@ def compute_factor_rate_acc(spec_table, meta_params):
 
 
 def compute_barrier_energy(spec_table, meta_params, specials=None):
-    spec_table["E_barr"] = meta_params.surf_diff_to_deso_ratio*spec_table["E_deso"]
+    cond = spec_table.index.map(lambda name: name.startswith("J"))
+    spec_table.loc[cond, "E_barr"] = meta_params.surf_diff_to_deso_ratio \
+        *spec_table.loc[cond, "E_deso"].values
+    cond = spec_table.index.map(lambda name: name.startswith("K"))
+    spec_table.loc[cond, "E_barr"] = meta_params.mant_diff_to_deso_ratio \
+        *spec_table.loc[cond, "E_deso"].values
     if specials is not None:
         for key, val in specials.items():
             spec_table.loc[key, "E_barr"] = val
@@ -246,23 +240,28 @@ def compute_rate_tunneling(spec_table, meta_params):
     spec_table["rate_tunneling_b"] = spec_table["freq_vib"]*np.exp(exponent)
 
 
-def assign_surface_params(df_reac, spec_table):
+def assign_surface_params(df_reac, df_spec, df_surf):
     """Assigin surface parameters.
 
     This is an inplace operation.
 
     Args:
         df_reac (pd.DataFrame): Data frame of reactions.
-        spec_table (pd.DataFrame): Specie table.
+        df_spec (pd.DataFrame): Specie table.
+        df_surf (pd.DataFrame): Surface parameters of species.
     """
-    columns = ["E_deso", "E_barr", "freq_vib", "factor_rate_acc"]
-    for col in columns:
-        df_reac[f"{col}_r1"] = spec_table.loc[df_reac["reactant_1"], col].values
-
     columns = ["E_barr", "freq_vib"]
-    df_tmp = df_reac.loc[df_reac["reactant_2"] != "", "reactant_2"]
+    df_spec[columns] = df_surf[columns].values
+    df_spec.fillna(0., inplace=True)
+
+    columns = ["E_deso", "freq_vib", "factor_rate_acc"]
     for col in columns:
-        df_reac.loc[df_tmp.index, f"{col}_r2"] = spec_table.loc[df_tmp, col].values
+        df_reac[f"{col}_r1"] = df_surf.loc[df_reac["reactant_1"], col].values
+
+    #columns = ["E_barr", "freq_vib"]
+    #df_tmp = df_reac.loc[df_reac["reactant_2"] != "", "reactant_2"]
+    #for col in columns:
+    #    df_reac.loc[df_tmp.index, f"{col}_r2"] = df_surf.loc[df_tmp, col].values
     df_reac.fillna(0., inplace=True)
 
 
@@ -275,6 +274,11 @@ def assign_activation_energy(df_reac, df_act):
     df_tmp = pd.DataFrame(df_reac.index, index=df_reac["key"], columns=["index"])
     df_reac.loc[df_tmp.loc[index, "index"], "E_act"] = df_act.loc[index, "E_act"].values
 
+    # When we have the following reactions:
+    # - JA + JB > X + Y
+    # - JA + JB > JX + JY
+    # The activation energy is only given for the second reaction. The code
+    # below assign the activation energy for the first reaction.
     cond = df_reac["formula"] == 'surface reaction'
     df_tmp = df_reac.loc[cond, ["key", "reactant_1", "reactant_2", "products", "E_act"]].copy()
     df_tmp["index"] = df_tmp.index.values
@@ -289,7 +293,7 @@ def assign_activation_energy(df_reac, df_act):
         df_tmp["reactant_2"].values,
         df_tmp["products"].values,
     ):
-        if prods.startswith("J"):
+        if prods.startswith("J") or prods.startswith("K"):
             continue
         prods = prods.split(";")
         prods = [f"J{prod}" for prod in prods]
@@ -301,7 +305,6 @@ def assign_activation_energy(df_reac, df_act):
 
 
 def compute_branching_ratio(df_reac, spec_table, meta_params):
-    u_dHf = units.imperial.kilocal.cgs.scale/K_B/constants.N_A.value # Convert kilocal/mol to K
     cond = df_reac["formula"] == 'surface reaction'
     df_tmp = df_reac.loc[cond, ["reactant_1", "reactant_2", "products", "E_act"]].copy()
 
@@ -315,7 +318,7 @@ def compute_branching_ratio(df_reac, spec_table, meta_params):
     ):
         reacs = f"{reac_1};{reac_2}"
         inds_dict[reacs].append(idx)
-        if prods.startswith("J"):
+        if prods.startswith("J") or prods.startswith("K"):
             counts_dict[reacs] += 1
     branching_ratios = []
     for inds, n_reac in zip(inds_dict.values(), counts_dict.values()):
@@ -326,10 +329,21 @@ def compute_branching_ratio(df_reac, spec_table, meta_params):
     inds = sum(inds_dict.values(), start=[])
     df_tmp.loc[inds, "branching_ratio"] = branching_ratios
     df_tmp.loc[df_tmp["reactant_1"] == df_tmp["reactant_2"], "branching_ratio"] *= .5
+    df_reac["branching_ratio"] = 1.
+    df_reac.loc[df_tmp.index, "branching_ratio"] = df_tmp["branching_ratio"].values
 
-    prod_first = [] # List of the first product. TODO: Check the order
+    compute_branching_ratio_rrk_desorption(df_reac, spec_table, meta_params)
+
+
+def compute_branching_ratio_rrk_desorption(df_reac, spec_table, meta_params):
+    u_dHf = units.imperial.kilocal.cgs.scale/K_B/constants.N_A.value # Convert kilocal/mol to K
+    cond = (df_reac["formula"] == 'surface reaction') \
+        & df_reac["reactant_1"].map(lambda name: name.startswith("J"))
+    cols = ["reactant_1", "reactant_2", "products", "E_act", "branching_ratio"]
+    df_tmp = df_reac.loc[cond, cols].copy()
 
     # TODO: Understanding
+    prod_first = []
     lookup_E_deso = spec_table["E_deso"].to_dict()
     E_deso_max = np.zeros(len(df_tmp))
     lookup_dHf = spec_table["dHf"].to_dict()
@@ -367,7 +381,6 @@ def compute_branching_ratio(df_reac, spec_table, meta_params):
 
     frac_deso[cond] = 1 - frac_deso[cond]
     df_tmp["branching_ratio"] *= frac_deso
-    df_reac["branching_ratio"] = 1.
     df_reac.loc[df_tmp.index, "branching_ratio"] = df_tmp["branching_ratio"].values
 
 

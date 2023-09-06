@@ -11,7 +11,7 @@ from utils import get_abs_fname
 
 
 torch.set_default_dtype(torch.float64)
-FILE_NAME = "H_cycle.pickle"
+FILE_NAME = "H_cycle_three_phase.pickle"
 ATOL = 1e-20
 
 
@@ -22,19 +22,17 @@ def test_H_cycle():
 
 
 def solve_H_cycle():
-    fname = get_fname("H_cycle.h5")
+    fname = get_fname("H_cycle_three_phase.h5")
     df_reac = pd.read_hdf(fname, key="reactions")
     df_surf = pd.read_hdf(fname, key="surface_parameters")
-    df_spec = pd.read_hdf(fname, key="specie")
+    df_spec = pd.read_hdf(fname, key="species")
     df_act = None
 
-    reaction_matrix = westlake.ReactionMatrix(df_reac, df_spec)
-    meta_params = westlake.MetaParameters(atol=ATOL)
-    westlake.prepare_piecewise_rates(df_reac)
-    westlake.prepare_surface_reaction_params(
-        df_reac, df_surf, df_act, reaction_matrix.df_spec, meta_params, specials_barr={'JH': 230.})
-    medium = westlake.StaticMedium({'Av': 10., "den_gas": 1e4, "T_gas": 10., "T_dust": 10.})
-    reaction_term = westlake.create_two_phase_model(reaction_matrix, df_reac, medium, meta_params)
+    meta_params = westlake.MetaParameters(atol=ATOL, ab_0_min=1e-40)
+    medium = westlake.StaticMedium({'Av': 10., "den_gas": 1e4, "T_gas": 17., "T_dust": 17.})
+    reaction_term = westlake.create_three_phase_model(
+        df_reac, df_surf, df_act, df_spec, medium, meta_params
+    )
 
     ab_0 = westlake.dervie_initial_abundances({'H2': .5,}, df_spec, meta_params)
     t_begin = 0.
