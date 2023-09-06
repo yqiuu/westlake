@@ -26,13 +26,13 @@ def solve_H_cycle():
     df_reac = pd.read_hdf(fname, key="reactions")
     df_surf = pd.read_hdf(fname, key="surface_parameters")
     df_spec = pd.read_hdf(fname, key="specie")
-    df_act = None
+    df_barr = pd.DataFrame([230.], index=["JH"], columns=["E_barr"])
 
     meta_params = westlake.MetaParameters(atol=ATOL)
-    westlake.prepare_surface_reaction_params(
-        df_reac, df_surf, df_act, df_spec, meta_params, specials_barr={'JH': 230.})
     medium = westlake.StaticMedium({'Av': 10., "den_gas": 1e4, "T_gas": 10., "T_dust": 10.})
-    reaction_term = westlake.create_two_phase_model(df_reac, df_surf, df_act, df_spec, medium, meta_params)
+    reaction_term = westlake.create_two_phase_model(
+        df_reac, df_spec, df_surf, medium, meta_params, df_barr=df_barr
+    )
 
     ab_0 = westlake.dervie_initial_abundances({'H2': .5,}, df_spec, meta_params)
     t_begin = 0.

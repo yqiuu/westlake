@@ -132,9 +132,8 @@ def compute_evaporation_rate(factor, freq_vib, E_d, T_dust):
     return factor*freq_vib*torch.exp(-E_d/T_dust)
 
 
-def prepare_surface_reaction_params(df_reac, df_surf, df_act, df_spec, meta_params,
-                                    use_builtin_spec_params=True,
-                                    specials_ma=None, specials_barr=None):
+def prepare_surface_reaction_params(df_reac, df_spec, df_surf, meta_params,
+                                    df_act=None, df_ma=None, df_barr=None):
     """Prepare surface reaction parameters.
 
     Assign the surface reaction parameters to the input reaction dataframe. This
@@ -146,20 +145,16 @@ def prepare_surface_reaction_params(df_reac, df_surf, df_act, df_spec, meta_para
         df_act (pd.DataFrame | None):
         spec_table (pd.DataFrame):
         meta_params (MetaPrameters):
-        use_builtin_spec_params (bool, optional): Defaults to True.
-        specials_barr (dict | None, optional): Defaults to None.
+        df_barr (dict | None, optional): Defaults to None.
     """
-    if use_builtin_spec_params:
-        df_surf = prepare_surface_specie_params(
-            df_surf, df_spec, meta_params, specials_ma, specials_barr)
+    df_surf = prepare_surface_specie_params(df_surf, df_spec, meta_params, df_ma, df_barr)
     assign_surface_params(df_reac, df_spec, df_surf)
     assign_activation_energy(df_reac, df_act)
     compute_branching_ratio(df_reac, df_surf, meta_params)
     assign_surface_tunneling_probability(df_reac, df_surf, meta_params)
 
 
-def prepare_surface_specie_params(df_surf, spec_table, meta_params,
-                                  specials_ma=None, specials_barr=None):
+def prepare_surface_specie_params(df_surf, spec_table, meta_params, df_ma=None, df_barr=None):
     """Prepare surface specie parameters.
 
     Args:
@@ -169,24 +164,24 @@ def prepare_surface_specie_params(df_surf, spec_table, meta_params,
         special_dict (dict, optional): Defaults to None.
     """
     df_surf_ret = spec_table[["charge", "num_atoms", "ma"]].copy()
-    df_surf_ret = df_surf_ret.join(df_surf[["E_deso", "E_barr", "dE_band", "dHf"]])
+    df_surf_ret = df_surf_ret.join(df_surf[["E_deso", "dE_band", "dHf"]])
     assign_columns_to_normal_counterparts(df_surf_ret, ["E_deso", "dHf"])
-    assign_vibration_frequency(df_surf_ret, meta_params, specials_ma)
+    assign_vibration_frequency(df_surf_ret, meta_params, df_ma)
     compute_factor_rate_acc(df_surf_ret, meta_params)
-    compute_barrier_energy(df_surf_ret, meta_params, specials_barr)
+    compute_barrier_energy(df_surf_ret, meta_params, df_barr)
     compute_rate_tunneling(df_surf_ret, meta_params)
     return df_surf_ret
 
 
-def assign_vibration_frequency(df_surf, meta_params, specials_ma=None):
+def assign_vibration_frequency(df_surf, meta_params, df_ma=None):
     df_surf["freq_vib"] = compute_vibration_frequency(
         df_surf["ma"].values, df_surf["E_deso"].values, meta_params.site_density)
 
-    if specials_ma is not None:
-        specials_ma = specials_ma[np.isin(specials_ma.index.values, df_surf.index.values)]
-        df_surf.loc[specials_ma.index, "freq_vib"] = compute_vibration_frequency(
-            specials_ma["ma"].values,
-            df_surf.loc[specials_ma.index, "E_deso"].values,
+    if df_ma is not None:
+        df_ma = df_ma[np.isin(df_ma.index.values, df_surf.index.values)]
+        df_surf.loc[df_ma.index, "freq_vib"] = compute_vibration_frequency(
+            df_ma["ma"].values,
+            df_surf.loc[df_ma.index, "E_deso"].values,
             meta_params.site_density
         )
 
@@ -220,16 +215,16 @@ def compute_factor_rate_acc(spec_table, meta_params):
     assign_columns_to_normal_counterparts(spec_table, "factor_rate_acc")
 
 
-def compute_barrier_energy(spec_table, meta_params, specials=None):
+def compute_barrier_energy(spec_table, meta_params, df_barr=None):
+    spec_table["E_barr"] = 0.
     cond = spec_table.index.map(lambda name: name.startswith("J"))
     spec_table.loc[cond, "E_barr"] = meta_params.surf_diff_to_deso_ratio \
         *spec_table.loc[cond, "E_deso"].values
     cond = spec_table.index.map(lambda name: name.startswith("K"))
     spec_table.loc[cond, "E_barr"] = meta_params.mant_diff_to_deso_ratio \
         *spec_table.loc[cond, "E_deso"].values
-    if specials is not None:
-        for key, val in specials.items():
-            spec_table.loc[key, "E_barr"] = val
+    if df_barr is not None:
+        spec_table.loc[df_barr.index, "E_barr"] = df_barr["E_barr"].values
 
 
 def compute_rate_tunneling(spec_table, meta_params):

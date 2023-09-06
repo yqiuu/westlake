@@ -36,12 +36,13 @@ def builtin_astrochem_reactions_2nd(meta_params):
     }
 
 
-def create_two_phase_model(df_reac, df_surf, df_act, df_spec, medium, meta_params,
+def create_two_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
+                           df_act=None, df_ma=None, df_barr=None,
                            param_names=None, formula_dict_1st=None, formula_dict_2nd=None):
     prepare_piecewise_rates(df_reac)
     reaction_matrix = ReactionMatrix(df_reac, df_spec)
     prepare_surface_reaction_params(
-        df_reac, df_surf, df_act, reaction_matrix.df_spec, meta_params, specials_barr={'JH': 230.})
+        df_reac, reaction_matrix.df_spec, df_surf, meta_params, df_act, df_ma, df_barr)
     rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
     if param_names is None:
         param_names = builtin_astrochem_reaction_param_names()
@@ -59,9 +60,15 @@ def create_two_phase_model(df_reac, df_surf, df_act, df_spec, medium, meta_param
     return ReactionTerm(rmat_1st, rmod_1st, rmat_2nd, rmod_2nd, medium)
 
 
-def create_three_phase_model(df_reac, df_surf, df_act, df_spec, medium, meta_params,
+def create_three_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
+                             df_act=None, df_ma=None, df_barr=None,
                              param_names=None, formula_dict_1st=None, formula_dict_2nd=None):
     prepare_piecewise_rates(df_reac)
+    reaction_matrix = ReactionMatrix(df_reac, df_spec)
+    prepare_surface_reaction_params(
+        df_reac, reaction_matrix.df_spec, df_surf, meta_params, df_act, df_ma, df_barr)
+    df_spec = reaction_matrix.df_spec
+
     if param_names is None:
         param_names = builtin_astrochem_reaction_param_names()
     df_reac_sub = pd.concat([
@@ -78,8 +85,6 @@ def create_three_phase_model(df_reac, df_surf, df_act, df_spec, medium, meta_par
         & (df_reac["formula"] != "surface to mantle")
     df_reac = df_reac[cond]
     reaction_matrix = ReactionMatrix(df_reac, df_spec)
-    prepare_surface_reaction_params(
-        df_reac_sub, df_surf, df_act, reaction_matrix.df_spec, meta_params, specials_barr={'JH': 230.})
     rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
     if formula_dict_1st is None:
         formula_dict_1st = builtin_astrochem_reactions_1st(meta_params)
