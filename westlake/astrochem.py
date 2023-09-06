@@ -36,8 +36,12 @@ def builtin_astrochem_reactions_2nd(meta_params):
     }
 
 
-def create_two_phase_model(reaction_matrix, df_reac, medium, meta_params,
+def create_two_phase_model(df_reac, df_surf, df_act, df_spec, medium, meta_params,
                            param_names=None, formula_dict_1st=None, formula_dict_2nd=None):
+    prepare_piecewise_rates(df_reac)
+    reaction_matrix = ReactionMatrix(df_reac, df_spec)
+    prepare_surface_reaction_params(
+        df_reac, df_surf, df_act, reaction_matrix.df_spec, meta_params, specials_barr={'JH': 230.})
     rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
     if param_names is None:
         param_names = builtin_astrochem_reaction_param_names()
