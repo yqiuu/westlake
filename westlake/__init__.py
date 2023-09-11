@@ -10,3 +10,4 @@ from .solver import *
 from .equation import *
 from .assemblers import *
 from .meta_params import *
+from .analysers import *
