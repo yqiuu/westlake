@@ -7,7 +7,6 @@ import torch
 from torch import nn
 
 from .utils import data_frame_to_tensor_dict
-from .reaction_terms import ReactionTerm
 
 
 class ConstantReactionRate(nn.Module):
@@ -16,19 +15,8 @@ class ConstantReactionRate(nn.Module):
         rate = torch.tensor(rmat.rate_sign*rate[rmat.inds_k], dtype=torch.get_default_dtype())
         self.register_buffer("rate", rate)
 
-    def forward(self, t_in, params_med=None):
+    def forward(self):
         return self.rate
-
-
-def create_constant_rate_model(reaction_matrix, df_reac):
-    rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
-    rate_1st = ConstantReactionRate(rmat_1st, df_reac["rate"].values)
-    rate_2nd = ConstantReactionRate(rmat_2nd, df_reac["rate"].values)
-    # The rate signs are included in the rates, and therefore, they are
-    # unnecessary.
-    rmat_1st.rate_sign = None
-    rmat_2nd.rate_sign = None
-    return ReactionTerm(rmat_1st, rate_1st, rmat_2nd, rate_2nd)
 
 
 class FormulaDictReactionModule(nn.Module):

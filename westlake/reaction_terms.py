@@ -12,9 +12,39 @@ from .reaction_matrices import ReactionMatrix
 from .assemblers import Assembler
 
 
-class ReactionTerm(nn.Module):
+class ConstantRateTerm(nn.Module):
+    def __init__(self, rmat_1st, rmod_1st, rmat_2nd, rmod_2nd):
+        super(ConstantRateTerm, self).__init__()
+        self.register_reactions("1st", rmat_1st, rmod_1st)
+        self.register_reactions("2nd", rmat_2nd, rmod_2nd)
+        self.inds_id_1st = rmat_1st.inds_id_uni
+        self.inds_id_2nd = rmat_2nd.inds_id_uni
+
+    def register_reactions(self, postfix, rmat, rmod):
+        setattr(self, f"asm_{postfix}", Assembler(rmat))
+        setattr(self, f"rmod_{postfix}", rmod)
+
+    def forward(self, t_in, y_in):
+        den_norm = 1.
+        rates_1st, rates_2nd = self.compute_rates()
+        return self.asm_1st(y_in, rates_1st, den_norm) \
+            + self.asm_2nd(y_in, rates_2nd, den_norm)
+
+    def jacobian(self, t_in, y_in):
+        den_norm = 1.
+        rates_1st, rates_2nd = self.compute_rates()
+        return self.asm_1st.jacobain(y_in, rates_1st, den_norm) \
+            + self.asm_2nd.jacobain(y_in, rates_2nd, den_norm)
+
+    def compute_rates(self):
+        rates_1st = self.rmod_1st()
+        rates_2nd = self.rmod_2nd()
+        return rates_1st, rates_2nd
+
+
+class TwoPhaseTerm(nn.Module):
     def __init__(self, rmat_1st, rmod_1st, rmat_2nd, rmod_2nd, module_med=None):
-        super(ReactionTerm, self).__init__()
+        super(TwoPhaseTerm, self).__init__()
         if module_med is None \
             or isinstance(module_med, TensorDict) or isinstance(module_med, nn.Module):
             self.module_med = module_med

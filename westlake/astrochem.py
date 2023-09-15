@@ -8,7 +8,8 @@ from .surface_reactions import (
 from .preprocesses import prepare_piecewise_rates
 from .medium import SequentialMedium, ThermalHoppingRate
 from .reaction_matrices import ReactionMatrix
-from .reaction_terms import ReactionTerm, ThreePhaseTerm
+from .reaction_rates import ConstantReactionRate
+from .reaction_terms import ConstantRateTerm, TwoPhaseTerm, ThreePhaseTerm
 
 import pandas as pd
 
@@ -36,6 +37,17 @@ def builtin_astrochem_reactions_2nd(meta_params):
     }
 
 
+def create_constant_rate_model(reaction_matrix, df_reac):
+    rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
+    rate_1st = ConstantReactionRate(rmat_1st, df_reac["rate"].values)
+    rate_2nd = ConstantReactionRate(rmat_2nd, df_reac["rate"].values)
+    # The rate signs are included in the rates, and therefore, they are
+    # unnecessary.
+    rmat_1st.rate_sign = None
+    rmat_2nd.rate_sign = None
+    return ConstantRateTerm(rmat_1st, rate_1st, rmat_2nd, rate_2nd)
+
+
 def create_two_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
                            df_act=None, df_ma=None, df_barr=None,
                            param_names=None, formula_dict_1st=None, formula_dict_2nd=None):
@@ -57,7 +69,7 @@ def create_two_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
         df_reac, reaction_matrix.df_spec, rmat_2nd, formula_dict_2nd, param_names
     )
     medium = add_hopping_rate_module(medium, reaction_matrix.df_spec, meta_params)
-    return ReactionTerm(rmat_1st, rmod_1st, rmat_2nd, rmod_2nd, medium)
+    return TwoPhaseTerm(rmat_1st, rmod_1st, rmat_2nd, rmod_2nd, medium)
 
 
 def create_three_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
