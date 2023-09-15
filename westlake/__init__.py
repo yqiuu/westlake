@@ -7,7 +7,7 @@ from .gas_reactions import *
 from .astrochem import *
 from .medium import *
 from .solver import *
-from .equation import *
+from .reaction_terms import *
 from .assemblers import *
 from .meta_params import *
 from .analysers import *

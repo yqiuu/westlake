@@ -7,7 +7,7 @@ import torch
 from torch import nn
 
 from .utils import data_frame_to_tensor_dict
-from .equation import ReactionTerm
+from .reaction_terms import ReactionTerm
 
 
 class ConstantReactionRate(nn.Module):

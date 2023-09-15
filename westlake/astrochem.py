@@ -8,7 +8,7 @@ from .surface_reactions import (
 from .preprocesses import prepare_piecewise_rates
 from .medium import SequentialMedium, ThermalHoppingRate
 from .reaction_matrices import ReactionMatrix
-from .equation import ReactionTerm, ThreePhaseTerm
+from .reaction_terms import ReactionTerm, ThreePhaseTerm
 
 import pandas as pd
 
