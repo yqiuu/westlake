@@ -32,8 +32,7 @@ def solve_robertson_problem():
         ["B", "C", "A;C", 1e4]
     ]
     df_reac = pd.DataFrame(reactions, columns=["reactant_1", "reactant_2", "products", "rate"])
-    reaction_matrix = westlake.ReactionMatrix(df_reac)
-    reaction_term = westlake.create_constant_rate_model(reaction_matrix, df_reac)
+    reaction_term = westlake.create_constant_rate_model(df_reac)
 
     # Solve the problem
     t_begin = 0.

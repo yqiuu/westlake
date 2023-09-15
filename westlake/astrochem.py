@@ -37,7 +37,8 @@ def builtin_astrochem_reactions_2nd(meta_params):
     }
 
 
-def create_constant_rate_model(reaction_matrix, df_reac):
+def create_constant_rate_model(df_reac):
+    reaction_matrix = ReactionMatrix(df_reac)
     rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
     rate_1st = ConstantReactionRate(rmat_1st, df_reac["rate"].values)
     rate_2nd = ConstantReactionRate(rmat_2nd, df_reac["rate"].values)
