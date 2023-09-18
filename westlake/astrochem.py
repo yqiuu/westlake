@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from .reaction_rates import create_formula_dict_reaction_module, create_surface_mantle_transition
@@ -11,6 +12,7 @@ from .preprocesses import prepare_piecewise_rates
 from .medium import SequentialMedium, ThermalHoppingRate
 from .reaction_matrices import ReactionMatrix
 from .reaction_terms import TwoPhaseTerm, ThreePhaseTerm
+from .solver import solve_rate_equation
 
 
 def builtin_astrochem_reaction_param_names():
@@ -133,3 +135,49 @@ def add_hopping_rate_module(medium, df_spec, meta_params):
     else:
         medium = SequentialMedium(medium, module)
     return medium
+
+
+def solve_rate_equation_astrochem(reaction_term, t_span, ab_0_dict, df_spec, meta_params,
+                                  t_eval=None, device="cpu", show_progress=True):
+    ab_0 = dervie_initial_abundances(ab_0_dict, df_spec, meta_params)
+    res = solve_rate_equation(
+        reaction_term, t_span, ab_0,
+        method=meta_params.solver,
+        rtol=meta_params.rtol,
+        atol=meta_params.atol,
+        t_eval=t_eval,
+        u_factor=meta_params.to_second,
+        device=device,
+        show_progress=show_progress
+    )
+    return res
+
+
+def dervie_initial_abundances(ab_0_dict, spec_table, meta_params):
+    """Derive the initial abundances of grains and electrons.
+
+    Args:
+        ab_0 (dict): Initial abundance of each specie.
+        spec_table (pd.DataFrame): Specie table.
+        meta_params (MetaParameters): Meta parameters.
+        ab_0_min (float, optional): Mimimum initial abundances. Defaults to 0.
+        dtype (str, optional): Data type of the return abundances. Defaults to 'tuple'.
+
+    Returns:
+        tuple: Initial abundances.
+    """
+    if not all(np.in1d(list(ab_0_dict.keys()), spec_table.index.values)):
+        raise ValueError("Find unrecognized species in 'ab_0'.")
+
+    ab_0 = np.full(len(spec_table), meta_params.ab_0_min)
+    ab_0[spec_table.loc[ab_0_dict.keys()]["index"].values] = list(ab_0_dict.values())
+
+    # Derive the grain abundances
+    ab_0[spec_table.loc["GRAIN0", "index"]] = meta_params.dtg_mass_ratio_0/meta_params.grain_mass
+    ab_0[spec_table.loc["GRAIN-", "index"]] = 0.
+
+    # Derive the electron abundance aussming the system is neutral
+    ab_0[spec_table.loc["e-", "index"]] = 0.
+    ab_0[spec_table.loc["e-", "index"]] = np.sum(spec_table["charge"].values*ab_0)
+
+    return ab_0

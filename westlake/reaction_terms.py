@@ -1,14 +1,8 @@
-import numpy as np
-import pandas as pd
 import torch
 from torch import nn
 from torch.func import jacrev
 
-from dataclasses import dataclass
-
-from .utils import TensorDict, data_frame_to_tensor_dict
-from .meta_params import MetaParameters
-from .reaction_matrices import ReactionMatrix
+from .utils import TensorDict
 from .assemblers import Assembler
 
 
@@ -183,33 +177,3 @@ class ThreePhaseTerm(nn.Module):
             rates[:, inds_id_2nd] = rates_2nd[:, self.rmod_2nd.inds_reac]
         rates = rates.T.squeeze()
         return rates
-
-
-def dervie_initial_abundances(ab_0_dict, spec_table, meta_params):
-    """Derive the initial abundances of grains and electrons.
-
-    Args:
-        ab_0 (dict): Initial abundance of each specie.
-        spec_table (pd.DataFrame): Specie table.
-        meta_params (MetaParameters): Meta parameters.
-        ab_0_min (float, optional): Mimimum initial abundances. Defaults to 0.
-        dtype (str, optional): Data type of the return abundances. Defaults to 'tuple'.
-
-    Returns:
-        tuple: Initial abundances.
-    """
-    if not all(np.in1d(list(ab_0_dict.keys()), spec_table.index.values)):
-        raise ValueError("Find unrecognized species in 'ab_0'.")
-
-    ab_0 = np.full(len(spec_table), meta_params.ab_0_min)
-    ab_0[spec_table.loc[ab_0_dict.keys()]["index"].values] = list(ab_0_dict.values())
-
-    # Derive the grain abundances
-    ab_0[spec_table.loc["GRAIN0", "index"]] = meta_params.dtg_mass_ratio_0/meta_params.grain_mass
-    ab_0[spec_table.loc["GRAIN-", "index"]] = 0.
-
-    # Derive the electron abundance aussming the system is neutral
-    ab_0[spec_table.loc["e-", "index"]] = 0.
-    ab_0[spec_table.loc["e-", "index"]] = np.sum(spec_table["charge"].values*ab_0)
-
-    return ab_0

@@ -34,8 +34,10 @@ class MetaParameters:
             frequency to the frequency at which energy is lost to the grain
             surface (Garrod el al. 2007).
 
-        to_second: A unit factor that converts the desired unit to second. The
+        to_second (float): A unit factor that converts the desired unit to second. The
             default value converts year to second.
+
+        method (str): ODE solver.
         rtol (float): Relative tolerance.
         atol (float): Ababsolute tolerance.
     """
@@ -68,8 +70,9 @@ class MetaParameters:
     to_second: float = units.year.to(units.second)
 
     # Numerics
+    solver: str = "LSODA"
     rtol: float = 1e-4
-    atol: float = 1e-30
+    atol: float = 1e-20
 
     @property
     def grain_mass(self):

@@ -1,13 +1,10 @@
 import torch
-from torch.autograd.functional import jacobian
 from scipy.integrate import solve_ivp
 
 
-def solve_kinetic(reaction_term, t_span, ab_0,
-                  meta_params=None, t_eval=None, device='cpu', show_progress=True, **kwargs):
+def solve_rate_equation(reaction_term, t_span, ab_0, method="LSODA", rtol=1e-4, atol=1e-20,
+                        t_eval=None, u_factor=1., device="cpu", show_progress=True):
     reaction_term.to(device)
-
-    u_factor = 1. if meta_params is None else meta_params.to_second
     dtype = torch.get_default_dtype()
 
     def wrapper(t_in, y_in):
@@ -42,9 +39,7 @@ def solve_kinetic(reaction_term, t_span, ab_0,
         "method": "BDF",
         "vectorized": True,
     }
-    if meta_params is not None:
-        kwargs_.update(rtol=meta_params.rtol, atol=meta_params.atol)
-    kwargs_.update(**kwargs)
+    kwargs_.update(method=method, rtol=rtol, atol=atol)
 
     res = solve_ivp(wrapper, t_span, ab_0, jac=wrapper_jac, **kwargs_)
     res.t /= u_factor

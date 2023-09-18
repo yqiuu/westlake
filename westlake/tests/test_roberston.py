@@ -31,7 +31,9 @@ def solve_robertson_problem():
         ["B", "B", "C;B", 3e7],
         ["B", "C", "A;C", 1e4]
     ]
-    df_reac = pd.DataFrame(reactions, columns=["reactant_1", "reactant_2", "products", "rate"])
+    df_reac = pd.DataFrame(
+        reactions, columns=["reactant_1", "reactant_2", "products", "rate"]
+    )
     df_spec = westlake.prepare_specie_table(df_reac)
     reaction_term = westlake.create_constant_rate_model(df_reac, df_spec)
 
@@ -42,7 +44,10 @@ def solve_robertson_problem():
     t_span = (t_begin, t_end)
     t_eval = np.linspace(t_begin, t_end, n_eval)
     ab_0 = np.array([1., 0., 0.])
-    res = westlake.solve_kinetic(reaction_term, t_span, ab_0, t_eval=t_eval, atol=ATOL)
+    res = westlake.solve_rate_equation(
+        reaction_term, t_span, ab_0, t_eval=t_eval,
+        method="BDF", rtol=1e-3, atol=ATOL
+    )
     return res
 
 
