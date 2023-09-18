@@ -34,8 +34,11 @@ def prepare_specie_table(df_reac, df_spec=None):
 
     df_spec_new = df_spec.copy()
     df_spec_new = df_spec_new.loc[specie_list]
+    inds = np.arange(len(specie_list))
     if "index" not in df_spec.columns:
-        df_spec_new.insert(0, "index", np.arange(len(specie_list)))
+        df_spec_new.insert(0, "index", inds)
+    else:
+        df_spec_new["index"] = inds
     return df_spec_new
 
 
