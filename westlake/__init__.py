@@ -11,3 +11,4 @@ from .reaction_terms import *
 from .assemblers import *
 from .meta_params import *
 from .analysers import *
+from .misc import *

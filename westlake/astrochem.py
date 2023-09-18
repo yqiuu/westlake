@@ -1,3 +1,5 @@
+import pandas as pd
+
 from .reaction_rates import create_formula_dict_reaction_module, create_surface_mantle_transition
 from .gas_reactions import builtin_gas_reactions_1st, builtin_gas_reactions_2nd
 from .surface_reactions import (
@@ -8,10 +10,7 @@ from .surface_reactions import (
 from .preprocesses import prepare_piecewise_rates
 from .medium import SequentialMedium, ThermalHoppingRate
 from .reaction_matrices import ReactionMatrix
-from .reaction_rates import ConstantReactionRate
-from .reaction_terms import ConstantRateTerm, TwoPhaseTerm, ThreePhaseTerm
-
-import pandas as pd
+from .reaction_terms import TwoPhaseTerm, ThreePhaseTerm
 
 
 def builtin_astrochem_reaction_param_names():
@@ -35,18 +34,6 @@ def builtin_astrochem_reactions_2nd(meta_params):
         **builtin_gas_reactions_2nd(meta_params),
         **builtin_surface_reactions_2nd(meta_params)
     }
-
-
-def create_constant_rate_model(df_reac, df_spec=None, den_norm=None):
-    reaction_matrix = ReactionMatrix(df_reac, df_spec)
-    rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
-    rate_1st = ConstantReactionRate(rmat_1st, df_reac["rate"].values)
-    rate_2nd = ConstantReactionRate(rmat_2nd, df_reac["rate"].values)
-    # The rate signs are included in the rates, and therefore, they are
-    # unnecessary.
-    rmat_1st.rate_sign = None
-    rmat_2nd.rate_sign = None
-    return ConstantRateTerm(rmat_1st, rate_1st, rmat_2nd, rate_2nd, den_norm)
 
 
 def create_two_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
