@@ -55,21 +55,21 @@ def create_two_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
     prepare_piecewise_rates(df_reac)
     reaction_matrix = ReactionMatrix(df_reac, df_spec)
     prepare_surface_reaction_params(
-        df_reac, reaction_matrix.df_spec, df_surf, meta_params, df_act, df_ma, df_barr)
+        df_reac, df_spec, df_surf, meta_params, df_act, df_ma, df_barr)
     rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
     if param_names is None:
         param_names = builtin_astrochem_reaction_param_names()
     if formula_dict_1st is None:
         formula_dict_1st = builtin_astrochem_reactions_1st(meta_params)
     rmod_1st, rmat_1st = create_formula_dict_reaction_module(
-        df_reac, reaction_matrix.df_spec, rmat_1st, formula_dict_1st, param_names
+        df_reac, df_spec, rmat_1st, formula_dict_1st, param_names
     )
     if formula_dict_2nd is None:
         formula_dict_2nd = builtin_astrochem_reactions_2nd(meta_params)
     rmod_2nd, rmat_2nd = create_formula_dict_reaction_module(
-        df_reac, reaction_matrix.df_spec, rmat_2nd, formula_dict_2nd, param_names
+        df_reac, df_spec, rmat_2nd, formula_dict_2nd, param_names
     )
-    medium = add_hopping_rate_module(medium, reaction_matrix.df_spec, meta_params)
+    medium = add_hopping_rate_module(medium, df_spec, meta_params)
     return TwoPhaseTerm(rmat_1st, rmod_1st, rmat_2nd, rmod_2nd, medium)
 
 
@@ -79,8 +79,7 @@ def create_three_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
     prepare_piecewise_rates(df_reac)
     reaction_matrix = ReactionMatrix(df_reac, df_spec)
     prepare_surface_reaction_params(
-        df_reac, reaction_matrix.df_spec, df_surf, meta_params, df_act, df_ma, df_barr)
-    df_spec = reaction_matrix.df_spec
+        df_reac, df_spec, df_surf, meta_params, df_act, df_ma, df_barr)
 
     if param_names is None:
         param_names = builtin_astrochem_reaction_param_names()
@@ -91,7 +90,7 @@ def create_three_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
     reaction_matrix = ReactionMatrix(df_reac_sub, df_spec)
     rmat_1st, _ = reaction_matrix.create_index_matrices()
     rmod_smt, rmat_smt = create_surface_mantle_transition(
-        df_reac_sub, reaction_matrix.df_spec, rmat_1st, param_names, meta_params
+        df_reac_sub, df_spec, rmat_1st, param_names, meta_params
     )
 
     cond = (df_reac["formula"] != "mantle to surface") \
@@ -102,14 +101,14 @@ def create_three_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
     if formula_dict_1st is None:
         formula_dict_1st = builtin_astrochem_reactions_1st(meta_params)
     rmod_1st, rmat_1st = create_formula_dict_reaction_module(
-        df_reac, reaction_matrix.df_spec, rmat_1st, formula_dict_1st, param_names
+        df_reac, df_spec, rmat_1st, formula_dict_1st, param_names
     )
     if formula_dict_2nd is None:
         formula_dict_2nd = builtin_astrochem_reactions_2nd(meta_params)
     rmod_2nd, rmat_2nd = create_formula_dict_reaction_module(
-        df_reac, reaction_matrix.df_spec, rmat_2nd, formula_dict_2nd, param_names
+        df_reac, df_spec, rmat_2nd, formula_dict_2nd, param_names
     )
-    medium = add_hopping_rate_module(medium, reaction_matrix.df_spec, meta_params)
+    medium = add_hopping_rate_module(medium, df_spec, meta_params)
 
     rmat_1st_surf, rmat_1st_other = split_surface_reactions(df_reac, rmat_1st)
     rmat_1st_surf_gain, rmat_1st_surf_loss = split_gain_loss(rmat_1st_surf)

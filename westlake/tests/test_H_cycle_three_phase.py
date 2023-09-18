@@ -24,8 +24,8 @@ def test_H_cycle():
 def solve_H_cycle():
     fname = get_fname("H_cycle_three_phase.h5")
     df_reac = pd.read_hdf(fname, key="reactions")
+    df_spec = westlake.prepare_specie_table(df_reac, pd.read_hdf(fname, key="species"))
     df_surf = pd.read_hdf(fname, key="surface_parameters")
-    df_spec = pd.read_hdf(fname, key="species")
     df_barr = pd.DataFrame([230.], index=["JH"], columns=["E_barr"])
 
     meta_params = westlake.MetaParameters(atol=ATOL, ab_0_min=1e-40)

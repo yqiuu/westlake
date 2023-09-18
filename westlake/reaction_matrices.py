@@ -1,7 +1,6 @@
 from dataclasses import dataclass, replace
 
 import numpy as np
-import pandas as pd
 
 
 @dataclass
@@ -49,19 +48,14 @@ class ReactionMat:
 
 
 class ReactionMatrix:
-    def __init__(self, df_reac, df_spec=None):
-        species, self._rmat_1st, self._rmat_2nd = self._derive_indices(
+    def __init__(self, df_reac, df_spec):
+        _, self._rmat_1st, self._rmat_2nd = self._derive_indices(
             df_reac.index.values,
             df_reac["reactant_1"].values,
             df_reac["reactant_2"].values,
             df_reac["products"].values,
         )
-        df_spec_new = self._create_specie_table(species, df_spec)
-        self._df_spec = df_spec_new
-
-    @property
-    def df_spec(self):
-        return self._df_spec
+        self._df_spec = df_spec
 
     def create_index_matrices(self):
         """Convert specie names to indices for both reaction matrices."""
@@ -156,16 +150,3 @@ class ReactionMatrix:
             inds_p=np.array(inds_p_2nd),
         )
         return species, rmat_1st, rmat_2nd
-
-    def _create_specie_table(self, species, df_spec):
-        if df_spec is not None:
-            assert species.issubset(set(df_spec.index.values))
-            if "index" not in df_spec.columns:
-                df_spec_new = df_spec.copy()
-                df_spec_new.insert(0, "index", np.arange(len(df_spec)))
-            else:
-                df_spec_new = df_spec
-            return df_spec_new
-        species = list(species)
-        species.sort()
-        return pd.DataFrame(np.arange(len(species)), index=species, columns=['index'])
