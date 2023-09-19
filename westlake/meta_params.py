@@ -41,8 +41,7 @@ class MetaParameters:
         rtol (float): Relative tolerance.
         atol (float): Ababsolute tolerance.
     """
-    # Initial abundances
-    ab_0_min: float = 0.
+    model: str
 
     # Grain parameters
     T_dust_0: float = 10.
@@ -66,13 +65,24 @@ class MetaParameters:
     num_active_layers: float = 2.
     uv_flux: float = 1.
 
-    #
-    to_second: float = units.year.to(units.second)
+    # Physcial parameters
+    use_static_medium: bool = True
+    Av: float = 10.
+    den_gas: float = 2.e+4
+    T_gas: float = 10.
+    T_dust: float = 10
 
     # Numerics
+    t_start: float = 0.
+    t_end: float = 1.e+6
     solver: str = "LSODA"
     rtol: float = 1e-4
     atol: float = 1e-20
+    ab_0_min: float = 0.
+
+    #
+    to_second: float = units.year.to(units.second)
+
 
     @property
     def grain_mass(self):

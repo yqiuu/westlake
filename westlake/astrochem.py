@@ -9,7 +9,7 @@ from .surface_reactions import (
     prepare_surface_reaction_params
 )
 from .preprocesses import prepare_piecewise_rates
-from .medium import SequentialMedium, ThermalHoppingRate
+from .medium import StaticMedium, SequentialMedium, ThermalHoppingRate
 from .reaction_matrices import ReactionMatrix
 from .reaction_terms import TwoPhaseTerm, ThreePhaseTerm
 from .solver import solve_rate_equation
@@ -36,6 +36,35 @@ def builtin_astrochem_reactions_2nd(meta_params):
         **builtin_gas_reactions_2nd(meta_params),
         **builtin_surface_reactions_2nd(meta_params)
     }
+
+
+def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
+                           df_act=None, df_ma=None, df_barr=None,
+                           param_names=None, formula_dict_1st=None, formula_dict_2nd=None):
+    if meta_params.use_static_medium:
+        medium = StaticMedium({
+            'Av': meta_params.Av,
+            "den_gas": meta_params.den_gas,
+            "T_gas": meta_params.T_gas,
+            "T_dust": meta_params.T_dust
+        })
+    else:
+        raise NotImplementedError("Only static medium is implemented.")
+
+    if meta_params.model == "two phase":
+        return create_two_phase_model(
+            df_reac, df_spec, df_surf, medium, meta_params,
+            df_act, df_ma, df_barr, param_names,
+            formula_dict_1st, formula_dict_2nd
+        )
+    elif meta_params.model == "three phase":
+        return create_three_phase_model(
+            df_reac, df_spec, df_surf, medium, meta_params,
+            df_act, df_ma, df_barr, param_names,
+            formula_dict_1st, formula_dict_2nd
+        )
+    else:
+        raise ValueError(f"Unknown model: {meta_params.model}")
 
 
 def create_two_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
@@ -137,9 +166,11 @@ def add_hopping_rate_module(medium, df_spec, meta_params):
     return medium
 
 
-def solve_rate_equation_astrochem(reaction_term, t_span, ab_0_dict, df_spec, meta_params,
-                                  t_eval=None, device="cpu", show_progress=True):
+def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, meta_params,
+                                  t_span=None, t_eval=None, device="cpu", show_progress=True):
     ab_0 = dervie_initial_abundances(ab_0_dict, df_spec, meta_params)
+    if t_span is None:
+        t_span = (meta_params.t_start, meta_params.t_end)
     res = solve_rate_equation(
         reaction_term, t_span, ab_0,
         method=meta_params.solver,
