@@ -167,15 +167,22 @@ def add_hopping_rate_module(medium, df_spec, meta_params):
 
 
 def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, meta_params,
-                                  t_span=None, t_eval=None, device="cpu", show_progress=True):
+                                  t_span=None, t_eval=None, method=None, rtol=None, atol=None,
+                                  device="cpu", show_progress=True):
     ab_0 = dervie_initial_abundances(ab_0_dict, df_spec, meta_params)
     if t_span is None:
         t_span = (meta_params.t_start, meta_params.t_end)
+    if method is None:
+        method = meta_params.solver
+    if rtol is None:
+        rtol = meta_params.rtol
+    if atol is None:
+        atol = meta_params.atol
     res = solve_rate_equation(
         reaction_term, t_span, ab_0,
-        method=meta_params.solver,
-        rtol=meta_params.rtol,
-        atol=meta_params.atol,
+        method=method,
+        rtol=rtol,
+        atol=atol,
         t_eval=t_eval,
         u_factor=meta_params.to_second,
         device=device,
