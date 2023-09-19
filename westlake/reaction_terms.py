@@ -78,7 +78,7 @@ class TwoPhaseTerm(nn.Module):
         rates_2nd = self.rmod_2nd(t_in, params_med)
         return rates_1st, rates_2nd, den_norm
 
-    def reproduce_reaction_rates(self, t_in=None):
+    def reproduce_rate_coeffs(self, t_in=None, y_in=None):
         if t_in is None:
             t_in = torch.tensor([0.])
 
@@ -164,7 +164,7 @@ class ThreePhaseTerm(nn.Module):
         )
         return rates_smt, rates_1st, rates_2nd, den_norm
 
-    def reproduce_reaction_rates(self, t_in, y_in):
+    def reproduce_rate_coeffs(self, t_in, y_in):
         inds_id_smt = self.inds_id_smt
         inds_id_1st = self.inds_id_1st
         inds_id_2nd = self.inds_id_2nd
