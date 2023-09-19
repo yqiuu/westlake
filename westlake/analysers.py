@@ -19,19 +19,52 @@ class MainReactionTracer:
         self._rates = rates
         self._time = time
 
-
-    def trace(self, specie, t_form, percent_cut=1, rate_cut=0.):
-        cond = self._df_reac["products"].map(lambda specs: specie in specs)
-        if np.count_nonzero(cond) == 0:
-            raise ValueError(f"{specie} does not exist.")
-
-        df_sub = self._df_reac.loc[cond]
-        rates = self._rates[cond]
-        percents = rates/rates.sum(axis=0, keepdims=True)*100.
+    def trace_instant(self, specie, t_form, percent_cut=1., rate_cut=0.):
+        cond_prod, cond_dest = self._select_prod_dest(specie)
 
         idx_t = np.argmin(np.abs(t_form - self._time))
-        rates = rates[:, idx_t]
-        percents = percents[:, idx_t]
+        print("idx_t = {}, t = {:.3e}".format(idx_t, self._time[idx_t]))
+
+        print("Production")
+        self._trace(cond_prod, percent_cut, rate_cut, idx_t)
+        print("\nDestruction")
+        self._trace(cond_dest, percent_cut, rate_cut, idx_t)
+
+    def trace_period(self, specie, t_start, t_end, percent_cut=1., rate_cut=0.):
+        cond_prod, cond_dest = self._select_prod_dest(specie)
+
+        idx_start = np.argmin(np.abs(t_start - self._time))
+        print("idx_start = {}, t = {:.3e}".format(idx_start, self._time[idx_start]))
+        idx_end = np.argmin(np.abs(t_end - self._time))
+        print("idx_end = {}, t = {:.3e}".format(idx_end, self._time[idx_end]))
+        if idx_end <= idx_start:
+            raise ValueError("'t_end' should be greater than 't_start'.")
+
+        print("Production")
+        self._trace(cond_prod, percent_cut, rate_cut, idx_start, idx_end)
+        print("\nDestruction")
+        self._trace(cond_dest, percent_cut, rate_cut, idx_start, idx_end)
+
+    def _select_prod_dest(self, specie):
+        df_reac = self._df_reac
+        cond_prod = df_reac["products"].map(lambda specs: specie in specs)
+        cond_dest = (df_reac["reactant_1"] == specie) \
+            | (df_reac["reactant_2"] == specie)
+        if np.count_nonzero(cond_prod) + np.count_nonzero(cond_dest) == 0:
+            raise ValueError(f"{specie} does not exist.")
+        return cond_prod, cond_dest
+
+    def _trace(self, cond, percent_cut, rate_cut, idx_start, idx_end=None):
+        df_sub = self._df_reac.loc[cond]
+        rates = self._rates[cond]
+
+        if idx_end is None:
+            rates = rates[:, idx_start]
+        else:
+            time = self._time
+            rates = np.trapz(rates[:, idx_start : idx_end+1], time[idx_start : idx_end+1], axis=-1)
+            rates = rates/(time[idx_end] - time[idx_start])
+        percents = rates/rates.sum(axis=0, keepdims=True)*100.
 
         cond = (percents > percent_cut) & (rates > rate_cut)
         rates = rates[cond]
@@ -43,7 +76,6 @@ class MainReactionTracer:
         percents = percents[inds]
         df_sub = df_sub.iloc[inds]
 
-        print("idx_t = {}, t = {:.3e}".format(idx_t, self._time[idx_t]))
         for idx, reac, rate, percent in zip(df_sub.index, df_sub["key"], rates, percents):
             reac = reac.replace(";", " + ")
             reac = reac.replace(">", " > ")
