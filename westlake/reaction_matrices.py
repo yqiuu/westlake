@@ -63,8 +63,8 @@ class ReactionMatrix:
 
         rmat_1st = self._rmat_1st
         if len(rmat_1st.inds_id) > 0:
-            inds_r_1st = df_spec.loc[rmat_1st.inds_r, "index"].values.ravel()
-            inds_p_1st = df_spec.loc[rmat_1st.inds_p, "index"].values.ravel()
+            inds_r_1st = df_spec.index.get_indexer(rmat_1st.inds_r)
+            inds_p_1st = df_spec.index.get_indexer(rmat_1st.inds_p)
             rmat_1st = replace(rmat_1st, inds_r=inds_r_1st, inds_p=inds_p_1st)
         else:
             rmat_1st = None
@@ -72,10 +72,10 @@ class ReactionMatrix:
         rmat_2nd = self._rmat_2nd
         if len(rmat_2nd.inds_id) > 0:
             inds_r_2nd_ = np.asarray(rmat_2nd.inds_r)
-            inds_r_2nd = np.zeros(inds_r_2nd_.shape, df_spec["index"].dtype)
-            inds_r_2nd[:, 0] = df_spec.loc[inds_r_2nd_[:, 0], "index"].values.ravel()
-            inds_r_2nd[:, 1] = df_spec.loc[inds_r_2nd_[:, 1], "index"].values.ravel()
-            inds_p_2nd = df_spec.loc[rmat_2nd.inds_p, "index"].values.ravel()
+            inds_r_2nd = np.zeros(inds_r_2nd_.shape, dtype="i8")
+            inds_r_2nd[:, 0] = df_spec.index.get_indexer(inds_r_2nd_[:, 0])
+            inds_r_2nd[:, 1] = df_spec.index.get_indexer(inds_r_2nd_[:, 1])
+            inds_p_2nd = df_spec.index.get_indexer(rmat_2nd.inds_p)
             rmat_2nd = replace(rmat_2nd, inds_r=inds_r_2nd, inds_p=inds_p_2nd)
         else:
             rmat_2nd = None

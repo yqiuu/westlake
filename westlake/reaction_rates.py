@@ -145,9 +145,9 @@ def reindex(rmat, inds_id_fm):
 def prepare_params_reac(df_sub, df_spec, rmat, param_names):
     params_reac = data_frame_to_tensor_dict(df_sub[param_names])
     # inds_r is used to extract specie propeties.
-    inds_r = df_spec.loc[df_sub["reactant_1"], "index"].values
+    inds_r = df_spec.index.get_indexer(df_sub["reactant_1"])
     if rmat.order == 2:
-        inds_r = np.vstack([inds_r, df_spec.loc[df_sub["reactant_2"], "index"].values]).T
+        inds_r = np.vstack([inds_r, df_spec.index.get_indexer(df_sub["reactant_2"])]).T
     inds_r = torch.tensor(inds_r)
     params_reac.add("inds_r", inds_r)
     return params_reac
