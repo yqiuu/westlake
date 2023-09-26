@@ -6,7 +6,8 @@ from .gas_reactions import builtin_gas_reactions_1st, builtin_gas_reactions_2nd
 from .surface_reactions import (
     builtin_surface_reactions_1st,
     builtin_surface_reactions_2nd,
-    prepare_surface_reaction_params
+    prepare_surface_reaction_params,
+    NoReaction,
 )
 from .preprocesses import prepare_piecewise_rates
 from .medium import StaticMedium, SequentialMedium, ThermalHoppingRate
@@ -79,6 +80,9 @@ def create_two_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
         param_names = builtin_astrochem_reaction_param_names()
     if formula_dict_1st is None:
         formula_dict_1st = builtin_astrochem_reactions_1st(meta_params)
+    if not meta_params.use_photodesorption:
+        formula_dict_1st["CR photodesorption"] = NoReaction()
+        formula_dict_1st["UV photodesorption"] = NoReaction()
     rmod_1st, rmat_1st = create_formula_dict_reaction_module(
         df_reac, df_spec, rmat_1st, formula_dict_1st, param_names
     )
@@ -101,21 +105,29 @@ def create_three_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
 
     if param_names is None:
         param_names = builtin_astrochem_reaction_param_names()
-    df_reac_smt, df_reac_remain \
-        = split_reac_table_by_formula(df_reac, ["mantle to surface", "surface to mantle"])
+    formula_list = ["mantle to surface", "surface to mantle"]
+    df_reac_smt, df_reac_remain = split_reac_table_by_formula(df_reac, formula_list)
     reaction_matrix = ReactionMatrix(df_reac_smt, df_spec)
     rmat_1st, _ = reaction_matrix.create_index_matrices()
     rmod_smt, rmat_smt = create_surface_mantle_transition(
         df_reac_smt, df_spec, rmat_1st, param_names, meta_params
     )
 
-    reaction_matrix = ReactionMatrix(df_reac_remain, df_spec)
-    rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
     if formula_dict_1st is None:
         formula_dict_1st = builtin_astrochem_reactions_1st(meta_params)
+    if not meta_params.use_photodesorption:
+        rmat_photodeso = None
+        formula_dict_1st["CR photodesorption"] = NoReaction()
+        formula_dict_1st["UV photodesorption"] = NoReaction()
+    reaction_matrix = ReactionMatrix(df_reac_remain, df_spec)
+    rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
     rmod_1st, rmat_1st = create_formula_dict_reaction_module(
         df_reac_remain, df_spec, rmat_1st, formula_dict_1st, param_names
     )
+    if meta_params.use_photodesorption:
+        formula_list = ["CR photodesorption", "UV photodesorption"]
+        rmat_photodeso = extract_by_formula(rmat_1st, df_reac, formula_list)
+
     if formula_dict_2nd is None:
         formula_dict_2nd = builtin_astrochem_reactions_2nd(meta_params)
     rmod_2nd, rmat_2nd = create_formula_dict_reaction_module(
@@ -134,8 +146,9 @@ def create_three_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
 
     return ThreePhaseTerm(
         rmod_smt, rmat_smt,
-        rmod_1st, rmat_1st, rmat_1st_surf_gain, rmat_1st_surf_loss, rmat_1st_other,
-        rmod_2nd, rmat_2nd, rmat_2nd_surf_gain, rmat_2nd_surf_loss, rmat_2nd_other,
+        rmod_1st, rmat_1st, rmat_1st_surf_gain, rmat_1st_surf_loss,
+        rmod_2nd, rmat_2nd, rmat_2nd_surf_gain, rmat_2nd_surf_loss,
+        rmat_photodeso,
         inds_surf, inds_mant, medium
     )
 
@@ -147,14 +160,22 @@ def split_reac_table_by_formula(df_reac, formula_list):
     return df_reac_target, df_reac_remain
 
 
+def extract_by_formula(rmat, df_reac, formula_list):
+    df_sub = df_reac["formula"].loc[rmat.inds_id_uni].values
+    cond = np.full(len(df_sub), False)
+    for formula in formula_list:
+        cond |= df_sub == formula
+    return rmat.extract(cond, use_id_uni=True)
+
+
 def split_surface_reactions(df_reac, rmat):
-    cond = df_reac["key"].loc[rmat.inds_id].map(lambda name: "J" in name)
-    return rmat.split(cond)
+    cond = df_reac["key"].loc[rmat.inds_id_uni].map(lambda name: "J" in name)
+    return rmat.split(cond, use_id_uni=True)
 
 
 def split_gain_loss(rmat):
     cond = rmat.rate_sign > 0
-    return rmat.split(cond)
+    return rmat.split(cond, use_id_uni=False)
 
 
 def add_hopping_rate_module(medium, df_spec, meta_params):
@@ -210,14 +231,14 @@ def dervie_initial_abundances(ab_0_dict, spec_table, meta_params):
         raise ValueError("Find unrecognized species in 'ab_0'.")
 
     ab_0 = np.full(len(spec_table), meta_params.ab_0_min)
-    ab_0[spec_table.loc[ab_0_dict.keys()]["index"].values] = list(ab_0_dict.values())
+    ab_0[spec_table.index.get_indexer(ab_0_dict.keys())] = list(ab_0_dict.values())
 
     # Derive the grain abundances
-    ab_0[spec_table.loc["GRAIN0", "index"]] = meta_params.dtg_mass_ratio_0/meta_params.grain_mass
-    ab_0[spec_table.loc["GRAIN-", "index"]] = 0.
+    ab_0[spec_table.index.get_indexer(["GRAIN0"]).item()] = meta_params.dtg_mass_ratio_0/meta_params.grain_mass
+    ab_0[spec_table.index.get_indexer(["GRAIN-"]).item()] = 0.
 
     # Derive the electron abundance aussming the system is neutral
-    ab_0[spec_table.loc["e-", "index"]] = 0.
-    ab_0[spec_table.loc["e-", "index"]] = np.sum(spec_table["charge"].values*ab_0)
+    ab_0[spec_table.index.get_indexer(["e-"]).item()] = 0.
+    ab_0[spec_table.index.get_indexer(["e-"]).item()] = np.sum(spec_table["charge"].values*ab_0)
 
     return ab_0

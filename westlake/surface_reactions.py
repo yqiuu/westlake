@@ -64,8 +64,11 @@ class UVPhotodesorption(nn.Module):
         self.register_buffer("prefactor",
             torch.tensor(1e8/meta_params.site_density*meta_params.uv_flux))
 
-    def forward(self, params_env, params_reac, **params_extra):
-        return self.prefactor*params_reac["alpha"]*torch.exp(-2.*params_env["Av"])
+    def forward(self, params_env, params_reac, decay_factor=None, **params_extra):
+        rate = self.prefactor*params_reac["alpha"]*torch.exp(-2.*params_env["Av"])
+        if decay_factor is not None:
+            rate = rate*decay_factor
+        return rate
 
 
 class CRPhotodesorption(nn.Module):
@@ -75,8 +78,11 @@ class CRPhotodesorption(nn.Module):
             torch.tensor(1e4/meta_params.site_density*1.3e-17/meta_params.rate_cr_ion)
         )
 
-    def forward(self, params_env, params_reac, **params_extra):
-        return self.prefactor*params_reac["alpha"]
+    def forward(self, params_env, params_reac, decay_factor=None, **params_extra):
+        rate = self.prefactor*params_reac["alpha"]
+        if decay_factor is not None:
+            rate = rate*decay_factor
+        return rate
 
 
 class SurfaceAccretion(nn.Module):

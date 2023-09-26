@@ -28,11 +28,18 @@ class ReactionMat:
     rate_sign: np.ndarray
     inds_r: np.ndarray
     inds_p: np.ndarray
+    inds_reac: np.ndarray = None
 
-    def split(self, cond):
-        return self._split_sub(cond), self._split_sub(~cond)
-
-    def _split_sub(self, cond):
+    def extract(self, cond, use_id_uni):
+        inds_reac = None
+        if use_id_uni:
+            inds_id_uni = self.inds_id_uni[cond]
+            if self.inds_reac is not None:
+                inds_reac = self.inds_reac[cond]
+            tmp = set(inds_id_uni)
+            cond = [idx in tmp for idx in self.inds_id]
+        else:
+            inds_id_uni = self.inds_id_uni
         inds_id = self.inds_id[cond]
         inds_k = self.inds_k[cond]
         if self.rate_sign is None:
@@ -43,8 +50,11 @@ class ReactionMat:
         inds_p = self.inds_p[cond]
         return ReactionMat(
             self.order, self.n_spec, self.inds_id_uni,
-            inds_id, inds_k, rate_sign, inds_r, inds_p
+            inds_id, inds_k, rate_sign, inds_r, inds_p, inds_reac
         )
+
+    def split(self, cond, use_id_uni):
+        return self.extract(cond, use_id_uni), self.extract(~cond, use_id_uni)
 
 
 class ReactionMatrix:

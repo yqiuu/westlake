@@ -65,6 +65,9 @@ class MetaParameters:
     num_active_layers: float = 2.
     uv_flux: float = 1.
 
+    # Switches
+    use_photodesorption: bool = False
+
     # Physcial parameters
     use_static_medium: bool = True
     Av: float = 10.

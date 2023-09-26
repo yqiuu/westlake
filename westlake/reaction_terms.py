@@ -96,9 +96,10 @@ class TwoPhaseTerm(nn.Module):
 
 class ThreePhaseTerm(nn.Module):
     def __init__(self, rmod_smt, rmat_smt,
-                 rmod_1st, rmat_1st, rmat_1st_surf_gain, rmat_1st_surf_loss, rmat_1st_other,
-                 rmod_2nd, rmat_2nd, rmat_2nd_surf_gain, rmat_2nd_surf_loss, rmat_2nd_other,
-                 inds_surf, inds_mant, module_med=None):
+                 rmod_1st, rmat_1st, rmat_1st_surf_gain, rmat_1st_surf_loss,
+                 rmod_2nd, rmat_2nd, rmat_2nd_surf_gain, rmat_2nd_surf_loss,
+                 rmat_photodeso,
+                 inds_surf, inds_mant, module_med):
         super().__init__()
         if module_med is None \
             or isinstance(module_med, TensorDict) or isinstance(module_med, nn.Module):
@@ -113,20 +114,23 @@ class ThreePhaseTerm(nn.Module):
         self.asm_1st = Assembler(rmat_1st)
         self.asm_1st_surf_gain = Assembler(rmat_1st_surf_gain)
         self.asm_1st_surf_loss = Assembler(rmat_1st_surf_loss)
-        self.asm_1st_other = Assembler(rmat_1st_other)
         # Second order reactions
         self.rmod_2nd = rmod_2nd
         self.asm_2nd = Assembler(rmat_2nd)
         self.asm_2nd_surf_gain = Assembler(rmat_2nd_surf_gain)
         self.asm_2nd_surf_loss = Assembler(rmat_2nd_surf_loss)
-        self.asm_2nd_other = Assembler(rmat_2nd_other)
-        #
-        self.register_buffer("inds_surf", torch.tensor(inds_surf))
-        self.register_buffer("inds_mant", torch.tensor(inds_mant))
         #
         self.inds_id_smt = rmat_smt.inds_id_uni
         self.inds_id_1st = rmat_1st.inds_id_uni
         self.inds_id_2nd = rmat_2nd.inds_id_uni
+        # Photodesorption
+        if rmat_photodeso is not None:
+            self.register_buffer("inds_id_photodeso", torch.as_tensor(rmat_photodeso.inds_reac))
+        else:
+            self.inds_id_photodeso = None
+        #
+        self.register_buffer("inds_surf", torch.tensor(inds_surf))
+        self.register_buffer("inds_mant", torch.tensor(inds_mant))
 
     def forward(self, t_in, y_in, **params_extra):
         rates_smt, rates_1st, rates_2nd, den_norm = self.compute_rates(t_in, y_in)
@@ -138,14 +142,21 @@ class ThreePhaseTerm(nn.Module):
         return jacrev(self, argnums=1)(t_in, y_in)
 
     def compute_rates(self, t_in, y_in, **params_extra):
-        if self.module_med is None:
-            params_med = None
-            den_norm = None
-        else:
-            params_med = self.module_med(t_in, **params_extra)
-            den_norm = params_med['den_gas']
+        params_med = self.module_med(t_in, **params_extra)
+        den_norm = params_med['den_gas']
         rates_1st = self.rmod_1st(t_in, params_med)
         rates_2nd = self.rmod_2nd(t_in, params_med)
+
+        y_in = torch.atleast_2d(y_in)
+        y_surf = y_in[:, self.inds_surf].sum(dim=-1, keepdim=True)
+        y_mant = y_in[:, self.inds_mant].sum(dim=-1, keepdim=True)
+
+        if self.inds_id_photodeso is not None:
+            decay_factor = torch.minimum(
+                1./(self.rmod_smt.alpha_gain*(y_surf + y_mant)),
+                torch.ones_like(y_surf)
+            )
+            rates_1st[:, self.inds_id_photodeso] = rates_1st[:, self.inds_id_photodeso]*decay_factor
 
         y_in = torch.atleast_2d(y_in)
         rates_1st = torch.atleast_2d(rates_1st)
@@ -157,10 +168,10 @@ class ThreePhaseTerm(nn.Module):
 
         dy_1st_loss = self.asm_1st_surf_loss(y_in, rates_1st, den_norm)[:, self.inds_surf]
         dy_2nd_loss = self.asm_2nd_surf_loss(y_in, rates_2nd, den_norm)[:, self.inds_surf]
-        dy_surf_loss = -torch.sum(dy_1st_loss + dy_2nd_loss, dim=-1, keepdim=True)
 
+        dy_surf_loss = -torch.sum(dy_1st_loss + dy_2nd_loss, dim=-1, keepdim=True)
         rates_smt = self.rmod_smt(
-            params_med, y_in, self.inds_surf, self.inds_mant, dy_surf_gain, dy_surf_loss,
+            params_med, y_in, self.inds_mant, y_surf, y_mant, dy_surf_gain, dy_surf_loss,
         )
         return rates_smt, rates_1st, rates_2nd, den_norm
 
