@@ -119,9 +119,14 @@ def clamp_gas_temperature(params_env, params_reac):
     T_gas = params_env["T_gas"] # (B, 1)
     cond_ge = T_gas >= T_min
     cond_lt = T_gas < T_max
-    mask_T = (cond_ge | is_leftmost) & (cond_lt | is_rightmost)
-    mask_T = mask_T.type(T_gas.dtype)
+    factor_0 = (cond_ge | is_leftmost) & (cond_lt | is_rightmost)
+    factor_0 = factor_0.type(T_gas.dtype)
+    width = 1.
+    factor_1 = F.hardtanh((T_gas - T_min)/width + 1, min_val=0.) \
+        * F.hardtanh((T_max - T_gas)/width + 1, min_val=0.)
+    factor_T = torch.maximum(factor_0, factor_1)
+
     T_gas = T_gas.repeat(1, T_min.shape[0]) # (B, R)
     T_gas = torch.where(cond_ge, T_gas, T_min)
     T_gas = torch.where(cond_lt, T_gas, T_max)
-    return T_gas, mask_T
+    return T_gas, factor_T
