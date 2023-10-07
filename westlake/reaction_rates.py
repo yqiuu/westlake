@@ -20,15 +20,12 @@ class ConstantReactionRate(nn.Module):
 
 
 class FormulaDictReactionModule(nn.Module):
-    def __init__(self, rmat, formula_dict, inds_fm_dict, params_reac, inds_reac):
+    def __init__(self, formula_dict, inds_fm_dict, params_reac, inds_reac):
         super(FormulaDictReactionModule, self).__init__()
-        self.order = rmat.order
         for i_fm, inds in enumerate(inds_fm_dict.values()):
             setattr(self, f"_params_reac_{i_fm}", params_reac.indexing(inds))
         self.formula_list = nn.ModuleList([formula_dict[key] for key in inds_fm_dict])
-        self.register_buffer(
-            "rate_sign", torch.tensor(rmat.rate_sign, dtype=torch.get_default_dtype()))
-        self.register_buffer("inds_reac", torch.tensor(inds_reac))
+        self.register_buffer("inds_reac", inds_reac)
 
     def forward(self, t_in, params_med):
         batch_size = next(iter(params_med.values())).shape[0]
@@ -42,9 +39,9 @@ class FormulaDictReactionModule(nn.Module):
         return torch.concat(
             [compute_rates_sub(i_fm) for i_fm in range(len(self.formula_list))], dim=-1)
 
-    def compute_rates_reac(self, t_in, params_med):
+    def assign_rate_coeffs(self, coeffs, t_in, params_med):
         # out: (B, R)
-        return self.forward(t_in, params_med)[:, self.inds_reac]
+        coeffs[:, self.inds_reac] = self(t_in, params_med)
 
 
 class SurfaceMantleTransition(nn.Module):
@@ -73,21 +70,14 @@ class SurfaceMantleTransition(nn.Module):
         return torch.concat([rates_m2s, rates_s2m], dim=-1)
 
 
-def create_formula_dict_reaction_module(df_reac, df_spec, rmat, formula_dict, param_names):
-    df_sub = df_reac.loc[rmat.inds_id_uni]
-
+def create_formula_dict_reaction_module(df_reac, df_spec, formula_dict, param_names):
     inds_fm_dict = defaultdict(list)
-    inds_id_fm_dict = defaultdict(list)
-    for i_fm, (idx, fm) in enumerate(zip(df_sub.index, df_sub["formula"])):
+    for i_fm, fm in enumerate(df_reac["formula"]):
         inds_fm_dict[fm].append(i_fm)
-        inds_id_fm_dict[fm].append(idx)
-    inds_id_fm = np.asarray(sum(inds_id_fm_dict.values(), start=[]))
-
-    inds_reac, inds_k = reindex(rmat, inds_id_fm)
-    params_reac = prepare_params_reac(df_sub, df_spec, rmat, param_names)
-    rmod = FormulaDictReactionModule(rmat, formula_dict, inds_fm_dict, params_reac, inds_reac)
-    rmat_new = replace(rmat, inds_k=inds_k, inds_reac=inds_reac)
-    return rmod, rmat_new
+    inds_reac = np.asarray(sum(inds_fm_dict.values(), start=[]))
+    inds_reac = torch.as_tensor(inds_reac)
+    params_reac = prepare_params_reac(df_reac, df_spec, param_names)
+    return FormulaDictReactionModule(formula_dict, inds_fm_dict, params_reac, inds_reac)
 
 
 def create_surface_mantle_transition(df_reac, df_spec, rmat, param_names, meta_params):
@@ -136,12 +126,13 @@ def reindex(rmat, inds_id_fm):
     return inds_id, inds_k
 
 
-def prepare_params_reac(df_sub, df_spec, rmat, param_names):
+def prepare_params_reac(df_sub, df_spec, param_names):
     params_reac = data_frame_to_tensor_dict(df_sub[param_names])
     # inds_r is used to extract specie propeties.
     inds_r = df_spec.index.get_indexer(df_sub["reactant_1"])
-    if rmat.order == 2:
-        inds_r = np.vstack([inds_r, df_spec.index.get_indexer(df_sub["reactant_2"])]).T
-    inds_r = torch.tensor(inds_r)
+    inds_r = np.vstack([inds_r, np.zeros_like(inds_r)])
+    cond = (df_sub["reactant_2"] != "").values
+    inds_r[1, cond] = df_spec.index.get_indexer(df_sub.loc[cond, "reactant_2"].values)
+    inds_r = torch.tensor(inds_r.T)
     params_reac.add("inds_r", inds_r)
     return params_reac

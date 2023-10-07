@@ -83,16 +83,14 @@ def create_two_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
     if not meta_params.use_photodesorption:
         formula_dict_1st["CR photodesorption"] = NoReaction()
         formula_dict_1st["UV photodesorption"] = NoReaction()
-    rmod_1st, rmat_1st = create_formula_dict_reaction_module(
-        df_reac, df_spec, rmat_1st, formula_dict_1st, param_names
-    )
     if formula_dict_2nd is None:
         formula_dict_2nd = builtin_astrochem_reactions_2nd(meta_params)
-    rmod_2nd, rmat_2nd = create_formula_dict_reaction_module(
-        df_reac, df_spec, rmat_2nd, formula_dict_2nd, param_names
+    formula_dict = {**formula_dict_1st, **formula_dict_2nd}
+    rmod = create_formula_dict_reaction_module(
+        df_reac, df_spec, formula_dict, param_names
     )
     medium = add_hopping_rate_module(medium, df_spec, meta_params)
-    return TwoPhaseTerm(rmat_1st, rmod_1st, rmat_2nd, rmod_2nd, medium)
+    return TwoPhaseTerm(rmod, rmat_1st, rmat_2nd, medium)
 
 
 def create_three_phase_model(df_reac, df_spec, df_surf, medium, meta_params,

@@ -40,58 +40,50 @@ class ConstantRateTerm(nn.Module):
 
 
 class TwoPhaseTerm(nn.Module):
-    def __init__(self, rmat_1st, rmod_1st, rmat_2nd, rmod_2nd, module_med=None):
+    def __init__(self, rmod, rmat_1st, rmat_2nd, module_med=None):
         super(TwoPhaseTerm, self).__init__()
         if module_med is None \
             or isinstance(module_med, TensorDict) or isinstance(module_med, nn.Module):
             self.module_med = module_med
         else:
             raise ValueError("Unknown 'module_med'.")
-
-        self.register_reactions("1st", rmat_1st, rmod_1st)
-        self.register_reactions("2nd", rmat_2nd, rmod_2nd)
+        self.rmod = rmod
+        self.asm_1st = Assembler(rmat_1st)
+        self.asm_2nd = Assembler(rmat_2nd)
         self.inds_id_1st = rmat_1st.inds_id_uni
         self.inds_id_2nd = rmat_2nd.inds_id_uni
 
-    def register_reactions(self, postfix, rmat, rmod):
-        setattr(self, f"asm_{postfix}", Assembler(rmat))
-        setattr(self, f"rmod_{postfix}", rmod)
-
     def forward(self, t_in, y_in, **params_extra):
-        rates_1st, rates_2nd, den_norm = self.compute_rates(t_in, y_in, **params_extra)
-        return self.asm_1st(y_in, rates_1st, den_norm) \
-            + self.asm_2nd(y_in, rates_2nd, den_norm)
+        coeffs, den_norm = self.compute_rate_coeffs(t_in, y_in, **params_extra)
+        return self.asm_1st(y_in, coeffs, den_norm) \
+            + self.asm_2nd(y_in, coeffs, den_norm)
 
     def jacobian(self, t_in, y_in, **params_extra):
-        rates_1st, rates_2nd, den_norm = self.compute_rates(t_in, y_in, **params_extra)
-        return self.asm_1st.jacobain(y_in, rates_1st, den_norm) \
-            + self.asm_2nd.jacobain(y_in, rates_2nd, den_norm)
+        coeffs, den_norm = self.compute_rate_coeffs(t_in, y_in, **params_extra)
+        return self.asm_1st.jacobain(y_in, coeffs, den_norm) \
+            + self.asm_2nd.jacobain(y_in, coeffs, den_norm)
 
-    def compute_rates(self, t_in, y_in, **params_extra):
+    def compute_rate_coeffs(self, t_in, y_in, **params_extra):
         if self.module_med is None:
             params_med = None
             den_norm = None
         else:
             params_med = self.module_med(t_in, **params_extra)
             den_norm = params_med['den_gas']
-        rates_1st = self.rmod_1st(t_in, params_med)
-        rates_2nd = self.rmod_2nd(t_in, params_med)
-        return rates_1st, rates_2nd, den_norm
-
-    def reproduce_rate_coeffs(self, t_in=None, y_in=None):
-        if t_in is None:
-            t_in = torch.tensor([0.])
 
         inds_id_1st = self.inds_id_1st
         inds_id_2nd = self.inds_id_2nd
         n_reac = len(inds_id_1st) + len(inds_id_2nd)
-        rates = torch.zeros([len(t_in), n_reac])
-        with torch.no_grad():
-            params_med = self.module_med(t_in)
-            rates[:, inds_id_1st] = self.rmod_1st.compute_rates_reac(t_in, params_med)
-            rates[:, inds_id_2nd] = self.rmod_2nd.compute_rates_reac(t_in, params_med)
-        rates = rates.T.squeeze()
-        return rates
+        coeffs = torch.zeros([len(t_in), n_reac])
+        self.rmod.assign_rate_coeffs(coeffs, t_in, params_med)
+        return coeffs, den_norm
+
+    def reproduce_rate_coeffs(self, t_in=None, y_in=None):
+        if t_in is None:
+            t_in = torch.tensor([0.])
+        coeffs, _ = self.compute_rate_coeffs(t_in, y_in)
+        coeffs = coeffs.T.squeeze()
+        return coeffs
 
 
 class ThreePhaseTerm(nn.Module):
