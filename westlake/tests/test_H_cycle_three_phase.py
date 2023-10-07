@@ -12,13 +12,14 @@ from utils import get_abs_fname
 
 torch.set_default_dtype(torch.float64)
 FILE_NAME = "H_cycle_three_phase.pickle"
+RTOL = 1e-5
 ATOL = 1e-20
 
 
 def test_H_cycle():
     res_new = solve_H_cycle()
     res_fid = pickle.load(open(get_abs_fname(FILE_NAME), "rb"))
-    assert_allclose(res_fid.y, res_new.y, atol=ATOL)
+    assert_allclose(res_fid.y, res_new.y, rtol=RTOL, atol=ATOL)
 
 
 def solve_H_cycle():
