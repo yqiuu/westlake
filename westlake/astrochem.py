@@ -127,7 +127,11 @@ def create_three_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
     rmat_2nd_surf, rmat_2nd_other = split_surface_reactions(df_reac, rmat_2nd)
     rmat_2nd_surf_gain, rmat_2nd_surf_loss = split_gain_loss(rmat_2nd_surf)
 
-    rmat_photodeso = None
+    if meta_params.use_photodesorption:
+        formula_list = ["CR photodesorption", "UV photodesorption"]
+        rmat_photodeso = extract_by_formula(rmat_1st, df_reac, formula_list)
+    else:
+        rmat_photodeso = None
 
     inds_surf = df_spec.index.map(lambda name: name.startswith("J")).values
     inds_mant = df_spec.index.map(lambda name: name.startswith("K")).values
