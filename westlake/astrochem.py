@@ -183,7 +183,7 @@ def add_hopping_rate_module(medium, df_spec, meta_params):
 def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, meta_params,
                                   t_span=None, t_eval=None, method=None, rtol=None, atol=None,
                                   device="cpu", show_progress=True):
-    ab_0 = dervie_initial_abundances(ab_0_dict, df_spec, meta_params)
+    ab_0 = derive_initial_abundances(ab_0_dict, df_spec, meta_params)
     if t_span is None:
         t_span = (meta_params.t_start, meta_params.t_end)
     if method is None:
@@ -205,7 +205,7 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, meta_params
     return res
 
 
-def dervie_initial_abundances(ab_0_dict, spec_table, meta_params):
+def derive_initial_abundances(ab_0_dict, spec_table, meta_params):
     """Derive the initial abundances of grains and electrons.
 
     Args:
