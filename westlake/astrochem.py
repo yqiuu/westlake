@@ -35,104 +35,66 @@ def builtin_astrochem_reactions(meta_params):
 
 
 def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
-                           df_act=None, df_ma=None, df_barr=None,
+                           medium=None, df_act=None, df_ma=None, df_barr=None,
                            param_names=None, formula_dict=None):
-    if meta_params.use_static_medium:
+    if meta_params.use_static_medium and medium is None:
         medium = StaticMedium({
             'Av': meta_params.Av,
             "den_gas": meta_params.den_gas,
             "T_gas": meta_params.T_gas,
             "T_dust": meta_params.T_dust
         })
-    else:
-        raise NotImplementedError("Only static medium is implemented.")
+
+    prepare_piecewise_rates(df_reac)
+    prepare_surface_reaction_params(
+        df_reac, df_spec, df_surf, meta_params, df_act, df_ma, df_barr)
+    medium = add_hopping_rate_module(medium, df_spec, meta_params)
+
+    reaction_matrix = ReactionMatrix(df_reac, df_spec)
+    rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
+    param_names_ = builtin_astrochem_reaction_param_names()
+    if param_names is not None:
+        param_names_.extend(param_names)
+    formula_dict_ = builtin_astrochem_reactions(meta_params)
+    if formula_dict is not None:
+        formula_dict_.update(formula_dict)
+    if not meta_params.use_photodesorption:
+        formula_dict_["CR photodesorption"] = NoReaction()
+        formula_dict_["UV photodesorption"] = NoReaction()
+    rmod = create_formula_dict_reaction_module(
+        df_reac, df_spec, formula_dict_, param_names_
+    )
 
     if meta_params.model == "two phase":
-        return create_two_phase_model(
-            df_reac, df_spec, df_surf, medium, meta_params,
-            df_act, df_ma, df_barr, param_names, formula_dict
-        )
+        return TwoPhaseTerm(rmod, rmat_1st, rmat_2nd, medium)
     elif meta_params.model == "three phase":
-        return create_three_phase_model(
-            df_reac, df_spec, df_surf, medium, meta_params,
-            df_act, df_ma, df_barr, param_names, formula_dict
+        rmod_smt = create_surface_mantle_transition(
+            df_reac, df_spec, param_names_, meta_params
+        )
+
+        rmat_1st_surf, rmat_1st_other = split_surface_reactions(df_reac, rmat_1st)
+        rmat_1st_surf_gain, rmat_1st_surf_loss = split_gain_loss(rmat_1st_surf)
+
+        rmat_2nd_surf, rmat_2nd_other = split_surface_reactions(df_reac, rmat_2nd)
+        rmat_2nd_surf_gain, rmat_2nd_surf_loss = split_gain_loss(rmat_2nd_surf)
+
+        if meta_params.use_photodesorption:
+            formula_list = ["CR photodesorption", "UV photodesorption"]
+            rmat_photodeso = extract_by_formula(rmat_1st, df_reac, formula_list)
+        else:
+            rmat_photodeso = None
+
+        inds_surf = df_spec.index.map(lambda name: name.startswith("J")).values
+        inds_mant = df_spec.index.map(lambda name: name.startswith("K")).values
+
+        return ThreePhaseTerm(
+            rmod, rmod_smt,
+            rmat_1st, rmat_1st_surf_gain, rmat_1st_surf_loss,
+            rmat_2nd, rmat_2nd_surf_gain, rmat_2nd_surf_loss,
+            rmat_photodeso, inds_surf, inds_mant, medium
         )
     else:
         raise ValueError(f"Unknown model: {meta_params.model}")
-
-
-def create_two_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
-                           df_act=None, df_ma=None, df_barr=None,
-                           param_names=None, formula_dict=None):
-    prepare_piecewise_rates(df_reac)
-    reaction_matrix = ReactionMatrix(df_reac, df_spec)
-    prepare_surface_reaction_params(
-        df_reac, df_spec, df_surf, meta_params, df_act, df_ma, df_barr)
-    rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
-    param_names_ = builtin_astrochem_reaction_param_names()
-    if param_names is not None:
-        param_names_.extend(param_names)
-    formula_dict_ = builtin_astrochem_reactions(meta_params)
-    if formula_dict is not None:
-        formula_dict_.update(formula_dict)
-    if not meta_params.use_photodesorption:
-        formula_dict_["CR photodesorption"] = NoReaction()
-        formula_dict_["UV photodesorption"] = NoReaction()
-    rmod = create_formula_dict_reaction_module(
-        df_reac, df_spec, formula_dict_, param_names_
-    )
-    medium = add_hopping_rate_module(medium, df_spec, meta_params)
-    return TwoPhaseTerm(rmod, rmat_1st, rmat_2nd, medium)
-
-
-def create_three_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
-                             df_act=None, df_ma=None, df_barr=None,
-                             param_names=None, formula_dict=None):
-    prepare_piecewise_rates(df_reac)
-    reaction_matrix = ReactionMatrix(df_reac, df_spec)
-    prepare_surface_reaction_params(
-        df_reac, df_spec, df_surf, meta_params, df_act, df_ma, df_barr)
-
-    rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
-    param_names_ = builtin_astrochem_reaction_param_names()
-    if param_names is not None:
-        param_names_.extend(param_names)
-    formula_dict_ = builtin_astrochem_reactions(meta_params)
-    if formula_dict is not None:
-        formula_dict_.update(formula_dict)
-    if not meta_params.use_photodesorption:
-        formula_dict_["CR photodesorption"] = NoReaction()
-        formula_dict_["UV photodesorption"] = NoReaction()
-    rmod = create_formula_dict_reaction_module(
-        df_reac, df_spec, formula_dict_, param_names_
-    )
-    medium = add_hopping_rate_module(medium, df_spec, meta_params)
-
-    rmod_smt = create_surface_mantle_transition(
-        df_reac, df_spec, param_names_, meta_params
-    )
-
-    rmat_1st_surf, rmat_1st_other = split_surface_reactions(df_reac, rmat_1st)
-    rmat_1st_surf_gain, rmat_1st_surf_loss = split_gain_loss(rmat_1st_surf)
-
-    rmat_2nd_surf, rmat_2nd_other = split_surface_reactions(df_reac, rmat_2nd)
-    rmat_2nd_surf_gain, rmat_2nd_surf_loss = split_gain_loss(rmat_2nd_surf)
-
-    if meta_params.use_photodesorption:
-        formula_list = ["CR photodesorption", "UV photodesorption"]
-        rmat_photodeso = extract_by_formula(rmat_1st, df_reac, formula_list)
-    else:
-        rmat_photodeso = None
-
-    inds_surf = df_spec.index.map(lambda name: name.startswith("J")).values
-    inds_mant = df_spec.index.map(lambda name: name.startswith("K")).values
-
-    return ThreePhaseTerm(
-        rmod, rmod_smt,
-        rmat_1st, rmat_1st_surf_gain, rmat_1st_surf_loss,
-        rmat_2nd, rmat_2nd_surf_gain, rmat_2nd_surf_loss,
-        rmat_photodeso, inds_surf, inds_mant, medium
-    )
 
 
 def split_reac_table_by_formula(df_reac, formula_list):
