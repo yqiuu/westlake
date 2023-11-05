@@ -25,15 +25,10 @@ def builtin_astrochem_reaction_param_names():
     ]
 
 
-def builtin_astrochem_reactions_1st(meta_params):
+def builtin_astrochem_reactions(meta_params):
     return {
         **builtin_gas_reactions_1st(meta_params),
-        **builtin_surface_reactions_1st(meta_params)
-    }
-
-
-def builtin_astrochem_reactions_2nd(meta_params):
-    return {
+        **builtin_surface_reactions_1st(meta_params),
         **builtin_gas_reactions_2nd(meta_params),
         **builtin_surface_reactions_2nd(meta_params)
     }
@@ -41,7 +36,7 @@ def builtin_astrochem_reactions_2nd(meta_params):
 
 def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
                            df_act=None, df_ma=None, df_barr=None,
-                           param_names=None, formula_dict_1st=None, formula_dict_2nd=None):
+                           param_names=None, formula_dict=None):
     if meta_params.use_static_medium:
         medium = StaticMedium({
             'Av': meta_params.Av,
@@ -55,14 +50,12 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
     if meta_params.model == "two phase":
         return create_two_phase_model(
             df_reac, df_spec, df_surf, medium, meta_params,
-            df_act, df_ma, df_barr, param_names,
-            formula_dict_1st, formula_dict_2nd
+            df_act, df_ma, df_barr, param_names, formula_dict
         )
     elif meta_params.model == "three phase":
         return create_three_phase_model(
             df_reac, df_spec, df_surf, medium, meta_params,
-            df_act, df_ma, df_barr, param_names,
-            formula_dict_1st, formula_dict_2nd
+            df_act, df_ma, df_barr, param_names, formula_dict
         )
     else:
         raise ValueError(f"Unknown model: {meta_params.model}")
@@ -70,24 +63,23 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
 
 def create_two_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
                            df_act=None, df_ma=None, df_barr=None,
-                           param_names=None, formula_dict_1st=None, formula_dict_2nd=None):
+                           param_names=None, formula_dict=None):
     prepare_piecewise_rates(df_reac)
     reaction_matrix = ReactionMatrix(df_reac, df_spec)
     prepare_surface_reaction_params(
         df_reac, df_spec, df_surf, meta_params, df_act, df_ma, df_barr)
     rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
-    if param_names is None:
-        param_names = builtin_astrochem_reaction_param_names()
-    if formula_dict_1st is None:
-        formula_dict_1st = builtin_astrochem_reactions_1st(meta_params)
+    param_names_ = builtin_astrochem_reaction_param_names()
+    if param_names is not None:
+        param_names_.extend(param_names)
+    formula_dict_ = builtin_astrochem_reactions(meta_params)
+    if formula_dict is not None:
+        formula_dict_.update(formula_dict)
     if not meta_params.use_photodesorption:
-        formula_dict_1st["CR photodesorption"] = NoReaction()
-        formula_dict_1st["UV photodesorption"] = NoReaction()
-    if formula_dict_2nd is None:
-        formula_dict_2nd = builtin_astrochem_reactions_2nd(meta_params)
-    formula_dict = {**formula_dict_1st, **formula_dict_2nd}
+        formula_dict_["CR photodesorption"] = NoReaction()
+        formula_dict_["UV photodesorption"] = NoReaction()
     rmod = create_formula_dict_reaction_module(
-        df_reac, df_spec, formula_dict, param_names
+        df_reac, df_spec, formula_dict_, param_names_
     )
     medium = add_hopping_rate_module(medium, df_spec, meta_params)
     return TwoPhaseTerm(rmod, rmat_1st, rmat_2nd, medium)
@@ -95,30 +87,29 @@ def create_two_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
 
 def create_three_phase_model(df_reac, df_spec, df_surf, medium, meta_params,
                              df_act=None, df_ma=None, df_barr=None,
-                             param_names=None, formula_dict_1st=None, formula_dict_2nd=None):
+                             param_names=None, formula_dict=None):
     prepare_piecewise_rates(df_reac)
     reaction_matrix = ReactionMatrix(df_reac, df_spec)
     prepare_surface_reaction_params(
         df_reac, df_spec, df_surf, meta_params, df_act, df_ma, df_barr)
 
     rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
-    if param_names is None:
-        param_names = builtin_astrochem_reaction_param_names()
-    if formula_dict_1st is None:
-        formula_dict_1st = builtin_astrochem_reactions_1st(meta_params)
+    param_names_ = builtin_astrochem_reaction_param_names()
+    if param_names is not None:
+        param_names_.extend(param_names)
+    formula_dict_ = builtin_astrochem_reactions(meta_params)
+    if formula_dict is not None:
+        formula_dict_.update(formula_dict)
     if not meta_params.use_photodesorption:
-        formula_dict_1st["CR photodesorption"] = NoReaction()
-        formula_dict_1st["UV photodesorption"] = NoReaction()
-    if formula_dict_2nd is None:
-        formula_dict_2nd = builtin_astrochem_reactions_2nd(meta_params)
-    formula_dict = {**formula_dict_1st, **formula_dict_2nd}
+        formula_dict_["CR photodesorption"] = NoReaction()
+        formula_dict_["UV photodesorption"] = NoReaction()
     rmod = create_formula_dict_reaction_module(
-        df_reac, df_spec, formula_dict, param_names
+        df_reac, df_spec, formula_dict_, param_names_
     )
     medium = add_hopping_rate_module(medium, df_spec, meta_params)
 
     rmod_smt = create_surface_mantle_transition(
-        df_reac, df_spec, param_names, meta_params
+        df_reac, df_spec, param_names_, meta_params
     )
 
     rmat_1st_surf, rmat_1st_other = split_surface_reactions(df_reac, rmat_1st)
