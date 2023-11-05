@@ -75,7 +75,7 @@ class TwoPhaseTerm(nn.Module):
         inds_id_2nd = self.inds_id_2nd
         n_reac = len(inds_id_1st) + len(inds_id_2nd)
         coeffs = torch.zeros([len(t_in), n_reac])
-        self.rmod.assign_rate_coeffs(coeffs, t_in, params_med)
+        self.rmod.assign_rate_coeffs(coeffs, params_med)
         return coeffs, den_norm
 
     def reproduce_rate_coeffs(self, t_in=None, y_in=None):
@@ -137,7 +137,7 @@ class ThreePhaseTerm(nn.Module):
         coeffs = torch.zeros([len(t_in), n_reac])
 
         #
-        self.rmod.assign_rate_coeffs(coeffs, t_in, params_med)
+        self.rmod.assign_rate_coeffs(coeffs, params_med)
 
         y_in = torch.atleast_2d(y_in)
         y_surf = y_in[:, self.inds_surf].sum(dim=-1, keepdim=True)

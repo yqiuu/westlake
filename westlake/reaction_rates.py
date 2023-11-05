@@ -27,11 +27,16 @@ class FormulaDictReactionModule(nn.Module):
         self.formula_list = nn.ModuleList([formula_dict[key] for key in inds_fm_dict])
         self.register_buffer("inds_reac", inds_reac)
 
-    def forward(self, t_in, params_med):
+    def forward(self, params_med, y_in=None, params_extra=None):
         batch_size = next(iter(params_med.values())).shape[0]
         def compute_rates_sub(i_fm):
             params_reac_sub = getattr(self, f"_params_reac_{i_fm}")()
-            rates = self.formula_list[i_fm](params_med, params_reac_sub)
+            if y_in is None:
+                rates = self.formula_list[i_fm](params_med, params_reac_sub)
+            else:
+                rates = self.formula_list[i_fm](
+                    params_med, params_reac_sub, y_in=y_in, params_extra=params_extra
+                )
             if rates.dim() == 1:
                 rates = rates.repeat(batch_size, 1)
             return rates
@@ -39,9 +44,9 @@ class FormulaDictReactionModule(nn.Module):
         return torch.concat(
             [compute_rates_sub(i_fm) for i_fm in range(len(self.formula_list))], dim=-1)
 
-    def assign_rate_coeffs(self, coeffs, t_in, params_med):
+    def assign_rate_coeffs(self, coeffs, params_med, y_in=None, params_extra=None):
         # out: (B, R)
-        coeffs[:, self.inds_reac] = self(t_in, params_med)
+        coeffs[:, self.inds_reac] = self(params_med, y_in, params_extra)
 
 
 class SurfaceMantleTransition(nn.Module):
