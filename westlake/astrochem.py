@@ -2,10 +2,9 @@ import numpy as np
 import pandas as pd
 
 from .reaction_rates import create_formula_dict_reaction_module, create_surface_mantle_transition
-from .gas_reactions import builtin_gas_reactions_1st, builtin_gas_reactions_2nd
+from .gas_reactions import builtin_gas_reactions
 from .surface_reactions import (
-    builtin_surface_reactions_1st,
-    builtin_surface_reactions_2nd,
+    builtin_surface_reactions,
     prepare_surface_reaction_params,
     NoReaction,
 )
@@ -27,10 +26,8 @@ def builtin_astrochem_reaction_param_names():
 
 def builtin_astrochem_reactions(meta_params):
     return {
-        **builtin_gas_reactions_1st(meta_params),
-        **builtin_surface_reactions_1st(meta_params),
-        **builtin_gas_reactions_2nd(meta_params),
-        **builtin_surface_reactions_2nd(meta_params)
+        **builtin_gas_reactions(meta_params),
+        **builtin_surface_reactions(meta_params)
     }
 
 

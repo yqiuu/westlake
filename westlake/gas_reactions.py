@@ -3,15 +3,10 @@ from torch import nn
 from torch.nn import functional as F
 
 
-def builtin_gas_reactions_1st(meta_params):
+def builtin_gas_reactions(meta_params):
     return {
         "CR ionization": CosmicRayIonization(meta_params.rate_cr_ion),
         "photodissociation": Photodissociation(),
-    }
-
-
-def builtin_gas_reactions_2nd(meta_params):
-    return {
         "modified Arrhenius": ModifiedArrhenius(),
         "ionpol1": Ionpol1(),
         "ionpol2": Ionpol2(),

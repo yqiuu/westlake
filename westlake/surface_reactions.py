@@ -10,7 +10,7 @@ from astropy import units, constants
 from .constants import M_ATOM, K_B, H_BAR, FACTOR_VIB_FREQ
 
 
-def builtin_surface_reactions_1st(meta_params):
+def builtin_surface_reactions(meta_params):
     return {
         'thermal evaporation': ThermalEvaporation(meta_params),
         'CR evaporation': CosmicRayEvaporation(meta_params),
@@ -21,11 +21,6 @@ def builtin_surface_reactions_1st(meta_params):
         'surface H accretion': SurfaceHAccretion(meta_params),
         "surface to mantle": NoReaction(),
         "mantle to surface": NoReaction(),
-    }
-
-
-def builtin_surface_reactions_2nd(meta_params):
-    return {
         'surface reaction': SurfaceReaction(meta_params),
         'Eley-Rideal': NoReaction(),
         'surface H2 formation': SurfaceH2Formation(meta_params),
