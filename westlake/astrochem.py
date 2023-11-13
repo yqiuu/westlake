@@ -133,6 +133,18 @@ def add_hopping_rate_module(medium, df_spec, meta_params):
 def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, meta_params,
                                   t_span=None, t_eval=None, method=None, rtol=None, atol=None,
                                   device="cpu", show_progress=True):
+    """Solve the rate equations for astrochemical problems.
+
+    Args:
+        reaction_term (nn.Module): Definition of the rate equations.
+        ab_0_dict (dict): Initial abundances.
+        df_spec (pd.DataFrame): Specie table.
+        show_progress: If True, print messages to show the progress.
+            Defaults to True.
+
+    Returns:
+        object: A result object returned by a scipy ODE solver.
+    """
     ab_0 = derive_initial_abundances(ab_0_dict, df_spec, meta_params)
     if t_span is None:
         t_span = (meta_params.t_start, meta_params.t_end)
@@ -159,14 +171,12 @@ def derive_initial_abundances(ab_0_dict, spec_table, meta_params):
     """Derive the initial abundances of grains and electrons.
 
     Args:
-        ab_0 (dict): Initial abundance of each specie.
+        ab_0_dict (dict): Initial abundance of each specie.
         spec_table (pd.DataFrame): Specie table.
         meta_params (MetaParameters): Meta parameters.
-        ab_0_min (float, optional): Mimimum initial abundances. Defaults to 0.
-        dtype (str, optional): Data type of the return abundances. Defaults to 'tuple'.
 
     Returns:
-        tuple: Initial abundances.
+        array: Initial abundances.
     """
     if not all(np.in1d(list(ab_0_dict.keys()), spec_table.index.values)):
         raise ValueError("Find unrecognized species in 'ab_0'.")
