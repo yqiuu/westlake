@@ -34,8 +34,12 @@ class MetaParameters:
             frequency to the frequency at which energy is lost to the grain
             surface (Garrod el al. 2007).
 
-        to_second (float): A unit factor that converts the desired unit to second. The
-            default value converts year to second.
+        den_Av_ratio_0 (float): Density to Av ratio to compute self-shielding.
+        H2_shielding (str): Set "Lee+1996" to turn on H2 shielding. Set None to
+            turn off.
+
+        to_second (float): A unit factor that converts the desired unit to
+            second. The default value converts year to second.
 
         method (str): ODE solver.
         rtol (float): Relative tolerance.
@@ -67,6 +71,10 @@ class MetaParameters:
 
     # Switches
     use_photodesorption: bool = False
+
+    # Sheilding
+    den_Av_ratio_0: float = 1./(5.34e-22)
+    H2_shielding: str = None # "Lee+1996"
 
     # Physcial parameters
     use_static_medium: bool = True

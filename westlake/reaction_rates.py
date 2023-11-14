@@ -27,7 +27,7 @@ class FormulaDictReactionModule(nn.Module):
         self.formula_list = nn.ModuleList([formula_dict[key] for key in inds_fm_dict])
         self.register_buffer("inds_reac", inds_reac)
 
-    def forward(self, params_med, y_in=None, params_extra=None):
+    def forward(self, params_med, y_in=None, params_extra=None, coeffs=None):
         batch_size = next(iter(params_med.values())).shape[0]
         def compute_rates_sub(i_fm):
             params_reac_sub = getattr(self, f"_params_reac_{i_fm}")()
@@ -35,7 +35,8 @@ class FormulaDictReactionModule(nn.Module):
                 rates = self.formula_list[i_fm](params_med, params_reac_sub)
             else:
                 rates = self.formula_list[i_fm](
-                    params_med, params_reac_sub, y_in=y_in, params_extra=params_extra
+                    params_med, params_reac_sub,
+                    y_in=y_in, coeffs=coeffs, params_extra=params_extra
                 )
             if rates.dim() == 1:
                 rates = rates.repeat(batch_size, 1)
@@ -46,7 +47,7 @@ class FormulaDictReactionModule(nn.Module):
 
     def assign_rate_coeffs(self, coeffs, params_med, y_in=None, params_extra=None):
         # out: (B, R)
-        coeffs[:, self.inds_reac] = self(params_med, y_in, params_extra)
+        coeffs[:, self.inds_reac] = self(params_med, y_in, params_extra, coeffs)
 
 
 class SurfaceMantleTransition(nn.Module):
@@ -80,14 +81,39 @@ class SurfaceMantleTransition(nn.Module):
         )
 
 
-def create_formula_dict_reaction_module(df_reac, df_spec, formula_dict, param_names):
-    inds_fm_dict = defaultdict(list)
+def create_formula_dict_reaction_module(df_reac, df_spec,
+                                        formula_dict, formula_dict_ex, param_names):
+    inds_fm_dict_all = defaultdict(list)
     for i_fm, fm in enumerate(df_reac["formula"]):
-        inds_fm_dict[fm].append(i_fm)
+        inds_fm_dict_all[fm].append(i_fm)
+    inds_fm_dict = {}
+    inds_fm_dict_ex = {}
+    for fm in list(inds_fm_dict_all.keys()):
+        if fm in formula_dict:
+            inds_fm_dict[fm] = inds_fm_dict_all.pop(fm)
+        elif fm in formula_dict_ex:
+            inds_fm_dict_ex[fm] = inds_fm_dict_all.pop(fm)
+    if len(inds_fm_dict_all) > 0:
+        reac_str = ", ".join(inds_fm_dict_all.keys())
+        raise ValueError(f"Unknown reactions: {reac_str}.")
+
+    params_reac = prepare_params_reac(df_reac, df_spec, param_names)
+    #
     inds_reac = np.asarray(sum(inds_fm_dict.values(), start=[]))
     inds_reac = torch.as_tensor(inds_reac)
-    params_reac = prepare_params_reac(df_reac, df_spec, param_names)
-    return FormulaDictReactionModule(formula_dict, inds_fm_dict, params_reac, inds_reac)
+    rmod = FormulaDictReactionModule(formula_dict, inds_fm_dict, params_reac, inds_reac)
+    #
+    if len(inds_fm_dict_ex) > 0:
+        inds_reac = np.asarray(sum(inds_fm_dict_ex.values(), start=[]))
+        inds_reac = torch.as_tensor(inds_reac)
+        rmod_ex = FormulaDictReactionModule(
+            formula_dict_ex, inds_fm_dict_ex, params_reac, inds_reac
+        )
+    else:
+        rmod_ex = None
+    #
+    return rmod, rmod_ex
+
 
 
 def create_surface_mantle_transition(df_reac, df_spec, param_names, meta_params):

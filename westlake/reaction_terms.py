@@ -40,7 +40,7 @@ class ConstantRateTerm(nn.Module):
 
 
 class TwoPhaseTerm(nn.Module):
-    def __init__(self, rmod, rmat_1st, rmat_2nd, module_med=None):
+    def __init__(self, rmod, rmod_ex, rmat_1st, rmat_2nd, module_med):
         super(TwoPhaseTerm, self).__init__()
         if module_med is None \
             or isinstance(module_med, TensorDict) or isinstance(module_med, nn.Module):
@@ -48,6 +48,7 @@ class TwoPhaseTerm(nn.Module):
         else:
             raise ValueError("Unknown 'module_med'.")
         self.rmod = rmod
+        self.rmod_ex = rmod_ex
         self.asm_1st = Assembler(rmat_1st)
         self.asm_2nd = Assembler(rmat_2nd)
         self.inds_id_1st = rmat_1st.inds_id_uni
@@ -76,6 +77,8 @@ class TwoPhaseTerm(nn.Module):
         n_reac = len(inds_id_1st) + len(inds_id_2nd)
         coeffs = torch.zeros([len(t_in), n_reac])
         self.rmod.assign_rate_coeffs(coeffs, params_med)
+        if self.rmod_ex is not None:
+            self.rmod_ex.assign_rate_coeffs(coeffs, params_med, y_in)
         return coeffs, den_norm
 
     def reproduce_rate_coeffs(self, t_in=None, y_in=None):

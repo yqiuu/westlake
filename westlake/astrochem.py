@@ -8,6 +8,7 @@ from .surface_reactions import (
     prepare_surface_reaction_params,
     NoReaction,
 )
+from .shielding import H2Shielding
 from .preprocesses import prepare_piecewise_rates
 from .medium import StaticMedium, SequentialMedium, ThermalHoppingRate
 from .reaction_matrices import ReactionMatrix
@@ -52,18 +53,27 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
     param_names_ = builtin_astrochem_reaction_param_names()
     if param_names is not None:
         param_names_.extend(param_names)
+
+    # Find and add special formulae
+    formula_dict_ex_ = {}
+
+    #
+    df_reac = add_H2_shielding(df_reac, df_spec, meta_params, formula_dict_ex_)
+
+    # Create reaction module
     formula_dict_ = builtin_astrochem_reactions(meta_params)
     if formula_dict is not None:
         formula_dict_.update(formula_dict)
     if not meta_params.use_photodesorption:
         formula_dict_["CR photodesorption"] = NoReaction()
         formula_dict_["UV photodesorption"] = NoReaction()
-    rmod = create_formula_dict_reaction_module(
-        df_reac, df_spec, formula_dict_, param_names_
+    rmod, rmod_ex = create_formula_dict_reaction_module(
+        df_reac, df_spec, formula_dict_, formula_dict_ex_,
+        param_names_
     )
 
     if meta_params.model == "two phase":
-        return TwoPhaseTerm(rmod, rmat_1st, rmat_2nd, medium)
+        return TwoPhaseTerm(rmod, rmod_ex, rmat_1st, rmat_2nd, medium)
     elif meta_params.model == "three phase":
         rmod_smt = create_surface_mantle_transition(
             df_reac, df_spec, param_names_, meta_params
@@ -92,6 +102,36 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
         )
     else:
         raise ValueError(f"Unknown model: {meta_params.model}")
+
+
+def add_H2_shielding(df_reac, df_spec, meta_params, formula_dict_ex):
+    """Add H2 shielding to `formula_dict_ex` if applicable.
+
+    This function changes `formula_dict_ex` inplace.
+
+    Returns:
+        pd.DataFrame: Reaction data with updated H2 shielding formula.
+    """
+    # H2 shielding
+    if meta_params.H2_shielding == "Lee+1996":
+        cond = (df_reac["formula"] == "photodissociation") & (df_reac["reactant_1"] == "H2")
+        n_reac = np.count_nonzero(cond)
+        if n_reac == 0:
+            pass
+        elif n_reac == 1:
+            idx_reac = df_reac[cond].index.item()
+            fm_name = "H2 Shielding"
+            df_reac = df_reac.copy()
+            df_reac.loc[idx_reac, "formula"] = fm_name
+            idx_H2 = df_spec.index.get_indexer(["H2"]).item()
+            formula_dict_ex[fm_name] = H2Shielding(idx_H2, meta_params)
+        else:
+            raise ValueError("Multiple H2 shielding reactions.")
+    elif meta_params.H2_shielding is None:
+        pass
+    else:
+        raise ValueError("Unknown H2 shielding: '{}'.".format(meta_params.H2_shielding))
+    return df_reac
 
 
 def split_reac_table_by_formula(df_reac, formula_list):
