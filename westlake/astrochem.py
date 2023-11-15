@@ -8,7 +8,7 @@ from .surface_reactions import (
     prepare_surface_reaction_params,
     NoReaction,
 )
-from .shielding import H2Shielding
+from .shielding import H2Shielding_Lee1996, COShielding_Lee1996
 from .preprocesses import prepare_piecewise_rates
 from .medium import StaticMedium, SequentialMedium, ThermalHoppingRate
 from .reaction_matrices import ReactionMatrix
@@ -59,6 +59,7 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
 
     #
     df_reac = add_H2_shielding(df_reac, df_spec, meta_params, formula_dict_ex_)
+    df_reac = add_CO_shielding(df_reac, df_spec, meta_params, formula_dict_ex_)
 
     # Create reaction module
     formula_dict_ = builtin_astrochem_reactions(meta_params)
@@ -124,13 +125,44 @@ def add_H2_shielding(df_reac, df_spec, meta_params, formula_dict_ex):
             df_reac = df_reac.copy()
             df_reac.loc[idx_reac, "formula"] = fm_name
             idx_H2 = df_spec.index.get_indexer(["H2"]).item()
-            formula_dict_ex[fm_name] = H2Shielding(idx_H2, meta_params)
+            formula_dict_ex[fm_name] = H2Shielding_Lee1996(idx_H2, meta_params)
         else:
             raise ValueError("Multiple H2 shielding reactions.")
     elif meta_params.H2_shielding is None:
         pass
     else:
         raise ValueError("Unknown H2 shielding: '{}'.".format(meta_params.H2_shielding))
+    return df_reac
+
+
+def add_CO_shielding(df_reac, df_spec, meta_params, formula_dict_ex):
+    """Add CO shielding to `formula_dict_ex` if applicable.
+
+    This function changes `formula_dict_ex` inplace.
+
+    Returns:
+        pd.DataFrame: Reaction data with updated CO shielding formula.
+    """
+    # H2 shielding
+    if meta_params.CO_shielding == "Lee+1996":
+        cond = (df_reac["formula"] == "photodissociation") & (df_reac["reactant_1"] == "CO")
+        n_reac = np.count_nonzero(cond)
+        if n_reac == 0:
+            pass
+        elif n_reac == 1:
+            idx_reac = df_reac[cond].index.item()
+            fm_name = "CO Shielding (Lee+1996)"
+            df_reac = df_reac.copy()
+            df_reac.loc[idx_reac, "formula"] = fm_name
+            idx_CO = df_spec.index.get_indexer(["CO"]).item()
+            idx_H2 = df_spec.index.get_indexer(["H2"]).item()
+            formula_dict_ex[fm_name] = COShielding_Lee1996(idx_CO, idx_H2, meta_params)
+        else:
+            raise ValueError("Multiple CO shielding reactions.")
+    elif meta_params.CO_shielding is None:
+        pass
+    else:
+        raise ValueError("Unknown CO shielding: '{}'.".format(meta_params.CO_shielding))
     return df_reac
 
 

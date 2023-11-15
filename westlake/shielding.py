@@ -8,11 +8,16 @@ from .utils import LinearInterpolation
 
 
 def load_H2_shielding_data():
-    fname = path.join(path.dirname(path.abspath(__file__)), "data", "H2_shielding.pickle")
+    fname = path.join(path.dirname(path.abspath(__file__)), "data", "H2_shielding_Lee+1996.pickle")
     return pickle.load(open(fname, "rb"))
 
 
-class H2Shielding(nn.Module):
+def load_CO_shielding_data():
+    fname = path.join(path.dirname(path.abspath(__file__)), "data", "CO_shielding_Lee+1996.pickle")
+    return pickle.load(open(fname, "rb"))
+
+
+class H2Shielding_Lee1996(nn.Module):
     def __init__(self, idx_H2, meta_params):
         super().__init__()
         data = load_H2_shielding_data()
@@ -27,3 +32,29 @@ class H2Shielding(nn.Module):
         y_in = torch.atleast_2d(y_in)
         den_H2 = params_med["Av"]*self.den_Av_ratio_0*y_in[:, self.idx_H2]
         return self.interp(den_H2)
+
+
+class COShielding_Lee1996(nn.Module):
+    def __init__(self, idx_CO, idx_H2, meta_params):
+        super().__init__()
+        data = load_CO_shielding_data()
+        self.interp_CO = self._create_interp(data, "CO")
+        self.interp_H2 = self._create_interp(data, "H2")
+        self.interp_Av = self._create_interp(data, "Av")
+        self.register_buffer("den_Av_ratio_0", torch.tensor(meta_params.den_Av_ratio_0))
+        self.idx_CO = slice(idx_CO, idx_CO + 1)
+        self.idx_H2 = slice(idx_H2, idx_H2 + 1)
+
+    def _create_interp(self, data, name):
+        x_node = torch.as_tensor(data[f"x_{name}"], dtype=torch.get_default_dtype())
+        y_node = torch.as_tensor(data[f"theta_{name}"], dtype=torch.get_default_dtype())
+        return LinearInterpolation(x_node, y_node[:, None])
+
+    def forward(self, params_med, params_reac, y_in, **kwargs):
+        y_in = torch.atleast_2d(y_in)
+        factor = params_med["Av"]*self.den_Av_ratio_0
+        den_CO = factor*y_in[:, self.idx_CO]
+        den_H2 = factor*y_in[:, self.idx_H2]
+        return 1.03e-10 * self.interp_CO(den_CO) \
+            * self.interp_H2(den_H2) \
+            * self.interp_Av(params_med["Av"])
