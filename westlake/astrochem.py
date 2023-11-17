@@ -35,9 +35,10 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
         })
 
     prepare_piecewise_rates(df_reac)
-    prepare_surface_reaction_params(
-        df_reac, df_spec, df_surf, meta_params, df_act, df_ma, df_barr)
-    medium = add_hopping_rate_module(medium, df_spec, meta_params)
+    if meta_params.model != "simple":
+        prepare_surface_reaction_params(
+            df_reac, df_spec, df_surf, meta_params, df_act, df_ma, df_barr)
+        medium = add_hopping_rate_module(medium, df_spec, meta_params)
 
     reaction_matrix = ReactionMatrix(df_reac, df_spec)
     rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
@@ -50,17 +51,23 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
     df_reac = add_CO_shielding(df_reac, df_spec, meta_params, formula_dict_ex_)
 
     # Create reaction module
-    formula_dict_ = builtin_astrochem_reactions(meta_params)
+    formula_dict_ = builtin_gas_reactions(meta_params)
+    formula_dict_surf = builtin_surface_reactions(meta_params)
+    if meta_params.model == "simple":
+        for key in formula_dict_surf:
+            formula_dict_[key] = NoReaction()
+    else:
+        formula_dict_.update(formula_dict_surf)
+        if not meta_params.use_photodesorption:
+            formula_dict_["CR photodesorption"] = NoReaction()
+            formula_dict_["UV photodesorption"] = NoReaction()
     if formula_dict is not None:
         formula_dict_.update(formula_dict)
-    if not meta_params.use_photodesorption:
-        formula_dict_["CR photodesorption"] = NoReaction()
-        formula_dict_["UV photodesorption"] = NoReaction()
     rmod, rmod_ex = create_formula_dict_reaction_module(
         df_reac, df_spec, formula_dict_, formula_dict_ex_,
     )
 
-    if meta_params.model == "two phase":
+    if meta_params.model == "simple" or meta_params.model == "two phase":
         return TwoPhaseTerm(rmod, rmod_ex, rmat_1st, rmat_2nd, medium)
     elif meta_params.model == "three phase":
         rmod_smt = create_surface_mantle_transition(df_reac, df_spec, meta_params)

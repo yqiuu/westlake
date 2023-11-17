@@ -13,6 +13,8 @@ def builtin_gas_reactions(meta_params):
         "ionpol1": Ionpol1(),
         "ionpol2": Ionpol2(),
         "gas grain": GasGrainReaction(),
+        "surface H2 formation": SurfaceH2Formation(meta_params),
+        "surface H accretion": SurfaceHAccretion(meta_params),
     }
 
 
@@ -124,6 +126,26 @@ class GasGrainReaction(ReactionRate):
         T_gas = params_env["T_gas"]
         rate = params_reac["alpha"]*(T_gas/300.)**params_reac["beta"]
         return rate
+
+
+class SurfaceHAccretion(ReactionRate):
+    def __init__(self, meta_params):
+        super().__init__(["alpha", "beta"])
+        self.register_buffer("dtg_num_ratio_0", torch.tensor(meta_params.dtg_num_ratio_0))
+
+    def forward(self, params_env, params_reac, **params_extra):
+        return params_reac["alpha"]*(params_env["T_gas"]/300)**params_reac["beta"] \
+            *self.dtg_num_ratio_0*params_env["den_gas"]
+
+
+class SurfaceH2Formation(ReactionRate):
+    def __init__(self, meta_params):
+        super().__init__(["alpha"])
+        self.register_buffer("inv_dtg_num_ratio_0", torch.tensor(1./meta_params.dtg_num_ratio_0))
+
+    def forward(self, params_env, params_reac, **params_extra):
+        return 1.186e7*params_reac["alpha"]*torch.exp(-225./params_env["T_gas"]) \
+            *self.inv_dtg_num_ratio_0/params_env["den_gas"]
 
 
 def clamp_gas_temperature(params_env, params_reac):
