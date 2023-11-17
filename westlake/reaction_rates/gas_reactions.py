@@ -2,6 +2,8 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+from .reaction_rates import ReactionRate
+
 
 def builtin_gas_reactions(meta_params):
     return {
@@ -14,14 +16,14 @@ def builtin_gas_reactions(meta_params):
     }
 
 
-class CosmicRayIonization(nn.Module):
+class CosmicRayIonization(ReactionRate):
     """Cosmic-ray ionization.
 
     Args:
         rate_cr_ion (float): H2 cosmic-ray ionization rate [s^-1].
     """
     def __init__(self, rate_cr_ion):
-        super(CosmicRayIonization, self).__init__()
+        super().__init__(["alpha"])
         self.register_buffer("rate_cr_ion", torch.tensor(rate_cr_ion))
 
     def forward(self, params_env, params_reac, **params_extra):
@@ -37,7 +39,10 @@ class CosmicRayIonization(nn.Module):
         return rate
 
 
-class Photodissociation(nn.Module):
+class Photodissociation(ReactionRate):
+    def __init__(self):
+        super().__init__(["alpha", "gamma"])
+
     def forward(self, params_env, params_reac, **params_extra):
         """
         Args:
@@ -52,7 +57,13 @@ class Photodissociation(nn.Module):
         return rate
 
 
-class ModifiedArrhenius(nn.Module):
+class ModifiedArrhenius(ReactionRate):
+    def __init__(self):
+        super().__init__([
+            "alpha", "beta", "gamma",
+            "T_min", "T_max", "is_leftmost", "is_rightmost"
+        ])
+
     def forward(self, params_env, params_reac, **params_extra):
         """
         Args:
@@ -70,7 +81,10 @@ class ModifiedArrhenius(nn.Module):
         return rate
 
 
-class Ionpol1(nn.Module):
+class Ionpol1(ReactionRate):
+    def __init__(self):
+        super().__init__(["alpha", "beta", "gamma"])
+
     def forward(self, params_env, params_reac, **params_extra):
         alpha = params_reac["alpha"]
         beta = params_reac["beta"]
@@ -80,7 +94,10 @@ class Ionpol1(nn.Module):
         return rate
 
 
-class Ionpol2(nn.Module):
+class Ionpol2(ReactionRate):
+    def __init__(self):
+        super().__init__(["alpha", "beta", "gamma"])
+
     def forward(self, params_env, params_reac, **params_extra):
         alpha = params_reac["alpha"]
         beta = params_reac["beta"]
@@ -91,7 +108,10 @@ class Ionpol2(nn.Module):
         return rate
 
 
-class GasGrainReaction(nn.Module):
+class GasGrainReaction(ReactionRate):
+    def __init__(self):
+        super().__init__(["alpha", "beta"])
+
     def forward(self, params_env, params_reac, **params_extra):
         """
         Args:

@@ -16,15 +16,6 @@ from .reaction_terms import TwoPhaseTerm, ThreePhaseTerm
 from .solver import solve_rate_equation
 
 
-def builtin_astrochem_reaction_param_names():
-    return [
-        "is_leftmost", "is_rightmost", "T_min", "T_max",
-        "alpha", "beta", "gamma",
-        "E_deso_r1", "freq_vib_r1", "factor_rate_acc_r1",
-        "E_act", "branching_ratio", "log_prob_surf_tunl"
-    ]
-
-
 def builtin_astrochem_reactions(meta_params):
     return {
         **builtin_gas_reactions(meta_params),
@@ -34,7 +25,7 @@ def builtin_astrochem_reactions(meta_params):
 
 def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
                            medium=None, df_act=None, df_ma=None, df_barr=None,
-                           param_names=None, formula_dict=None):
+                           formula_dict=None):
     if meta_params.use_static_medium and medium is None:
         medium = StaticMedium({
             'Av': meta_params.Av,
@@ -50,9 +41,6 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
 
     reaction_matrix = ReactionMatrix(df_reac, df_spec)
     rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
-    param_names_ = builtin_astrochem_reaction_param_names()
-    if param_names is not None:
-        param_names_.extend(param_names)
 
     # Find and add special formulae
     formula_dict_ex_ = {}
@@ -70,15 +58,12 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
         formula_dict_["UV photodesorption"] = NoReaction()
     rmod, rmod_ex = create_formula_dict_reaction_module(
         df_reac, df_spec, formula_dict_, formula_dict_ex_,
-        param_names_
     )
 
     if meta_params.model == "two phase":
         return TwoPhaseTerm(rmod, rmod_ex, rmat_1st, rmat_2nd, medium)
     elif meta_params.model == "three phase":
-        rmod_smt = create_surface_mantle_transition(
-            df_reac, df_spec, param_names_, meta_params
-        )
+        rmod_smt = create_surface_mantle_transition(df_reac, df_spec, meta_params)
 
         rmat_1st_surf, rmat_1st_other = split_surface_reactions(df_reac, rmat_1st)
         rmat_1st_surf_gain, rmat_1st_surf_loss = split_gain_loss(rmat_1st_surf)

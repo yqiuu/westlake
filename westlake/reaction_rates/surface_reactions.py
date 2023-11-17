@@ -7,6 +7,7 @@ import torch
 from torch import nn
 from astropy import units, constants
 
+from .reaction_rates import ReactionRate, NoReaction
 from ..constants import M_ATOM, K_B, H_BAR, FACTOR_VIB_FREQ
 
 
@@ -27,9 +28,9 @@ def builtin_surface_reactions(meta_params):
     }
 
 
-class ThermalEvaporation(nn.Module):
+class ThermalEvaporation(ReactionRate):
     def __init__(self, meta_params):
-        super(ThermalEvaporation, self).__init__()
+        super().__init__(["alpha", "freq_vib_r1", "E_deso_r1"])
 
     def forward(self, params_env, params_reac, **params_extra):
         return compute_evaporation_rate(
@@ -38,9 +39,9 @@ class ThermalEvaporation(nn.Module):
         )
 
 
-class CosmicRayEvaporation(nn.Module):
+class CosmicRayEvaporation(ReactionRate):
     def __init__(self, meta_params):
-        super(CosmicRayEvaporation, self).__init__()
+        super().__init__(["alpha", "freq_vib_r1", "E_deso_r1"])
         prefactor = (meta_params.rate_cr_ion + meta_params.rate_x_ion)/1.3e-17 \
             *(meta_params.rate_fe_ion*meta_params.tau_cr_peak)
         self.register_buffer("prefactor", torch.tensor(prefactor))
@@ -53,9 +54,9 @@ class CosmicRayEvaporation(nn.Module):
         )
 
 
-class UVPhotodesorption(nn.Module):
+class UVPhotodesorption(ReactionRate):
     def __init__(self, meta_params):
-        super(UVPhotodesorption, self).__init__()
+        super().__init__(["alpha"])
         self.register_buffer("prefactor",
             torch.tensor(1e8/meta_params.site_density*meta_params.uv_flux))
 
@@ -66,9 +67,9 @@ class UVPhotodesorption(nn.Module):
         return rate
 
 
-class CRPhotodesorption(nn.Module):
+class CRPhotodesorption(ReactionRate):
     def __init__(self, meta_params):
-        super(CRPhotodesorption, self).__init__()
+        super().__init__(["alpha"])
         self.register_buffer("prefactor",
             torch.tensor(1e4/meta_params.site_density*1.3e-17/meta_params.rate_cr_ion)
         )
@@ -80,9 +81,9 @@ class CRPhotodesorption(nn.Module):
         return rate
 
 
-class SurfaceAccretion(nn.Module):
+class SurfaceAccretion(ReactionRate):
     def __init__(self, meta_params):
-        super(SurfaceAccretion, self).__init__()
+        super().__init__(["alpha", "factor_rate_acc_r1"])
         self.register_buffer("dtg_num_ratio_0", torch.tensor(meta_params.dtg_num_ratio_0))
 
     def forward(self, params_env, params_reac, **params_extra):
@@ -90,9 +91,9 @@ class SurfaceAccretion(nn.Module):
             *(params_env["T_gas"].sqrt()*params_env["den_gas"]*self.dtg_num_ratio_0)
 
 
-class SurfaceHAccretion(nn.Module):
+class SurfaceHAccretion(ReactionRate):
     def __init__(self, meta_params):
-        super(SurfaceHAccretion, self).__init__()
+        super().__init__(["alpha", "beta"])
         self.register_buffer("dtg_num_ratio_0", torch.tensor(meta_params.dtg_num_ratio_0))
 
     def forward(self, params_env, params_reac, **params_extra):
@@ -100,9 +101,9 @@ class SurfaceHAccretion(nn.Module):
             *self.dtg_num_ratio_0*params_env["den_gas"]
 
 
-class SurfaceH2Formation(nn.Module):
+class SurfaceH2Formation(ReactionRate):
     def __init__(self, meta_params):
-        super(SurfaceH2Formation, self).__init__()
+        super().__init__(["alpha"])
         self.register_buffer("inv_dtg_num_ratio_0", torch.tensor(1./meta_params.dtg_num_ratio_0))
 
     def forward(self, params_env, params_reac, **params_extra):
@@ -110,9 +111,9 @@ class SurfaceH2Formation(nn.Module):
             *self.inv_dtg_num_ratio_0/params_env["den_gas"]
 
 
-class SurfaceReaction(nn.Module):
+class SurfaceReaction(ReactionRate):
     def __init__(self, meta_params):
-        super().__init__()
+        super().__init__(["alpha", "branching_ratio", "E_act", "log_prob_surf_tunl"])
         self.register_buffer("inv_dtg_num_ratio_0", torch.tensor(1./meta_params.dtg_num_ratio_0))
 
     def forward(self, params_med, params_reac, **params_extra):
@@ -122,11 +123,6 @@ class SurfaceReaction(nn.Module):
         prob = log_prob.exp()
         return params_reac["alpha"]*params_reac["branching_ratio"]/params_med["den_gas"] \
             *self.inv_dtg_num_ratio_0*rate_hopping*prob
-
-
-class NoReaction(nn.Module):
-    def forward(self, params_env, params_reac, **params_extra):
-        return torch.zeros_like(params_reac["alpha"])
 
 
 def compute_evaporation_rate(factor, freq_vib, E_d, T_dust):

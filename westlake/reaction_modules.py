@@ -81,8 +81,7 @@ class SurfaceMantleTransition(nn.Module):
         )
 
 
-def create_formula_dict_reaction_module(df_reac, df_spec,
-                                        formula_dict, formula_dict_ex, param_names):
+def create_formula_dict_reaction_module(df_reac, df_spec, formula_dict, formula_dict_ex):
     inds_fm_dict_all = defaultdict(list)
     for i_fm, fm in enumerate(df_reac["formula"]):
         inds_fm_dict_all[fm].append(i_fm)
@@ -97,6 +96,11 @@ def create_formula_dict_reaction_module(df_reac, df_spec,
         reac_str = ", ".join(inds_fm_dict_all.keys())
         raise ValueError(f"Unknown reactions: {reac_str}.")
 
+    param_names = {}
+    for fm in formula_dict.values():
+        for prop in fm.required_props:
+            param_names[prop] = 0
+    param_names = list(param_names.keys())
     params_reac = prepare_params_reac(df_reac, df_spec, param_names)
     #
     inds_reac = np.asarray(sum(inds_fm_dict.values(), start=[]))
@@ -115,8 +119,7 @@ def create_formula_dict_reaction_module(df_reac, df_spec,
     return rmod, rmod_ex
 
 
-
-def create_surface_mantle_transition(df_reac, df_spec, param_names, meta_params):
+def create_surface_mantle_transition(df_reac, df_spec, meta_params):
     inds_fm_dict = defaultdict(list)
     for i_fm, fm in enumerate(df_reac["formula"]):
         if fm == "mantle to surface":
@@ -126,7 +129,7 @@ def create_surface_mantle_transition(df_reac, df_spec, param_names, meta_params)
             inds_fm_dict[fm].append(i_fm)
     inds_reac = np.asarray(sum(inds_fm_dict.values(), start=[]))
     inds_reac = torch.as_tensor(inds_reac)
-    params_reac = prepare_params_reac(df_reac, df_spec, param_names)
+    params_reac = prepare_params_reac(df_reac, df_spec, [])
     return SurfaceMantleTransition(inds_fm_dict, inds_reac, params_reac, meta_params)
 
 
