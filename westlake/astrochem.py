@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from .reaction_rates import create_formula_dict_reaction_module, create_surface_mantle_transition
+from .reaction_modules import create_formula_dict_reaction_module, create_surface_mantle_transition
 from .gas_reactions import builtin_gas_reactions
 from .surface_reactions import (
     builtin_surface_reactions,
