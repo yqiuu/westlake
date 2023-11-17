@@ -2,8 +2,7 @@ from .utils import *
 from .preprocesses import *
 from .reaction_matrices import *
 from .reaction_modules import *
-from .surface_reactions import *
-from .gas_reactions import *
+from .reaction_rates import *
 from .astrochem import *
 from .medium import *
 from .solver import *

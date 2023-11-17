@@ -7,7 +7,7 @@ import torch
 from torch import nn
 from astropy import units, constants
 
-from .constants import M_ATOM, K_B, H_BAR, FACTOR_VIB_FREQ
+from ..constants import M_ATOM, K_B, H_BAR, FACTOR_VIB_FREQ
 
 
 def builtin_surface_reactions(meta_params):
