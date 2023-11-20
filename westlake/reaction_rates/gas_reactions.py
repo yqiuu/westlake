@@ -8,7 +8,7 @@ from .reaction_rates import ReactionRate
 def builtin_gas_reactions(meta_params):
     return {
         "CR ionization": CosmicRayIonization(meta_params.rate_cr_ion),
-        "photodissociation": Photodissociation(),
+        "photodissociation": Photodissociation(meta_params),
         "modified Arrhenius": ModifiedArrhenius(),
         "ionpol1": Ionpol1(),
         "ionpol2": Ionpol2(),
@@ -42,8 +42,9 @@ class CosmicRayIonization(ReactionRate):
 
 
 class Photodissociation(ReactionRate):
-    def __init__(self):
+    def __init__(self, meta_params):
         super().__init__(["alpha", "gamma"])
+        self.register_buffer("uv_flux", torch.tensor(meta_params.uv_flux))
 
     def forward(self, params_env, params_reac, **params_extra):
         """
@@ -54,9 +55,7 @@ class Photodissociation(ReactionRate):
         Returns:
             tensor: (R,). Reaction rate.
         """
-        Av = params_env["Av"]
-        rate = params_reac["alpha"]*torch.exp(-params_reac["gamma"]*Av)
-        return rate
+        return params_reac["alpha"]*torch.exp(-params_reac["gamma"]*params_env["Av"])*self.uv_flux
 
 
 class ModifiedArrhenius(ReactionRate):
