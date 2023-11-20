@@ -7,10 +7,11 @@ import torch
 from torch import nn
 from astropy import units, constants
 
-from .constants import M_ATOM, K_B, H_BAR, FACTOR_VIB_FREQ
+from .reaction_rates import ReactionRate, NoReaction
+from ..constants import M_ATOM, K_B, H_BAR, FACTOR_VIB_FREQ
 
 
-def builtin_surface_reactions_1st(meta_params):
+def builtin_surface_reactions(meta_params):
     return {
         'thermal evaporation': ThermalEvaporation(meta_params),
         'CR evaporation': CosmicRayEvaporation(meta_params),
@@ -18,23 +19,17 @@ def builtin_surface_reactions_1st(meta_params):
         'UV photodesorption': UVPhotodesorption(meta_params),
         'CR photodesorption': CRPhotodesorption(meta_params),
         'surface accretion': SurfaceAccretion(meta_params),
-        'surface H accretion': SurfaceHAccretion(meta_params),
         "surface to mantle": NoReaction(),
         "mantle to surface": NoReaction(),
-    }
-
-
-def builtin_surface_reactions_2nd(meta_params):
-    return {
         'surface reaction': SurfaceReaction(meta_params),
         'Eley-Rideal': NoReaction(),
-        'surface H2 formation': SurfaceH2Formation(meta_params),
+
     }
 
 
-class ThermalEvaporation(nn.Module):
+class ThermalEvaporation(ReactionRate):
     def __init__(self, meta_params):
-        super(ThermalEvaporation, self).__init__()
+        super().__init__(["alpha", "freq_vib_r1", "E_deso_r1"])
 
     def forward(self, params_env, params_reac, **params_extra):
         return compute_evaporation_rate(
@@ -43,9 +38,9 @@ class ThermalEvaporation(nn.Module):
         )
 
 
-class CosmicRayEvaporation(nn.Module):
+class CosmicRayEvaporation(ReactionRate):
     def __init__(self, meta_params):
-        super(CosmicRayEvaporation, self).__init__()
+        super().__init__(["alpha", "freq_vib_r1", "E_deso_r1"])
         prefactor = (meta_params.rate_cr_ion + meta_params.rate_x_ion)/1.3e-17 \
             *(meta_params.rate_fe_ion*meta_params.tau_cr_peak)
         self.register_buffer("prefactor", torch.tensor(prefactor))
@@ -58,9 +53,9 @@ class CosmicRayEvaporation(nn.Module):
         )
 
 
-class UVPhotodesorption(nn.Module):
+class UVPhotodesorption(ReactionRate):
     def __init__(self, meta_params):
-        super(UVPhotodesorption, self).__init__()
+        super().__init__(["alpha"])
         self.register_buffer("prefactor",
             torch.tensor(1e8/meta_params.site_density*meta_params.uv_flux))
 
@@ -71,9 +66,9 @@ class UVPhotodesorption(nn.Module):
         return rate
 
 
-class CRPhotodesorption(nn.Module):
+class CRPhotodesorption(ReactionRate):
     def __init__(self, meta_params):
-        super(CRPhotodesorption, self).__init__()
+        super().__init__(["alpha"])
         self.register_buffer("prefactor",
             torch.tensor(1e4/meta_params.site_density*1.3e-17/meta_params.rate_cr_ion)
         )
@@ -85,9 +80,9 @@ class CRPhotodesorption(nn.Module):
         return rate
 
 
-class SurfaceAccretion(nn.Module):
+class SurfaceAccretion(ReactionRate):
     def __init__(self, meta_params):
-        super(SurfaceAccretion, self).__init__()
+        super().__init__(["alpha", "factor_rate_acc_r1"])
         self.register_buffer("dtg_num_ratio_0", torch.tensor(meta_params.dtg_num_ratio_0))
 
     def forward(self, params_env, params_reac, **params_extra):
@@ -95,29 +90,9 @@ class SurfaceAccretion(nn.Module):
             *(params_env["T_gas"].sqrt()*params_env["den_gas"]*self.dtg_num_ratio_0)
 
 
-class SurfaceHAccretion(nn.Module):
+class SurfaceReaction(ReactionRate):
     def __init__(self, meta_params):
-        super(SurfaceHAccretion, self).__init__()
-        self.register_buffer("dtg_num_ratio_0", torch.tensor(meta_params.dtg_num_ratio_0))
-
-    def forward(self, params_env, params_reac, **params_extra):
-        return params_reac["alpha"]*(params_env["T_gas"]/300)**params_reac["beta"] \
-            *self.dtg_num_ratio_0*params_env["den_gas"]
-
-
-class SurfaceH2Formation(nn.Module):
-    def __init__(self, meta_params):
-        super(SurfaceH2Formation, self).__init__()
-        self.register_buffer("inv_dtg_num_ratio_0", torch.tensor(1./meta_params.dtg_num_ratio_0))
-
-    def forward(self, params_env, params_reac, **params_extra):
-        return 1.186e7*params_reac["alpha"]*torch.exp(-225./params_env["T_gas"]) \
-            *self.inv_dtg_num_ratio_0/params_env["den_gas"]
-
-
-class SurfaceReaction(nn.Module):
-    def __init__(self, meta_params):
-        super().__init__()
+        super().__init__(["alpha", "branching_ratio", "E_act", "log_prob_surf_tunl"])
         self.register_buffer("inv_dtg_num_ratio_0", torch.tensor(1./meta_params.dtg_num_ratio_0))
 
     def forward(self, params_med, params_reac, **params_extra):
@@ -129,17 +104,12 @@ class SurfaceReaction(nn.Module):
             *self.inv_dtg_num_ratio_0*rate_hopping*prob
 
 
-class NoReaction(nn.Module):
-    def forward(self, params_env, params_reac, **params_extra):
-        return torch.zeros_like(params_reac["alpha"])
-
-
 def compute_evaporation_rate(factor, freq_vib, E_d, T_dust):
     return factor*freq_vib*torch.exp(-E_d/T_dust)
 
 
 def prepare_surface_reaction_params(df_reac, df_spec, df_surf, meta_params,
-                                    df_act=None, df_ma=None, df_barr=None):
+                                    df_act=None, df_br=None, df_ma=None, df_barr=None):
     """Prepare surface reaction parameters.
 
     Assign the surface reaction parameters to the input reaction dataframe. This
@@ -149,6 +119,7 @@ def prepare_surface_reaction_params(df_reac, df_spec, df_surf, meta_params,
         df_reac (pd.DataFrame):
         df_surf (pd.DataFrame):
         df_act (pd.DataFrame | None):
+        df_br (pd.DataFrame | None): Branching ratios.
         spec_table (pd.DataFrame):
         meta_params (MetaPrameters):
         df_barr (dict | None, optional): Defaults to None.
@@ -157,6 +128,7 @@ def prepare_surface_reaction_params(df_reac, df_spec, df_surf, meta_params,
     assign_surface_params(df_reac, df_spec, df_surf)
     assign_activation_energy(df_reac, df_act)
     compute_branching_ratio(df_reac, df_surf, meta_params)
+    assign_branching_ratio(df_reac, df_br)
     assign_surface_tunneling_probability(df_reac, df_surf, meta_params)
 
 
@@ -383,6 +355,20 @@ def compute_branching_ratio_rrk_desorption(df_reac, spec_table, meta_params):
     frac_deso[cond] = 1 - frac_deso[cond]
     df_tmp["branching_ratio"] *= frac_deso
     df_reac.loc[df_tmp.index, "branching_ratio"] = df_tmp["branching_ratio"].values
+
+
+def assign_branching_ratio(df_reac, df_br):
+    """Assign external branching ration.
+
+    Args:
+        df_reac (pd.DataFrame): Reaction dataframe.
+        df_br (pd.DataFrame): Branching ratios.
+    """
+    if df_br is None:
+        return
+    inds = df_br.index.get_indexer(df_reac["key"])
+    cond = inds != -1
+    df_reac.loc[cond, "branching_ratio"] = df_br.iloc[inds[cond]]["branching_ratio"].values
 
 
 def assign_surface_tunneling_probability(df_reac, df_surf, meta_params):

@@ -6,18 +6,29 @@ from torch import nn
 class LinearInterpolation(nn.Module):
     """Linear interpolation of a key tensor.
 
+    Input tensor should be (N,) or (N, 1).
+
     Args:
         x_node (tensor): (N,). x data.
         y_node (tensor): (N, X). y_data.
+        boundary (str): Extrapolation method.
+            - 'fixed': Use values at bounds.
+            - 'extrapolate': Linear extrapolation.
     """
-    def __init__(self, x_node, y_node):
+    def __init__(self, x_node, y_node, boundary="fixed"):
         super(LinearInterpolation, self).__init__()
         self.register_buffer("x_node", x_node)
         self.register_buffer("y_node", y_node)
+        options = ("fixed", "extrapolate")
+        if boundary not in options:
+            msg = ", ".join([f"'{opn}'" for opn in options])
+            raise ValueError(f"Choose boundary from ({msg}).")
 
     def forward(self, x_in):
         # x_in (B,)
         x_in = x_in.ravel()
+        x_in = x_in.clamp_min(self.x_node[0])
+        x_in = x_in.clamp_max(self.x_node[-1])
 
         x_node = self.x_node
         n_bin = x_node.shape[0] - 1

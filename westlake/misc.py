@@ -1,5 +1,5 @@
 from .reaction_matrices import ReactionMatrix
-from .reaction_rates import ConstantReactionRate
+from .reaction_modules import ConstantReactionRate
 from .reaction_terms import ConstantRateTerm
 
 

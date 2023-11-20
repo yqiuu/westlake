@@ -2,31 +2,30 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+from .reaction_rates import ReactionRate
 
-def builtin_gas_reactions_1st(meta_params):
+
+def builtin_gas_reactions(meta_params):
     return {
         "CR ionization": CosmicRayIonization(meta_params.rate_cr_ion),
-        "photodissociation": Photodissociation(),
-    }
-
-
-def builtin_gas_reactions_2nd(meta_params):
-    return {
+        "photodissociation": Photodissociation(meta_params),
         "modified Arrhenius": ModifiedArrhenius(),
         "ionpol1": Ionpol1(),
         "ionpol2": Ionpol2(),
         "gas grain": GasGrainReaction(),
+        "surface H2 formation": SurfaceH2Formation(meta_params),
+        "surface H accretion": SurfaceHAccretion(meta_params),
     }
 
 
-class CosmicRayIonization(nn.Module):
+class CosmicRayIonization(ReactionRate):
     """Cosmic-ray ionization.
 
     Args:
         rate_cr_ion (float): H2 cosmic-ray ionization rate [s^-1].
     """
     def __init__(self, rate_cr_ion):
-        super(CosmicRayIonization, self).__init__()
+        super().__init__(["alpha"])
         self.register_buffer("rate_cr_ion", torch.tensor(rate_cr_ion))
 
     def forward(self, params_env, params_reac, **params_extra):
@@ -42,7 +41,11 @@ class CosmicRayIonization(nn.Module):
         return rate
 
 
-class Photodissociation(nn.Module):
+class Photodissociation(ReactionRate):
+    def __init__(self, meta_params):
+        super().__init__(["alpha", "gamma"])
+        self.register_buffer("uv_flux", torch.tensor(meta_params.uv_flux))
+
     def forward(self, params_env, params_reac, **params_extra):
         """
         Args:
@@ -52,12 +55,16 @@ class Photodissociation(nn.Module):
         Returns:
             tensor: (R,). Reaction rate.
         """
-        Av = params_env["Av"]
-        rate = params_reac["alpha"]*torch.exp(-params_reac["gamma"]*Av)
-        return rate
+        return params_reac["alpha"]*torch.exp(-params_reac["gamma"]*params_env["Av"])*self.uv_flux
 
 
-class ModifiedArrhenius(nn.Module):
+class ModifiedArrhenius(ReactionRate):
+    def __init__(self):
+        super().__init__([
+            "alpha", "beta", "gamma",
+            "T_min", "T_max", "is_leftmost", "is_rightmost"
+        ])
+
     def forward(self, params_env, params_reac, **params_extra):
         """
         Args:
@@ -75,7 +82,10 @@ class ModifiedArrhenius(nn.Module):
         return rate
 
 
-class Ionpol1(nn.Module):
+class Ionpol1(ReactionRate):
+    def __init__(self):
+        super().__init__(["alpha", "beta", "gamma"])
+
     def forward(self, params_env, params_reac, **params_extra):
         alpha = params_reac["alpha"]
         beta = params_reac["beta"]
@@ -85,7 +95,10 @@ class Ionpol1(nn.Module):
         return rate
 
 
-class Ionpol2(nn.Module):
+class Ionpol2(ReactionRate):
+    def __init__(self):
+        super().__init__(["alpha", "beta", "gamma"])
+
     def forward(self, params_env, params_reac, **params_extra):
         alpha = params_reac["alpha"]
         beta = params_reac["beta"]
@@ -96,7 +109,10 @@ class Ionpol2(nn.Module):
         return rate
 
 
-class GasGrainReaction(nn.Module):
+class GasGrainReaction(ReactionRate):
+    def __init__(self):
+        super().__init__(["alpha", "beta"])
+
     def forward(self, params_env, params_reac, **params_extra):
         """
         Args:
@@ -109,6 +125,26 @@ class GasGrainReaction(nn.Module):
         T_gas = params_env["T_gas"]
         rate = params_reac["alpha"]*(T_gas/300.)**params_reac["beta"]
         return rate
+
+
+class SurfaceHAccretion(ReactionRate):
+    def __init__(self, meta_params):
+        super().__init__(["alpha", "beta"])
+        self.register_buffer("dtg_num_ratio_0", torch.tensor(meta_params.dtg_num_ratio_0))
+
+    def forward(self, params_env, params_reac, **params_extra):
+        return params_reac["alpha"]*(params_env["T_gas"]/300)**params_reac["beta"] \
+            *self.dtg_num_ratio_0*params_env["den_gas"]
+
+
+class SurfaceH2Formation(ReactionRate):
+    def __init__(self, meta_params):
+        super().__init__(["alpha"])
+        self.register_buffer("inv_dtg_num_ratio_0", torch.tensor(1./meta_params.dtg_num_ratio_0))
+
+    def forward(self, params_env, params_reac, **params_extra):
+        return 1.186e7*params_reac["alpha"]*torch.exp(-225./params_env["T_gas"]) \
+            *self.inv_dtg_num_ratio_0/params_env["den_gas"]
 
 
 def clamp_gas_temperature(params_env, params_reac):

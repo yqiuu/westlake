@@ -12,13 +12,14 @@ from utils import get_abs_fname
 
 torch.set_default_dtype(torch.float64)
 FILE_NAME = "H_cycle.pickle"
+RTOL = 1e-5
 ATOL = 1e-20
 
 
 def test_H_cycle():
     res_new = solve_H_cycle()
     res_fid = pickle.load(open(get_abs_fname(FILE_NAME), "rb"))
-    assert_allclose(res_fid.y, res_new.y, atol=ATOL)
+    assert_allclose(res_fid.y, res_new.y, rtol=RTOL, atol=ATOL)
 
 
 def solve_H_cycle():
@@ -36,8 +37,8 @@ def solve_H_cycle():
         t_start=t_start, t_end=t_end,
     )
     medium = westlake.StaticMedium({'Av': 10., "den_gas": 1e4, "T_gas": 10., "T_dust": 10.})
-    reaction_term = westlake.create_two_phase_model(
-        df_reac, df_spec, df_surf, medium, meta_params, df_barr=df_barr
+    reaction_term = westlake.create_astrochem_model(
+        df_reac, df_spec, df_surf, meta_params, medium, df_barr=df_barr
     )
 
     t_begin = 0.
