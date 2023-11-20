@@ -8,7 +8,7 @@ from .reaction_rates import (
     prepare_surface_reaction_params,
     NoReaction,
 )
-from .shielding import H2Shielding_Lee1996, COShielding_Lee1996
+from .reaction_rates.shielding import H2Shielding_Lee1996, COShielding_Lee1996
 from .preprocesses import prepare_piecewise_rates
 from .medium import StaticMedium, SequentialMedium, ThermalHoppingRate
 from .reaction_matrices import ReactionMatrix

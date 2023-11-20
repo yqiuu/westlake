@@ -1,19 +1,19 @@
 import pickle
-from os import path
+from pathlib import Path
 
 import torch
 from torch import nn
 
-from .utils import LinearInterpolation
+from ..utils import LinearInterpolation
 
 
 def load_H2_shielding_data():
-    fname = path.join(path.dirname(path.abspath(__file__)), "data", "H2_shielding_Lee+1996.pickle")
+    fname = Path(__file__).parent.parent/Path("data")/Path("H2_shielding_Lee+1996.pickle")
     return pickle.load(open(fname, "rb"))
 
 
 def load_CO_shielding_data():
-    fname = path.join(path.dirname(path.abspath(__file__)), "data", "CO_shielding_Lee+1996.pickle")
+    fname = Path(__file__).parent.parent/Path("data")/Path("CO_shielding_Lee+1996.pickle")
     return pickle.load(open(fname, "rb"))
 
 
