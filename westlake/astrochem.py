@@ -24,8 +24,8 @@ def builtin_astrochem_reactions(meta_params):
 
 
 def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
-                           medium=None, df_act=None, df_ma=None, df_barr=None,
-                           formula_dict=None):
+                           medium=None, df_act=None, df_br=None,
+                           df_ma=None, df_barr=None, formula_dict=None):
     if meta_params.use_static_medium and medium is None:
         medium = StaticMedium({
             'Av': meta_params.Av,
@@ -37,7 +37,7 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
     prepare_piecewise_rates(df_reac)
     if meta_params.model != "simple":
         prepare_surface_reaction_params(
-            df_reac, df_spec, df_surf, meta_params, df_act, df_ma, df_barr)
+            df_reac, df_spec, df_surf, meta_params, df_act, df_br, df_ma, df_barr)
         medium = add_hopping_rate_module(medium, df_spec, meta_params)
 
     reaction_matrix = ReactionMatrix(df_reac, df_spec)

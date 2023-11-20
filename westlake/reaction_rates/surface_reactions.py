@@ -109,7 +109,7 @@ def compute_evaporation_rate(factor, freq_vib, E_d, T_dust):
 
 
 def prepare_surface_reaction_params(df_reac, df_spec, df_surf, meta_params,
-                                    df_act=None, df_ma=None, df_barr=None):
+                                    df_act=None, df_br=None, df_ma=None, df_barr=None):
     """Prepare surface reaction parameters.
 
     Assign the surface reaction parameters to the input reaction dataframe. This
@@ -119,6 +119,7 @@ def prepare_surface_reaction_params(df_reac, df_spec, df_surf, meta_params,
         df_reac (pd.DataFrame):
         df_surf (pd.DataFrame):
         df_act (pd.DataFrame | None):
+        df_br (pd.DataFrame | None): Branching ratios.
         spec_table (pd.DataFrame):
         meta_params (MetaPrameters):
         df_barr (dict | None, optional): Defaults to None.
@@ -127,6 +128,7 @@ def prepare_surface_reaction_params(df_reac, df_spec, df_surf, meta_params,
     assign_surface_params(df_reac, df_spec, df_surf)
     assign_activation_energy(df_reac, df_act)
     compute_branching_ratio(df_reac, df_surf, meta_params)
+    assign_branching_ratio(df_reac, df_br)
     assign_surface_tunneling_probability(df_reac, df_surf, meta_params)
 
 
@@ -353,6 +355,20 @@ def compute_branching_ratio_rrk_desorption(df_reac, spec_table, meta_params):
     frac_deso[cond] = 1 - frac_deso[cond]
     df_tmp["branching_ratio"] *= frac_deso
     df_reac.loc[df_tmp.index, "branching_ratio"] = df_tmp["branching_ratio"].values
+
+
+def assign_branching_ratio(df_reac, df_br):
+    """Assign external branching ration.
+
+    Args:
+        df_reac (pd.DataFrame): Reaction dataframe.
+        df_br (pd.DataFrame): Branching ratios.
+    """
+    if df_br is None:
+        return
+    inds = df_br.index.get_indexer(df_reac["key"])
+    cond = inds != -1
+    df_reac.loc[cond, "branching_ratio"] = df_br.iloc[inds[cond]]["branching_ratio"].values
 
 
 def assign_surface_tunneling_probability(df_reac, df_surf, meta_params):
