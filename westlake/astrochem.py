@@ -27,6 +27,71 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
                            medium=None, df_act=None, df_br=None,
                            df_ma=None, df_barr=None, formula_dict=None,
                            use_copy=True):
+    """Create the primary object for computing the chemical model.
+
+    Args:
+        df_reac (pd.DataFrame): The reaction dataframe should include:
+            - index: Nautral number.
+            - 'reactant_1': The first reactant.
+            - 'reactant_2': The second reactant. Use '' for first order
+              reactions.
+            - 'products": Each product should be joined using ';'. For instance,
+            'H;OH'.
+            - 'formula': Formula name.
+            - 'alpha': Reaction parameter.
+            - 'beta': Reaction parameter.
+            - 'gamma': Reaction parameter.
+            - 'T_min': Minimum reaction temperature.
+            - 'T_max': Maximum reaction temperature.
+
+        df_spec (pd.DataFrame): The specie dataframe should include:
+            - index: Specie name.
+            - 'charge': Charge.
+            - 'num_atoms': Number of atoms.
+            - 'ma': Molecular or atomic weight [amu].
+
+        df_surf (pd.DataFrame): Surface parameters. The dataframe should
+            include:
+            - index: Specie name.
+            - 'E_deso': Desorption energy [K].
+            - 'dHf': Enthalpy of formation [kcal/mol].
+
+        meta_params (MetaParameter): Config.
+        medium (Medium, optional): Medium. Defaults to None.
+        df_act (pd.DataFrame, optional): Activation energy. Defaults to None.
+            The dataframe should include:
+            - index: Reaction key.
+            - 'E_act': Activation energy [K].
+
+        df_br (pd.DataFrame, optional): Additional Branching ratio. This will
+            overwrite all builtin branching ratios. Defaults to None.
+            The dataframe should include:
+            - index: Reaction key.
+            - 'branching_ratio': Branching ratio.
+
+        df_barr (pd.DataFrame, optional): Additional diffusion energy. This will
+            overwrite all builtin values, which are obtained by multiplying a
+            factor to the desorption energy. Defaults to None. The dataframe
+            should include:
+            - index: Specie name.
+            - 'E_barr': Diffusion energy [K].
+
+        df_ma (pd.DataFrame, optional): Additional molecular weights. Defaults
+            to None. The dataframe should include:
+            - index: Specie name.
+            - 'ma': molecular weight [amu].
+
+        formula_dict (dict, optional): User-defined reaction formulae.
+            Defaults to None.
+            - key: Formula name.
+            - value: An instance of `ReactionRate`.
+
+        use_copy (bool, optional): If True, copy the input reaction and specie
+            dataframe. Defaults to True.
+
+    Returns:
+        nn.Module: A callable that can be passed to a ODE solver.
+    """
     if use_copy:
         df_reac = df_reac.copy()
         df_spec = df_spec.copy()
