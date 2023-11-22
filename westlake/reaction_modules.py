@@ -1,5 +1,4 @@
 from collections import defaultdict
-from dataclasses import replace
 
 import numpy as np
 import pandas as pd
@@ -7,16 +6,6 @@ import torch
 from torch import nn
 
 from .utils import data_frame_to_tensor_dict
-
-
-class ConstantReactionRate(nn.Module):
-    def __init__(self, rmat, rate):
-        super(ConstantReactionRate, self).__init__()
-        rate = torch.tensor(rmat.rate_sign*rate[rmat.inds_k], dtype=torch.get_default_dtype())
-        self.register_buffer("rate", rate)
-
-    def forward(self):
-        return self.rate
 
 
 class FormulaDictReactionModule(nn.Module):
