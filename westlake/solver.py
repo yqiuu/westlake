@@ -1,9 +1,11 @@
 import torch
+from torch.func import jacrev
 from scipy.integrate import solve_ivp
 
 
-def solve_rate_equation(reaction_term, t_span, ab_0, method="LSODA", rtol=1e-4, atol=1e-20,
-                        t_eval=None, u_factor=1., device="cpu", show_progress=True):
+def solve_rate_equation(reaction_term, t_span, ab_0, method="LSODA",
+                        rtol=1e-4, atol=1e-20, t_eval=None, u_factor=1.,
+                        use_auto_jac=False, device="cpu", show_progress=True):
     """Solve the rate equations.
 
     Args:
@@ -17,6 +19,8 @@ def solve_rate_equation(reaction_term, t_span, ab_0, method="LSODA", rtol=1e-4, 
             otherwise use the points obtaiend by the solver. Defaults to None.
         u_factor (float, optional): Unit factor that is mutiplied by any input
             time variables such as `t_span`. Defaults to 1.
+        use_auto_jac (bool, optional): If True, use `jacrev` in `torch` to
+            compute jacobian.
         device (str, optional): The device for `reaction_term`.
             Defaults to "cpu".
         show_progress: If True, print messages to show the progress.
@@ -42,13 +46,24 @@ def solve_rate_equation(reaction_term, t_span, ab_0, method="LSODA", rtol=1e-4, 
             y_out = y_out.T
         return y_out.cpu().numpy()
 
-    def wrapper_jac(t_in, y_in):
-        t_in = torch.tensor(t_in, dtype=dtype, device=device)
-        t_in = torch.atleast_1d(t_in)
-        y_in = torch.tensor(y_in, dtype=dtype, device=device)
-        y_in = torch.atleast_1d(y_in)
-        jac_out = reaction_term.jacobian(t_in, y_in)
-        return jac_out.cpu().numpy()
+    if use_auto_jac:
+        jacobian = jacrev(reaction_term, argnums=1)
+
+        def wrapper_jac(t_in, y_in):
+            t_in = torch.tensor(t_in, dtype=dtype, device=device)
+            t_in = torch.atleast_1d(t_in)
+            y_in = torch.tensor(y_in, dtype=dtype, device=device)
+            y_in = torch.atleast_1d(y_in)
+            jac_out = jacobian(t_in, y_in)
+            return jac_out.cpu().numpy()
+    else:
+        def wrapper_jac(t_in, y_in):
+            t_in = torch.tensor(t_in, dtype=dtype, device=device)
+            t_in = torch.atleast_1d(t_in)
+            y_in = torch.tensor(y_in, dtype=dtype, device=device)
+            y_in = torch.atleast_1d(y_in)
+            jac_out = reaction_term.jacobian(t_in, y_in)
+            return jac_out.cpu().numpy()
 
     t_span = tuple(t*u_factor for t in t_span)
     if t_eval is not None:

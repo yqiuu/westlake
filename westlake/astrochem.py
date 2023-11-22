@@ -294,7 +294,7 @@ def add_hopping_rate_module(medium, df_spec, config):
 
 def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config,
                                   t_span=None, t_eval=None, method=None, rtol=None, atol=None,
-                                  device="cpu", show_progress=True):
+                                  use_auto_jac=None, device="cpu", show_progress=True):
     """Solve the rate equations for astrochemical problems.
 
     Args:
@@ -312,6 +312,8 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config,
         t_span = (config.t_start, config.t_end)
     if method is None:
         method = config.solver
+    if use_auto_jac is None:
+        use_auto_jac = config.use_auto_jac
     if rtol is None:
         rtol = config.rtol
     if atol is None:
@@ -323,6 +325,7 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config,
         atol=atol,
         t_eval=t_eval,
         u_factor=config.to_second,
+        use_auto_jac=use_auto_jac,
         device=device,
         show_progress=show_progress
     )

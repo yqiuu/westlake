@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-from torch.func import jacrev
 
 from .utils import TensorDict
 from .assemblers import Assembler

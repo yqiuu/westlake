@@ -91,6 +91,7 @@ class Config:
     rtol: float = 1e-4
     atol: float = 1e-20
     ab_0_min: float = 0.
+    use_auto_jac: bool = False
 
     #
     to_second: float = units.year.to(units.second)
