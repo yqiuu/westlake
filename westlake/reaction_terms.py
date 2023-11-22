@@ -75,7 +75,7 @@ class TwoPhaseTerm(nn.Module):
         inds_id_1st = self.inds_id_1st
         inds_id_2nd = self.inds_id_2nd
         n_reac = len(inds_id_1st) + len(inds_id_2nd)
-        coeffs = torch.zeros([len(t_in), n_reac])
+        coeffs = torch.zeros([len(t_in), n_reac], device=t_in.device)
         self.rmod.assign_rate_coeffs(coeffs, params_med)
         if self.rmod_ex is not None:
             self.rmod_ex.assign_rate_coeffs(coeffs, params_med, y_in)
@@ -137,7 +137,7 @@ class ThreePhaseTerm(nn.Module):
         inds_id_1st = self.inds_id_1st
         inds_id_2nd = self.inds_id_2nd
         n_reac = len(inds_id_1st) + len(inds_id_2nd)
-        coeffs = torch.zeros([len(t_in), n_reac])
+        coeffs = torch.zeros([len(t_in), n_reac], device=t_in.device)
 
         #
         self.rmod.assign_rate_coeffs(coeffs, params_med)
