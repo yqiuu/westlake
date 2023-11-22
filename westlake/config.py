@@ -11,7 +11,10 @@ class Config:
     """Config.
 
     Args:
-        ab_0_min (float): Minimum initial abundances.
+        model (str):
+            - 'simple': Gas phase model.
+            - 'two phase': Two phase model.
+            - 'three phase': Three phase model.
 
         site_density (float): Site density on one grain [cm^-2].
         grain_density (float): Grain mass density [g cm^-3].
@@ -32,6 +35,14 @@ class Config:
         vib_to_dissip_freq_ratio (float): The ratio of the surface-molecule bond
             frequency to the frequency at which energy is lost to the grain
             surface (Garrod el al. 2007).
+        surf_diff_to_deso_ratio (float): Factor to convert desorption energy
+            to diffusion energy for surface species.
+        mant_diff_to_deso_ratio (float): Factor to convert desorption energy
+            to diffusion energy for mantle species.
+        num_active_layers (float): Number of active layers.
+        uv_flux (float): UV flux.
+
+        use_photodesorption (bool): If True, enable photodesorption.
 
         den_Av_ratio_0 (float): Density to Av ratio to compute self-shielding.
         H2_shielding (str): Set "Lee+1996" to turn on H2 shielding. Set None to
@@ -39,12 +50,15 @@ class Config:
         CO_shielding (str): Set "Lee+1996" to turn on CO shielding. Set None to
             turn off.
 
-        to_second (float): A unit factor that converts the desired unit to
-            second. The default value converts year to second.
-
         method (str): ODE solver.
         rtol (float): Relative tolerance.
         atol (float): Ababsolute tolerance.
+        ab_0_min (float): Minimum initial abundances.
+        use_auto_jac (bool): If True, use `jacrev` in `torch` to compute
+            jacobian.
+
+        to_second (float): A unit factor that converts the desired unit to
+            second. The default value converts year to second.
     """
     model: str
 
