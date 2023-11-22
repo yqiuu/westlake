@@ -58,7 +58,8 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
 
         meta_params (MetaParameter): Config.
         medium (Medium, optional): Medium. Defaults to None.
-        df_act (pd.DataFrame, optional): Activation energy. Defaults to None.
+        df_act (pd.DataFrame, optional): Additional Activation energy. The
+        default value is 0. Defaults to None.
             The dataframe should include:
             - index: Reaction key.
             - 'E_act': Activation energy [K].
