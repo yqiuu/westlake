@@ -26,12 +26,12 @@ class H2Shielding_Lee1996(nn.Module):
         factor = 2.54e-11*factor[:, None]
         self.interp = LinearInterpolation(x_H2, factor)
         self.register_buffer("uv_flux", torch.tensor(config.uv_flux))
-        self.register_buffer("den_Av_ratio_0", torch.tensor(config.den_Av_ratio_0))
+        self.register_buffer("den_Av_ratio", torch.tensor(config.den_Av_ratio))
         self.idx_H2 = slice(idx_H2, idx_H2 + 1)
 
     def forward(self, params_med, params_reac, y_in, **kwargs):
         y_in = torch.atleast_2d(y_in)
-        den_H2 = params_med["Av"]*self.den_Av_ratio_0*y_in[:, self.idx_H2]
+        den_H2 = params_med["Av"]*self.den_Av_ratio*y_in[:, self.idx_H2]
         return self.uv_flux*self.interp(den_H2)
 
 
@@ -43,7 +43,7 @@ class COShielding_Lee1996(nn.Module):
         self.interp_H2 = self._create_interp(data, "H2")
         self.interp_Av = self._create_interp(data, "Av")
         self.register_buffer("uv_flux", torch.tensor(config.uv_flux))
-        self.register_buffer("den_Av_ratio_0", torch.tensor(config.den_Av_ratio_0))
+        self.register_buffer("den_Av_ratio", torch.tensor(config.den_Av_ratio))
         self.idx_CO = slice(idx_CO, idx_CO + 1)
         self.idx_H2 = slice(idx_H2, idx_H2 + 1)
 
@@ -54,7 +54,7 @@ class COShielding_Lee1996(nn.Module):
 
     def forward(self, params_med, params_reac, y_in, **kwargs):
         y_in = torch.atleast_2d(y_in)
-        factor = params_med["Av"]*self.den_Av_ratio_0
+        factor = params_med["Av"]*self.den_Av_ratio
         den_CO = factor*y_in[:, self.idx_CO]
         den_H2 = factor*y_in[:, self.idx_H2]
         return 1.03e-10 * self.interp_CO(den_CO) \
