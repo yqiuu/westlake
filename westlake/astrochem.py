@@ -25,8 +25,8 @@ def builtin_astrochem_reactions(meta_params):
 
 def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
                            medium=None, df_act=None, df_br=None,
-                           df_ma=None, df_barr=None, formula_dict=None,
-                           use_copy=True):
+                           df_barr=None, df_gap=None, df_ma=None,
+                           formula_dict=None, use_copy=True):
     """Create the primary object for computing the chemical model.
 
     Args:
@@ -76,6 +76,11 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
             - index: Specie name.
             - 'E_barr': Diffusion energy [K].
 
+        df_gap (pd.DataFrame, optional): Additional gap energy. Defaults to
+            None. The dataframe should include:
+            - index: Specie name.
+            - 'dE_band': Gap energy.
+
         df_ma (pd.DataFrame, optional): Additional molecular weights. Defaults
             to None. The dataframe should include:
             - index: Specie name.
@@ -109,7 +114,10 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
     prepare_piecewise_rates(df_reac)
     if meta_params.model != "simple":
         prepare_surface_reaction_params(
-            df_reac, df_spec, df_surf, meta_params, df_act, df_br, df_ma, df_barr)
+            df_reac, df_spec, df_surf, meta_params,
+            df_act=df_act, df_br=df_br,
+            df_barr=df_barr, df_gap=df_gap, df_ma=df_ma,
+        )
         medium = add_hopping_rate_module(medium, df_spec, meta_params)
 
     reaction_matrix = ReactionMatrix(df_reac, df_spec)

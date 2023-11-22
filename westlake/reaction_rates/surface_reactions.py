@@ -109,7 +109,8 @@ def compute_evaporation_rate(factor, freq_vib, E_d, T_dust):
 
 
 def prepare_surface_reaction_params(df_reac, df_spec, df_surf, meta_params,
-                                    df_act=None, df_br=None, df_ma=None, df_barr=None):
+                                    df_act=None, df_br=None,
+                                    df_barr=None, df_gap=None, df_ma=None):
     """Prepare surface reaction parameters.
 
     Assign the surface reaction parameters to the input reaction dataframe. This
@@ -117,14 +118,18 @@ def prepare_surface_reaction_params(df_reac, df_spec, df_surf, meta_params,
 
     Args:
         df_reac (pd.DataFrame):
+        df_spec (pd.DataFrame):
         df_surf (pd.DataFrame):
-        df_act (pd.DataFrame | None):
-        df_br (pd.DataFrame | None): Branching ratios.
-        spec_table (pd.DataFrame):
-        meta_params (MetaPrameters):
-        df_barr (dict | None, optional): Defaults to None.
+        meta_params (MetaParameter): Config.
+        df_act (pd.DataFrame, optional):
+        df_br (pd.DataFrame, optional): Additonal Branching ratio.
+        df_barr (pd.DataFrame, optional): Defaults to None.
+        df_gap (pd.DataFrame, optional): Gap energy [K].
     """
-    df_surf = prepare_surface_specie_params(df_surf, df_spec, meta_params, df_ma, df_barr)
+    df_surf = prepare_surface_specie_params(
+        df_surf, df_spec, meta_params,
+        df_barr=df_barr, df_gap=df_gap, df_ma=df_ma
+    )
     assign_surface_params(df_reac, df_spec, df_surf)
     assign_activation_energy(df_reac, df_act)
     compute_branching_ratio(df_reac, df_surf, meta_params)
@@ -132,22 +137,21 @@ def prepare_surface_reaction_params(df_reac, df_spec, df_surf, meta_params,
     assign_surface_tunneling_probability(df_reac, df_surf, meta_params)
 
 
-def prepare_surface_specie_params(df_surf, spec_table, meta_params, df_ma=None, df_barr=None):
+def prepare_surface_specie_params(df_surf, spec_table, meta_params, df_barr, df_gap, df_ma):
     """Prepare surface specie parameters.
 
     Args:
         df_surf_ret (pd.DataFrame): Surface parameters.
         spec_table (pd.DataFrame): Specie table.
         meta_params (MetaPrameters): Meta parameters.
-        special_dict (dict, optional): Defaults to None.
     """
     df_surf_ret = spec_table[["charge", "num_atoms", "ma"]].copy()
-    df_surf_ret = df_surf_ret.join(df_surf[["E_deso", "dE_band", "dHf"]])
+    df_surf_ret = df_surf_ret.join(df_surf[["E_deso", "dHf"]])
     assign_columns_to_normal_counterparts(df_surf_ret, ["E_deso", "dHf"])
     assign_vibration_frequency(df_surf_ret, meta_params, df_ma)
     compute_factor_rate_acc(df_surf_ret, meta_params)
     compute_barrier_energy(df_surf_ret, meta_params, df_barr)
-    compute_rate_tunneling(df_surf_ret, meta_params)
+    compute_rate_tunneling(df_surf_ret, df_gap, meta_params)
     return df_surf_ret
 
 
@@ -205,12 +209,15 @@ def compute_barrier_energy(spec_table, meta_params, df_barr=None):
         spec_table.loc[df_barr.index, "E_barr"] = df_barr["E_barr"].values
 
 
-def compute_rate_tunneling(spec_table, meta_params):
-    spec_table["rate_tunneling_a"] = spec_table["dE_band"]*(.25*K_B/H_BAR)
+def compute_rate_tunneling(df_surf, df_gap, meta_params):
+    df_surf["dE_band"] = 0.
+    if df_gap is not None:
+        df_surf.loc[df_gap.index, "dE_band"] = df_gap["dE_band"].values
+    df_surf["rate_tunneling_a"] = df_surf["dE_band"]*(.25*K_B/H_BAR)
 
     exponent = -2.*meta_params.diffusion_barrier_thickness/H_BAR \
-        *np.sqrt(2*K_B*M_ATOM**spec_table["ma"])
-    spec_table["rate_tunneling_b"] = spec_table["freq_vib"]*np.exp(exponent)
+        *np.sqrt(2*K_B*M_ATOM**df_surf["ma"])
+    df_surf["rate_tunneling_b"] = df_surf["freq_vib"]*np.exp(exponent)
 
 
 def assign_surface_params(df_reac, df_spec, df_surf):
