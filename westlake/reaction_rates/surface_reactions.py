@@ -137,15 +137,15 @@ def prepare_surface_reaction_params(df_reac, df_spec, df_surf, config,
     assign_surface_tunneling_probability(df_reac, df_surf, config)
 
 
-def prepare_surface_specie_params(df_surf, spec_table, config, df_barr, df_gap, df_ma):
+def prepare_surface_specie_params(df_surf, df_spec, config, df_barr, df_gap, df_ma):
     """Prepare surface specie parameters.
 
     Args:
         df_surf_ret (pd.DataFrame): Surface parameters.
-        spec_table (pd.DataFrame): Specie table.
+        df_spec (pd.DataFrame): Specie dataframe.
         config (Config): Config.
     """
-    df_surf_ret = spec_table[["charge", "num_atoms", "ma"]].copy()
+    df_surf_ret = df_spec[["charge", "num_atoms", "ma"]].copy()
     df_surf_ret = df_surf_ret.join(df_surf[["E_deso", "dHf"]])
     assign_columns_to_normal_counterparts(df_surf_ret, ["E_deso", "dHf"])
     assign_vibration_frequency(df_surf_ret, config, df_ma)
@@ -173,7 +173,7 @@ def compute_vibration_frequency(ma, E_deso, site_density):
     return np.sqrt(FACTOR_VIB_FREQ*site_density*E_deso/ma)
 
 
-def compute_factor_rate_acc(spec_table, config):
+def compute_factor_rate_acc(df_surf, config):
     """Compute the factor to calculate surface accretion rates.
 
     For surface accretion, the product is a surface specie, while the reactant
@@ -181,33 +181,33 @@ def compute_factor_rate_acc(spec_table, config):
     corresponding normal specie.
 
     Args:
-        spec_table (pd.Dataframe): Specie table.
+        df_surf (pd.Dataframe): Specie table.
         config (Config): Config.
         special_dict (dict | None, optional): A dict to specify special cases.
         Defaults to None.
     """
-    charge = spec_table["charge"].values
-    sticking_coeff = np.zeros_like(spec_table["ma"].values)
+    charge = df_surf["charge"].values
+    sticking_coeff = np.zeros_like(df_surf["ma"].values)
     sticking_coeff[charge == 0] = config.sticking_coeff_neutral
     sticking_coeff[charge > 0] = config.sticking_coeff_positive
     sticking_coeff[charge < -1] = config.sticking_coeff_negative
 
     grain_radius = config.grain_radius
     factor = math.pi*grain_radius*grain_radius*math.sqrt(8.*K_B/math.pi/M_ATOM)
-    spec_table["factor_rate_acc"] = factor*sticking_coeff/np.sqrt(spec_table["ma"])
-    assign_columns_to_normal_counterparts(spec_table, "factor_rate_acc")
+    df_surf["factor_rate_acc"] = factor*sticking_coeff/np.sqrt(df_surf["ma"])
+    assign_columns_to_normal_counterparts(df_surf, "factor_rate_acc")
 
 
-def compute_barrier_energy(spec_table, config, df_barr=None):
-    spec_table["E_barr"] = 0.
-    cond = spec_table.index.map(lambda name: name.startswith("J"))
-    spec_table.loc[cond, "E_barr"] = config.surf_diff_to_deso_ratio \
-        *spec_table.loc[cond, "E_deso"].values
-    cond = spec_table.index.map(lambda name: name.startswith("K"))
-    spec_table.loc[cond, "E_barr"] = config.mant_diff_to_deso_ratio \
-        *spec_table.loc[cond, "E_deso"].values
+def compute_barrier_energy(df_surf, config, df_barr=None):
+    df_surf["E_barr"] = 0.
+    cond = df_surf.index.map(lambda name: name.startswith("J"))
+    df_surf.loc[cond, "E_barr"] = config.surf_diff_to_deso_ratio \
+        *df_surf.loc[cond, "E_deso"].values
+    cond = df_surf.index.map(lambda name: name.startswith("K"))
+    df_surf.loc[cond, "E_barr"] = config.mant_diff_to_deso_ratio \
+        *df_surf.loc[cond, "E_deso"].values
     if df_barr is not None:
-        spec_table.loc[df_barr.index, "E_barr"] = df_barr["E_barr"].values
+        df_surf.loc[df_barr.index, "E_barr"] = df_barr["E_barr"].values
 
 
 def compute_rate_tunneling(df_surf, df_gap, config):
@@ -287,7 +287,7 @@ def assign_activation_energy(df_reac, df_act):
     df_reac.loc[inds, "E_act"] = df_reac.loc[inds_surf, "E_act"].values
 
 
-def compute_branching_ratio(df_reac, spec_table, config):
+def compute_branching_ratio(df_reac, df_surf, config):
     cond = df_reac["formula"] == 'surface reaction'
     df_tmp = df_reac.loc[cond, ["reactant_1", "reactant_2", "products", "E_act"]].copy()
 
@@ -315,10 +315,10 @@ def compute_branching_ratio(df_reac, spec_table, config):
     df_reac["branching_ratio"] = 1.
     df_reac.loc[df_tmp.index, "branching_ratio"] = df_tmp["branching_ratio"].values
 
-    compute_branching_ratio_rrk_desorption(df_reac, spec_table, config)
+    compute_branching_ratio_rrk_desorption(df_reac, df_surf, config)
 
 
-def compute_branching_ratio_rrk_desorption(df_reac, spec_table, config):
+def compute_branching_ratio_rrk_desorption(df_reac, df_surf, config):
     u_dHf = units.imperial.kilocal.cgs.scale/K_B/constants.N_A.value # Convert kilocal/mol to K
     cond = (df_reac["formula"] == 'surface reaction') \
         & df_reac["reactant_1"].map(lambda name: name.startswith("J"))
@@ -327,11 +327,11 @@ def compute_branching_ratio_rrk_desorption(df_reac, spec_table, config):
 
     # TODO: Understanding
     prod_first = []
-    lookup_E_deso = spec_table["E_deso"].to_dict()
+    lookup_E_deso = df_surf["E_deso"].to_dict()
     E_deso_max = np.zeros(len(df_tmp))
-    lookup_dHf = spec_table["dHf"].to_dict()
-    dHf_sum = spec_table.loc[df_tmp["reactant_1"], "dHf"].values \
-        + spec_table.loc[df_tmp["reactant_2"], "dHf"].values
+    lookup_dHf = df_surf["dHf"].to_dict()
+    dHf_sum = df_surf.loc[df_tmp["reactant_1"], "dHf"].values \
+        + df_surf.loc[df_tmp["reactant_2"], "dHf"].values
     for i_reac, prods in enumerate(df_tmp["products"].values):
         prods = prods.split(";")
         prod_first.append(prods[0])
@@ -345,7 +345,7 @@ def compute_branching_ratio_rrk_desorption(df_reac, spec_table, config):
     dHf_sum *= u_dHf # To K
     dHf_sum -= df_tmp["E_act"].values
 
-    num_atoms = spec_table.loc[prod_first, "num_atoms"].values
+    num_atoms = df_surf.loc[prod_first, "num_atoms"].values
     frac_deso = np.zeros_like(E_deso_max)
     cond = dHf_sum != 0.
     frac_deso[cond] = 1. - E_deso_max[cond]/dHf_sum[cond]
