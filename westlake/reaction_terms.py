@@ -129,7 +129,9 @@ class ThreePhaseTerm(nn.Module):
             + self.asm_2nd(y_in, coeffs, den_norm)
 
     def jacobian(self, t_in, y_in, **params_extra):
-        return jacrev(self, argnums=1)(t_in, y_in)
+        coeffs, den_norm = self.compute_rate_coeffs(t_in, y_in, **params_extra)
+        return self.asm_1st.jacobain(y_in, coeffs, den_norm) \
+            + self.asm_2nd.jacobain(y_in, coeffs, den_norm)
 
     def compute_rate_coeffs(self, t_in, y_in, **params_extra):
         params_med = self.module_med(t_in, **params_extra)
