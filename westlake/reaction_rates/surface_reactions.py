@@ -31,10 +31,10 @@ class ThermalEvaporation(ReactionRate):
     def __init__(self, config):
         super().__init__(["alpha", "freq_vib_r1", "E_deso_r1"])
 
-    def forward(self, params_env, params_reac, **params_extra):
+    def forward(self, params_med, params_reac, **params_extra):
         return compute_evaporation_rate(
             params_reac["alpha"], params_reac["freq_vib_r1"],
-            params_reac["E_deso_r1"], params_env["T_dust"]
+            params_reac["E_deso_r1"], params_med["T_dust"]
         )
 
 
@@ -46,7 +46,7 @@ class CosmicRayEvaporation(ReactionRate):
         self.register_buffer("prefactor", torch.tensor(prefactor))
         self.register_buffer("T_grain_cr_peak", torch.tensor(config.T_grain_cr_peak))
 
-    def forward(self, params_env, params_reac, **params_extra):
+    def forward(self, params_med, params_reac, **params_extra):
         return compute_evaporation_rate(
             self.prefactor*params_reac["alpha"], params_reac["freq_vib_r1"],
             params_reac["E_deso_r1"], self.T_grain_cr_peak
@@ -59,8 +59,8 @@ class UVPhotodesorption(ReactionRate):
         self.register_buffer("prefactor",
             torch.tensor(1e8/config.site_density*config.uv_flux))
 
-    def forward(self, params_env, params_reac, decay_factor=None, **params_extra):
-        rate = self.prefactor*params_reac["alpha"]*torch.exp(-2.*params_env["Av"])
+    def forward(self, params_med, params_reac, decay_factor=None, **params_extra):
+        rate = self.prefactor*params_reac["alpha"]*torch.exp(-2.*params_med["Av"])
         if decay_factor is not None:
             rate = rate*decay_factor
         return rate
@@ -73,7 +73,7 @@ class CRPhotodesorption(ReactionRate):
             torch.tensor(1e4/config.site_density*1.3e-17/config.rate_cr_ion)
         )
 
-    def forward(self, params_env, params_reac, decay_factor=None, **params_extra):
+    def forward(self, params_med, params_reac, decay_factor=None, **params_extra):
         rate = self.prefactor*params_reac["alpha"]
         if decay_factor is not None:
             rate = rate*decay_factor
@@ -85,9 +85,9 @@ class SurfaceAccretion(ReactionRate):
         super().__init__(["alpha", "factor_rate_acc_r1"])
         self.register_buffer("dtg_num_ratio_0", torch.tensor(config.dtg_num_ratio_0))
 
-    def forward(self, params_env, params_reac, **params_extra):
+    def forward(self, params_med, params_reac, **params_extra):
         return params_reac["alpha"]*params_reac["factor_rate_acc_r1"] \
-            *(params_env["T_gas"].sqrt()*params_env["den_gas"]*self.dtg_num_ratio_0)
+            *(params_med["T_gas"].sqrt()*params_med["den_gas"]*self.dtg_num_ratio_0)
 
 
 class SurfaceReaction(ReactionRate):
