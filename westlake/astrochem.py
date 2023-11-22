@@ -25,7 +25,12 @@ def builtin_astrochem_reactions(meta_params):
 
 def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
                            medium=None, df_act=None, df_br=None,
-                           df_ma=None, df_barr=None, formula_dict=None):
+                           df_ma=None, df_barr=None, formula_dict=None,
+                           use_copy=True):
+    if use_copy:
+        df_reac = df_reac.copy()
+        df_spec = df_spec.copy()
+
     if meta_params.use_static_medium and medium is None:
         medium = StaticMedium({
             'Av': meta_params.Av,
