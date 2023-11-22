@@ -160,6 +160,7 @@ def assign_vibration_frequency(df_surf, meta_params, df_ma=None):
         df_surf["ma"].values, df_surf["E_deso"].values, meta_params.site_density)
 
     if df_ma is not None:
+        # TODO: Do we need this check?
         df_ma = df_ma[np.isin(df_ma.index.values, df_surf.index.values)]
         df_surf.loc[df_ma.index, "freq_vib"] = compute_vibration_frequency(
             df_ma["ma"].values,
@@ -212,6 +213,8 @@ def compute_barrier_energy(spec_table, meta_params, df_barr=None):
 def compute_rate_tunneling(df_surf, df_gap, meta_params):
     df_surf["dE_band"] = 0.
     if df_gap is not None:
+        # TODO: Do we need this check?
+        df_gap = df_gap[np.isin(df_gap.index.values, df_surf.index.values)]
         df_surf.loc[df_gap.index, "dE_band"] = df_gap["dE_band"].values
     df_surf["rate_tunneling_a"] = df_surf["dE_band"]*(.25*K_B/H_BAR)
 
