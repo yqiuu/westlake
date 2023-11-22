@@ -16,14 +16,14 @@ from .reaction_terms import TwoPhaseTerm, ThreePhaseTerm
 from .solver import solve_rate_equation
 
 
-def builtin_astrochem_reactions(meta_params):
+def builtin_astrochem_reactions(config):
     return {
-        **builtin_gas_reactions(meta_params),
-        **builtin_surface_reactions(meta_params)
+        **builtin_gas_reactions(config),
+        **builtin_surface_reactions(config)
     }
 
 
-def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
+def create_astrochem_model(df_reac, df_spec, df_surf, config,
                            medium=None, df_act=None, df_br=None,
                            df_barr=None, df_gap=None, df_ma=None,
                            formula_dict=None, use_copy=True):
@@ -56,7 +56,7 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
             - 'E_deso': Desorption energy [K].
             - 'dHf': Enthalpy of formation [kcal/mol].
 
-        meta_params (MetaParameter): Config.
+        config (Config): Config.
         medium (Medium, optional): Medium. Defaults to None.
         df_act (pd.DataFrame, optional): Additional Activation energy. The
         default value is 0. Defaults to None.
@@ -104,22 +104,22 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
 
     df_reac = assign_reaction_key(df_reac)
 
-    if meta_params.use_static_medium and medium is None:
+    if config.use_static_medium and medium is None:
         medium = StaticMedium({
-            'Av': meta_params.Av,
-            "den_gas": meta_params.den_gas,
-            "T_gas": meta_params.T_gas,
-            "T_dust": meta_params.T_dust
+            'Av': config.Av,
+            "den_gas": config.den_gas,
+            "T_gas": config.T_gas,
+            "T_dust": config.T_dust
         })
 
     prepare_piecewise_rates(df_reac)
-    if meta_params.model != "simple":
+    if config.model != "simple":
         prepare_surface_reaction_params(
-            df_reac, df_spec, df_surf, meta_params,
+            df_reac, df_spec, df_surf, config,
             df_act=df_act, df_br=df_br,
             df_barr=df_barr, df_gap=df_gap, df_ma=df_ma,
         )
-        medium = add_hopping_rate_module(medium, df_spec, meta_params)
+        medium = add_hopping_rate_module(medium, df_spec, config)
 
     reaction_matrix = ReactionMatrix(df_reac, df_spec)
     rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
@@ -128,18 +128,18 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
     formula_dict_ex_ = {}
 
     #
-    df_reac = add_H2_shielding(df_reac, df_spec, meta_params, formula_dict_ex_)
-    df_reac = add_CO_shielding(df_reac, df_spec, meta_params, formula_dict_ex_)
+    df_reac = add_H2_shielding(df_reac, df_spec, config, formula_dict_ex_)
+    df_reac = add_CO_shielding(df_reac, df_spec, config, formula_dict_ex_)
 
     # Create reaction module
-    formula_dict_ = builtin_gas_reactions(meta_params)
-    formula_dict_surf = builtin_surface_reactions(meta_params)
-    if meta_params.model == "simple":
+    formula_dict_ = builtin_gas_reactions(config)
+    formula_dict_surf = builtin_surface_reactions(config)
+    if config.model == "simple":
         for key in formula_dict_surf:
             formula_dict_[key] = NoReaction()
     else:
         formula_dict_.update(formula_dict_surf)
-        if not meta_params.use_photodesorption:
+        if not config.use_photodesorption:
             formula_dict_["CR photodesorption"] = NoReaction()
             formula_dict_["UV photodesorption"] = NoReaction()
     if formula_dict is not None:
@@ -148,10 +148,10 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
         df_reac, df_spec, formula_dict_, formula_dict_ex_,
     )
 
-    if meta_params.model == "simple" or meta_params.model == "two phase":
+    if config.model == "simple" or config.model == "two phase":
         return TwoPhaseTerm(rmod, rmod_ex, rmat_1st, rmat_2nd, medium)
-    elif meta_params.model == "three phase":
-        rmod_smt = create_surface_mantle_transition(df_reac, df_spec, meta_params)
+    elif config.model == "three phase":
+        rmod_smt = create_surface_mantle_transition(df_reac, df_spec, config)
 
         rmat_1st_surf, rmat_1st_other = split_surface_reactions(df_reac, rmat_1st)
         rmat_1st_surf_gain, rmat_1st_surf_loss = split_gain_loss(rmat_1st_surf)
@@ -159,7 +159,7 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
         rmat_2nd_surf, rmat_2nd_other = split_surface_reactions(df_reac, rmat_2nd)
         rmat_2nd_surf_gain, rmat_2nd_surf_loss = split_gain_loss(rmat_2nd_surf)
 
-        if meta_params.use_photodesorption:
+        if config.use_photodesorption:
             formula_list = ["CR photodesorption", "UV photodesorption"]
             rmat_photodeso = extract_by_formula(rmat_1st, df_reac, formula_list)
         else:
@@ -175,7 +175,7 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
             rmat_photodeso, inds_surf, inds_mant, medium
         )
     else:
-        raise ValueError(f"Unknown model: {meta_params.model}")
+        raise ValueError(f"Unknown model: {config.model}")
 
 
 def assign_reaction_key(df_reac):
@@ -195,7 +195,7 @@ def assign_reaction_key(df_reac):
     return df_reac
 
 
-def add_H2_shielding(df_reac, df_spec, meta_params, formula_dict_ex):
+def add_H2_shielding(df_reac, df_spec, config, formula_dict_ex):
     """Add H2 shielding to `formula_dict_ex` if applicable.
 
     This function changes `formula_dict_ex` inplace.
@@ -204,7 +204,7 @@ def add_H2_shielding(df_reac, df_spec, meta_params, formula_dict_ex):
         pd.DataFrame: Reaction data with updated H2 shielding formula.
     """
     # H2 shielding
-    if meta_params.H2_shielding == "Lee+1996":
+    if config.H2_shielding == "Lee+1996":
         cond = (df_reac["formula"] == "photodissociation") & (df_reac["reactant_1"] == "H2")
         n_reac = np.count_nonzero(cond)
         if n_reac == 0:
@@ -215,17 +215,17 @@ def add_H2_shielding(df_reac, df_spec, meta_params, formula_dict_ex):
             df_reac = df_reac.copy()
             df_reac.loc[idx_reac, "formula"] = fm_name
             idx_H2 = df_spec.index.get_indexer(["H2"]).item()
-            formula_dict_ex[fm_name] = H2Shielding_Lee1996(idx_H2, meta_params)
+            formula_dict_ex[fm_name] = H2Shielding_Lee1996(idx_H2, config)
         else:
             raise ValueError("Multiple H2 shielding reactions.")
-    elif meta_params.H2_shielding is None:
+    elif config.H2_shielding is None:
         pass
     else:
-        raise ValueError("Unknown H2 shielding: '{}'.".format(meta_params.H2_shielding))
+        raise ValueError("Unknown H2 shielding: '{}'.".format(config.H2_shielding))
     return df_reac
 
 
-def add_CO_shielding(df_reac, df_spec, meta_params, formula_dict_ex):
+def add_CO_shielding(df_reac, df_spec, config, formula_dict_ex):
     """Add CO shielding to `formula_dict_ex` if applicable.
 
     This function changes `formula_dict_ex` inplace.
@@ -234,7 +234,7 @@ def add_CO_shielding(df_reac, df_spec, meta_params, formula_dict_ex):
         pd.DataFrame: Reaction data with updated CO shielding formula.
     """
     # H2 shielding
-    if meta_params.CO_shielding == "Lee+1996":
+    if config.CO_shielding == "Lee+1996":
         cond = (df_reac["formula"] == "photodissociation") & (df_reac["reactant_1"] == "CO")
         n_reac = np.count_nonzero(cond)
         if n_reac == 0:
@@ -246,13 +246,13 @@ def add_CO_shielding(df_reac, df_spec, meta_params, formula_dict_ex):
             df_reac.loc[idx_reac, "formula"] = fm_name
             idx_CO = df_spec.index.get_indexer(["CO"]).item()
             idx_H2 = df_spec.index.get_indexer(["H2"]).item()
-            formula_dict_ex[fm_name] = COShielding_Lee1996(idx_CO, idx_H2, meta_params)
+            formula_dict_ex[fm_name] = COShielding_Lee1996(idx_CO, idx_H2, config)
         else:
             raise ValueError("Multiple CO shielding reactions.")
-    elif meta_params.CO_shielding is None:
+    elif config.CO_shielding is None:
         pass
     else:
-        raise ValueError("Unknown CO shielding: '{}'.".format(meta_params.CO_shielding))
+        raise ValueError("Unknown CO shielding: '{}'.".format(config.CO_shielding))
     return df_reac
 
 
@@ -281,9 +281,9 @@ def split_gain_loss(rmat):
     return rmat.split(cond, use_id_uni=False)
 
 
-def add_hopping_rate_module(medium, df_spec, meta_params):
+def add_hopping_rate_module(medium, df_spec, config):
     module = ThermalHoppingRate(
-        df_spec["E_barr"].values, df_spec["freq_vib"].values, meta_params
+        df_spec["E_barr"].values, df_spec["freq_vib"].values, config
     )
     if isinstance(medium, SequentialMedium):
         medium.append(module)
@@ -292,7 +292,7 @@ def add_hopping_rate_module(medium, df_spec, meta_params):
     return medium
 
 
-def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, meta_params,
+def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config,
                                   t_span=None, t_eval=None, method=None, rtol=None, atol=None,
                                   device="cpu", show_progress=True):
     """Solve the rate equations for astrochemical problems.
@@ -307,35 +307,35 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, meta_params
     Returns:
         object: A result object returned by a scipy ODE solver.
     """
-    ab_0 = derive_initial_abundances(ab_0_dict, df_spec, meta_params)
+    ab_0 = derive_initial_abundances(ab_0_dict, df_spec, config)
     if t_span is None:
-        t_span = (meta_params.t_start, meta_params.t_end)
+        t_span = (config.t_start, config.t_end)
     if method is None:
-        method = meta_params.solver
+        method = config.solver
     if rtol is None:
-        rtol = meta_params.rtol
+        rtol = config.rtol
     if atol is None:
-        atol = meta_params.atol
+        atol = config.atol
     res = solve_rate_equation(
         reaction_term, t_span, ab_0,
         method=method,
         rtol=rtol,
         atol=atol,
         t_eval=t_eval,
-        u_factor=meta_params.to_second,
+        u_factor=config.to_second,
         device=device,
         show_progress=show_progress
     )
     return res
 
 
-def derive_initial_abundances(ab_0_dict, spec_table, meta_params):
+def derive_initial_abundances(ab_0_dict, spec_table, config):
     """Derive the initial abundances of grains and electrons.
 
     Args:
         ab_0_dict (dict): Initial abundance of each specie.
         spec_table (pd.DataFrame): Specie table.
-        meta_params (MetaParameters): Meta parameters.
+        config (Config): Config.
 
     Returns:
         array: Initial abundances.
@@ -343,11 +343,11 @@ def derive_initial_abundances(ab_0_dict, spec_table, meta_params):
     if not all(np.in1d(list(ab_0_dict.keys()), spec_table.index.values)):
         raise ValueError("Find unrecognized species in 'ab_0'.")
 
-    ab_0 = np.full(len(spec_table), meta_params.ab_0_min)
+    ab_0 = np.full(len(spec_table), config.ab_0_min)
     ab_0[spec_table.index.get_indexer(ab_0_dict.keys())] = list(ab_0_dict.values())
 
     # Derive the grain abundances
-    ab_0[spec_table.index.get_indexer(["GRAIN0"]).item()] = meta_params.dtg_mass_ratio_0/meta_params.grain_mass
+    ab_0[spec_table.index.get_indexer(["GRAIN0"]).item()] = config.dtg_mass_ratio_0/config.grain_mass
     ab_0[spec_table.index.get_indexer(["GRAIN-"]).item()] = 0.
 
     # Derive the electron abundance aussming the system is neutral

@@ -37,10 +37,10 @@ class StaticMedium(nn.Module):
 
 
 class InterpolationMedium(nn.Module):
-    def __init__(self, tau, params, columns, meta_params):
+    def __init__(self, tau, params, columns, config):
         super(InterpolationMedium, self).__init__()
         self.interp = LinearInterpolation(
-            torch.tensor(tau*meta_params.to_second, dtype=torch.get_default_dtype()),
+            torch.tensor(tau*config.to_second, dtype=torch.get_default_dtype()),
             torch.tensor(params, dtype=torch.get_default_dtype()),
         )
         self.columns = columns
@@ -62,12 +62,12 @@ class CoevolutionMedium(nn.Module):
 
 
 class ThermalHoppingRate(nn.Module):
-    def __init__(self, E_barr, freq_vib, meta_params):
+    def __init__(self, E_barr, freq_vib, config):
         super().__init__()
         self.register_buffer("E_barr", torch.tensor(E_barr, dtype=torch.get_default_dtype()))
         self.register_buffer("freq_vib", torch.tensor(freq_vib, dtype=torch.get_default_dtype()))
         self.register_buffer("inv_num_sites_per_grain",
-            torch.tensor(1./meta_params.num_sites_per_grain))
+            torch.tensor(1./config.num_sites_per_grain))
 
     def forward(self, t_in, params_med):
         params_med["rate_hopping"] = self.freq_vib \

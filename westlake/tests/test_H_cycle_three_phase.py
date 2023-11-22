@@ -32,19 +32,19 @@ def solve_H_cycle():
     ab_0_dict = {'H2': .5,}
     t_start = 0.
     t_end = 1e5
-    meta_params = westlake.MetaParameters(
+    config = westlake.Config(
         model="three phase", atol=ATOL, ab_0_min=1e-40,
         t_start=t_start, t_end=t_end,
     )
     medium = westlake.StaticMedium({'Av': 10., "den_gas": 1e4, "T_gas": 17., "T_dust": 17.})
     reaction_term = westlake.create_astrochem_model(
-        df_reac, df_spec, df_surf, meta_params, medium, df_barr=df_barr
+        df_reac, df_spec, df_surf, config, medium, df_barr=df_barr
     )
 
     n_eval = 100
     t_eval = np.linspace(t_start, t_end, n_eval)
     res = westlake.solve_rate_equation_astrochem(
-        reaction_term, ab_0_dict, df_spec, meta_params, t_eval=t_eval
+        reaction_term, ab_0_dict, df_spec, config, t_eval=t_eval
     )
     return res
 

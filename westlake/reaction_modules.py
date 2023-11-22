@@ -51,14 +51,14 @@ class FormulaDictReactionModule(nn.Module):
 
 
 class SurfaceMantleTransition(nn.Module):
-    def __init__(self, inds_fm_dict, inds_reac, params_reac, meta_params):
+    def __init__(self, inds_fm_dict, inds_reac, params_reac, config):
         super().__init__()
         self._params_reac_m2s = params_reac.indexing(inds_fm_dict["mantle to surface"])
         self._params_reac_s2m = params_reac.indexing(inds_fm_dict["surface to mantle"])
         self.register_buffer("inds_reac", inds_reac)
         self.register_buffer("layer_factor",
-            torch.tensor(1./(meta_params.dtg_num_ratio_0*meta_params.num_sites_per_grain)))
-        self.register_buffer("alpha_gain", self.layer_factor/meta_params.num_active_layers)
+            torch.tensor(1./(config.dtg_num_ratio_0*config.num_sites_per_grain)))
+        self.register_buffer("alpha_gain", self.layer_factor/config.num_active_layers)
 
     def forward(self, params_med, y_in, inds_mant, y_surf, y_mant, dy_surf_gain, dy_surf_loss):
         n_layer_mant = y_mant*self.layer_factor
@@ -119,7 +119,7 @@ def create_formula_dict_reaction_module(df_reac, df_spec, formula_dict, formula_
     return rmod, rmod_ex
 
 
-def create_surface_mantle_transition(df_reac, df_spec, meta_params):
+def create_surface_mantle_transition(df_reac, df_spec, config):
     inds_fm_dict = defaultdict(list)
     for i_fm, fm in enumerate(df_reac["formula"]):
         if fm == "mantle to surface":
@@ -130,7 +130,7 @@ def create_surface_mantle_transition(df_reac, df_spec, meta_params):
     inds_reac = np.asarray(sum(inds_fm_dict.values(), start=[]))
     inds_reac = torch.as_tensor(inds_reac)
     params_reac = prepare_params_reac(df_reac, df_spec, [])
-    return SurfaceMantleTransition(inds_fm_dict, inds_reac, params_reac, meta_params)
+    return SurfaceMantleTransition(inds_fm_dict, inds_reac, params_reac, config)
 
 
 def prepare_formula_dict_indices(df_sub, rmat, inds_id_uni):

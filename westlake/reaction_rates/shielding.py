@@ -18,15 +18,15 @@ def load_CO_shielding_data():
 
 
 class H2Shielding_Lee1996(nn.Module):
-    def __init__(self, idx_H2, meta_params):
+    def __init__(self, idx_H2, config):
         super().__init__()
         data = load_H2_shielding_data()
         x_H2 = torch.as_tensor(data["x_H2"], dtype=torch.get_default_dtype())
         factor = torch.as_tensor(data["factor"], dtype=torch.get_default_dtype())
         factor = 2.54e-11*factor[:, None]
         self.interp = LinearInterpolation(x_H2, factor)
-        self.register_buffer("uv_flux", torch.tensor(meta_params.uv_flux))
-        self.register_buffer("den_Av_ratio_0", torch.tensor(meta_params.den_Av_ratio_0))
+        self.register_buffer("uv_flux", torch.tensor(config.uv_flux))
+        self.register_buffer("den_Av_ratio_0", torch.tensor(config.den_Av_ratio_0))
         self.idx_H2 = slice(idx_H2, idx_H2 + 1)
 
     def forward(self, params_med, params_reac, y_in, **kwargs):
@@ -36,14 +36,14 @@ class H2Shielding_Lee1996(nn.Module):
 
 
 class COShielding_Lee1996(nn.Module):
-    def __init__(self, idx_CO, idx_H2, meta_params):
+    def __init__(self, idx_CO, idx_H2, config):
         super().__init__()
         data = load_CO_shielding_data()
         self.interp_CO = self._create_interp(data, "CO")
         self.interp_H2 = self._create_interp(data, "H2")
         self.interp_Av = self._create_interp(data, "Av")
-        self.register_buffer("uv_flux", torch.tensor(meta_params.uv_flux))
-        self.register_buffer("den_Av_ratio_0", torch.tensor(meta_params.den_Av_ratio_0))
+        self.register_buffer("uv_flux", torch.tensor(config.uv_flux))
+        self.register_buffer("den_Av_ratio_0", torch.tensor(config.den_Av_ratio_0))
         self.idx_CO = slice(idx_CO, idx_CO + 1)
         self.idx_H2 = slice(idx_H2, idx_H2 + 1)
 

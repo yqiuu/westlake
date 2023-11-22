@@ -7,8 +7,8 @@ from .constants import M_ATOM
 
 
 @dataclass(frozen=True)
-class MetaParameters:
-    """Meta parameters.
+class Config:
+    """Config.
 
     Args:
         ab_0_min (float): Minimum initial abundances.
@@ -117,5 +117,5 @@ class MetaParameters:
 def fixed_dtg_mass_ratio_0(ab_He, dtg_mass_ratio_0=None):
     """Fix the initial DTG mass ratio using the He abundance."""
     if dtg_mass_ratio_0 is None:
-        dtg_mass_ratio_0 = MetaParameters.dtg_mass_ratio_0
+        dtg_mass_ratio_0 = Config.dtg_mass_ratio_0
     return dtg_mass_ratio_0*(1 + 4*ab_He)
