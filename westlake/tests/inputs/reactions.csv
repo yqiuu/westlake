@@ -1,0 +1,360 @@
+reactant_1,reactant_2,products,formula,alpha,beta,gamma,T_min,T_max
+H,,H+;e-,CR ionization,0.46,0.0,0.0,-9999.0,9999.0
+He,,He+;e-,CR ionization,0.5,0.0,0.0,-9999.0,9999.0
+O,,O+;e-,CR ionization,2.8,0.0,0.0,-9999.0,9999.0
+H2,,H2+;e-,CR ionization,0.93,0.0,0.0,-9999.0,9999.0
+CO,,C;O,CR ionization,5.0,0.0,0.0,-9999.0,9999.0
+CO,,CO+;e-,CR ionization,3.0,0.0,0.0,-9999.0,9999.0
+H2,,H;H,CR ionization,0.1,0.0,0.0,-9999.0,9999.0
+H2,,H;H+;e-,CR ionization,0.022,0.0,0.0,-9999.0,9999.0
+H2,,H+;H-,CR ionization,0.0003,0.0,0.0,-9999.0,9999.0
+CH+,,H;C+,CR ionization,112.0,0.0,0.0,-9999.0,9999.0
+CH+,,C;H+,CR ionization,64.0,0.0,0.0,-9999.0,9999.0
+O2,,O;O,CR ionization,750.0,0.0,0.0,-9999.0,9999.0
+OH,,H;O,CR ionization,510.0,0.0,0.0,-9999.0,9999.0
+CH2,,CH2+;e-,CR ionization,500.0,0.0,0.0,-9999.0,9999.0
+H2O,,H;OH,CR ionization,970.0,0.0,0.0,-9999.0,9999.0
+C,,C+;e-,CR ionization,1020.0,0.0,0.0,-9999.0,9999.0
+S,,S+;e-,CR ionization,960.0,0.0,0.0,-9999.0,9999.0
+CH,,C;H,CR ionization,730.0,0.0,0.0,-9999.0,9999.0
+CH+,,C;H+,photodissociation,2.5e-10,0.0,2.94,-9999.0,9999.0
+H2+,,H;H+,photodissociation,5.7e-10,0.0,2.37,-9999.0,9999.0
+OH+,,O;H+,photodissociation,1.1e-11,0.0,3.5,-9999.0,9999.0
+CH2+,,H;CH+,photodissociation,1.4e-10,0.0,2.21,-9999.0,9999.0
+H3+,,H2;H+,photodissociation,2e-08,0.0,1.8,-9999.0,9999.0
+H3+,,H;H2+,photodissociation,7.9e-09,0.0,2.3,-9999.0,9999.0
+CH3+,,H2;CH+,photodissociation,1e-09,0.0,1.7,-9999.0,9999.0
+CH3+,,H;CH2+,photodissociation,1e-09,0.0,1.7,-9999.0,9999.0
+H-,,H;e-,photodissociation,2.4e-07,0.0,0.9,-9999.0,9999.0
+C,,C+;e-,photodissociation,3.1e-10,0.0,3.33,-9999.0,9999.0
+S,,S+;e-,photodissociation,6e-10,0.0,3.08,-9999.0,9999.0
+CH,,C;H,photodissociation,9.2e-10,0.0,1.72,-9999.0,9999.0
+CH,,CH+;e-,photodissociation,7.6e-10,0.0,3.28,-9999.0,9999.0
+CO,,C;O,photodissociation,2.6e-10,0.0,3.53,-9999.0,9999.0
+H2,,H;H,photodissociation,3.4e-11,0.0,2.5,-9999.0,9999.0
+O2,,O;O,photodissociation,7.9e-10,0.0,2.13,-9999.0,9999.0
+OH,,H;O,photodissociation,3.9e-10,0.0,2.24,-9999.0,9999.0
+OH,,OH+;e-,photodissociation,1.6e-12,0.0,3.1,-9999.0,9999.0
+CH2,,H;CH,photodissociation,5.8e-10,0.0,2.02,-9999.0,9999.0
+CH2,,CH2+;e-,photodissociation,1e-09,0.0,2.3,-9999.0,9999.0
+H2O,,H;OH,photodissociation,8e-10,0.0,2.2,-9999.0,9999.0
+H2O,,H2O+;e-,photodissociation,3.1e-11,0.0,3.9,-9999.0,9999.0
+O2,C+,CO;O+,modified Arrhenius,4.53e-10,0.0,0.0,10.0,300.0
+O2,C+,O;CO+,modified Arrhenius,3.42e-10,0.0,0.0,10.0,300.0
+OH,C+,H;CO+,ionpol1,1.0,9.15e-10,5.5,10.0,800.0
+H2O,C+,H;HCO+,ionpol1,0.331,1.03e-09,5.41,10.0,800.0
+H2,CO+,H;HCO+,modified Arrhenius,7.5e-10,0.0,0.0,10.0,300.0
+O,CH2,CO;H2,modified Arrhenius,4e-11,0.0,0.0,10.0,800.0
+O,CH2,CO;H;H,modified Arrhenius,1e-10,0.0,0.0,10.0,800.0
+CH,O2,CO;OH,modified Arrhenius,3.8e-11,-0.48,0.0,10.0,300.0
+OH,OH,O;H2O,modified Arrhenius,1.65e-12,1.14,50.0,10.0,199.0
+OH,OH,O;H2O,modified Arrhenius,6.2e-14,2.62,-945.0,200.0,350.0
+OH,CH2,CH;H2O,modified Arrhenius,1.44e-11,0.5,3000.0,10.0,800.0
+CH,CO+,C;HCO+,ionpol1,0.5,1.14e-09,3.33,10.0,800.0
+OH,CO+,O;HCO+,ionpol1,0.5,7.45e-10,5.5,10.0,800.0
+CH2,CO+,CH;HCO+,ionpol1,0.5,1.12e-09,1.41,10.0,149.0
+CH2,CO+,CH;HCO+,ionpol2,0.5,1.12e-09,1.41,150.0,800.0
+H2O,CO+,OH;HCO+,ionpol1,0.341,8.37e-10,5.41,10.0,800.0
+C,H2+,H;CH+,modified Arrhenius,2.4e-09,0.0,0.0,10.0,300.0
+O,H2+,H;OH+,modified Arrhenius,1.5e-09,0.0,0.0,10.0,300.0
+CH,H2+,H;CH2+,ionpol1,0.5,2.59e-09,3.33,10.0,800.0
+CO,H2+,H;HCO+,ionpol2,0.786,2.39e-09,0.251,10.0,800.0
+H2,H2+,H;H3+,modified Arrhenius,2.1e-09,0.0,0.0,10.0,300.0
+OH,H2+,H;H2O+,ionpol1,0.5,1.81e-09,5.5,10.0,800.0
+CH2,H2+,H;CH3+,ionpol1,0.5,2.58e-09,1.41,10.0,149.0
+CH2,H2+,H;CH3+,ionpol2,0.5,2.58e-09,1.41,150.0,800.0
+H3+,H-,H2;H2,modified Arrhenius,2.3e-07,-0.5,0.0,10.0,300.0
+HCO+,H-,CO;H2,modified Arrhenius,2.3e-07,-0.5,0.0,10.0,300.0
+CH,He+,H;He;C+,ionpol1,0.5,1.95e-09,3.33,10.0,800.0
+CO,He+,He;O;C+,ionpol2,1.0,1.75e-09,0.251,10.0,800.0
+H2,He+,H;H;He+,modified Arrhenius,3e-11,0.5,52000.0,10.0,800.0
+H2,He+,H;He;H+,modified Arrhenius,3.3e-15,0.0,0.0,10.0,300.0
+O2,He+,He;O;O+,modified Arrhenius,1e-09,0.0,0.0,10.0,300.0
+OH,He+,H;He;O+,ionpol1,1.0,1.35e-09,5.5,10.0,800.0
+CH2,He+,He;H2;C+,ionpol1,0.5,1.93e-09,1.41,10.0,149.0
+CH2,He+,He;H2;C+,ionpol2,0.5,1.93e-09,1.41,150.0,800.0
+CH2,He+,H;He;CH+,ionpol1,0.5,1.93e-09,1.41,10.0,149.0
+CH2,He+,H;He;CH+,ionpol2,0.5,1.93e-09,1.41,150.0,800.0
+H2O,He+,He;OH;H+,ionpol1,0.333,1.54e-09,5.41,10.0,800.0
+H2O,He+,H;He;OH+,ionpol1,0.333,1.54e-09,5.41,10.0,800.0
+O,CH2+,H;HCO+,modified Arrhenius,7.5e-10,0.0,0.0,10.0,300.0
+H2,CH2+,H;CH3+,modified Arrhenius,1.2e-09,0.0,0.0,10.0,300.0
+O2,CH2+,OH;HCO+,modified Arrhenius,9.1e-10,0.0,0.0,10.0,300.0
+C,H2O+,OH;CH+,modified Arrhenius,1.1e-09,0.0,0.0,10.0,300.0
+C,HCO+,CO;CH+,modified Arrhenius,1.1e-09,0.0,0.0,10.0,300.0
+CH,HCO+,CO;CH2+,ionpol1,1.0,1.14e-09,3.33,10.0,800.0
+OH,HCO+,CO;H2O+,ionpol1,0.5,7.42e-10,5.5,10.0,800.0
+CH2,HCO+,CO;CH3+,ionpol1,1.0,1.11e-09,1.41,10.0,149.0
+CH2,HCO+,CO;CH3+,ionpol2,1.0,1.11e-09,1.41,150.0,800.0
+C,CH2,CH;CH,modified Arrhenius,2.69e-12,0.0,23600.0,10.0,300.0
+H,CH,C;H2,modified Arrhenius,1.24e-10,0.26,0.0,10.0,500.0
+H,CH2,CH;H2,modified Arrhenius,2.2e-10,0.0,0.0,10.0,298.0
+H,OH,O;H2,modified Arrhenius,6.86e-14,2.8,1950.0,10.0,300.0
+H,H2O,H2;OH,modified Arrhenius,6.82e-12,1.6,9720.0,10.0,300.0
+H,O2,O;OH,modified Arrhenius,2.94e-10,0.0,8380.0,10.0,300.0
+C,H2,H;CH,modified Arrhenius,6.64e-10,0.0,11700.0,10.0,300.0
+CH,H2,H;CH2,modified Arrhenius,3.75e-10,0.0,1660.0,10.0,300.0
+O,H2,H;OH,modified Arrhenius,3.44e-13,2.67,3160.0,10.0,300.0
+H2,OH,H;H2O,modified Arrhenius,8.4e-13,0.0,1040.0,10.0,300.0
+O,OH,H;O2,modified Arrhenius,4e-11,0.0,0.0,10.0,50.0
+O,OH,H;O2,modified Arrhenius,3.5e-11,0.0,0.0,51.0,149.0
+O,OH,H;O2,modified Arrhenius,2.4e-11,0.0,-110.0,150.0,500.0
+CH,H2O+,OH;CH2+,ionpol1,0.5,1.24e-09,3.33,10.0,800.0
+CO,H2O+,OH;HCO+,ionpol2,1.0,9.86e-10,0.251,10.0,800.0
+CH2,H2O+,OH;CH3+,ionpol1,0.5,1.21e-09,1.41,10.0,149.0
+CH2,H2O+,OH;CH3+,ionpol2,0.5,1.21e-09,1.41,150.0,800.0
+C,H3+,H2;CH+,modified Arrhenius,2e-09,0.0,0.0,10.0,300.0
+O,H3+,H;H2O+,modified Arrhenius,3.42e-10,-0.156,1.41,10.0,300.0
+O,H3+,H2;OH+,modified Arrhenius,7.98e-10,-0.156,1.41,10.0,300.0
+CH,H3+,H2;CH2+,ionpol1,1.0,2.18e-09,3.33,10.0,800.0
+CO,H3+,H2;HCO+,ionpol2,0.945,1.99e-09,0.251,10.0,800.0
+OH,H3+,H2;H2O+,ionpol1,1.0,1.52e-09,5.5,10.0,800.0
+CH2,H3+,H2;CH3+,ionpol1,1.0,2.17e-09,1.41,10.0,149.0
+CH2,H3+,H2;CH3+,ionpol2,1.0,2.17e-09,1.41,150.0,800.0
+CH2,H+,H2;CH+,ionpol1,0.5,3.53e-09,1.41,10.0,149.0
+CH2,H+,H2;CH+,ionpol2,0.5,3.53e-09,1.41,150.0,800.0
+CH,O+,H;CO+,ionpol1,0.5,1.27e-09,3.33,10.0,800.0
+H2,O+,H;OH+,modified Arrhenius,1.6e-09,0.0,0.0,10.0,300.0
+H,CH+,H2;C+,modified Arrhenius,7.5e-10,0.0,0.0,10.0,300.0
+O,CH+,H;CO+,modified Arrhenius,3.5e-10,0.0,0.0,10.0,300.0
+H2,CH+,H;CH2+,modified Arrhenius,1.2e-09,0.0,0.0,10.0,300.0
+O2,CH+,OH;CO+,modified Arrhenius,1e-11,0.0,0.0,10.0,300.0
+O2,CH+,O;HCO+,modified Arrhenius,9.7e-10,0.0,0.0,10.0,300.0
+OH,CH+,H2;CO+,ionpol1,1.0,8.94e-10,5.5,10.0,800.0
+H2O,CH+,H2;HCO+,ionpol1,0.714,1.01e-09,5.41,10.0,800.0
+C,OH+,O;CH+,modified Arrhenius,1.2e-09,0.0,0.0,10.0,300.0
+CH,OH+,O;CH2+,ionpol1,0.5,1.26e-09,3.33,10.0,800.0
+CO,OH+,O;HCO+,ionpol2,1.0,1e-09,0.251,10.0,800.0
+H2,OH+,H;H2O+,modified Arrhenius,1.1e-09,0.0,0.0,10.0,300.0
+OH,OH+,O;H2O+,ionpol1,1.0,8.32e-10,5.5,10.0,800.0
+CH2,OH+,O;CH3+,ionpol1,0.5,1.23e-09,1.41,10.0,149.0
+CH2,OH+,O;CH3+,ionpol2,0.5,1.23e-09,1.41,150.0,800.0
+O,CH3+,H2;HCO+,modified Arrhenius,2.05e-10,0.0,0.0,10.0,300.0
+O,CH,C;OH,modified Arrhenius,2.52e-11,0.0,2380.0,10.0,800.0
+O,CH,H;CO,modified Arrhenius,7e-11,0.0,0.0,10.0,300.0
+C,O2,O;CO,modified Arrhenius,4.9e-11,-0.32,0.0,15.0,295.0
+C,OH,O;CH,modified Arrhenius,2.25e-11,0.5,14800.0,10.0,800.0
+C,OH,H;CO,modified Arrhenius,1.15e-10,-0.339,-0.108,10.0,500.0
+H2,C+,H;CH+,modified Arrhenius,1.5e-10,0.0,4640.0,10.0,800.0
+H,CH2+,H2;CH+,modified Arrhenius,1.2e-09,0.0,2700.0,10.0,800.0
+H,CH3+,H2;CH2+,modified Arrhenius,7e-10,0.0,10600.0,10.0,800.0
+H,H3+,H2;H2+,modified Arrhenius,2.1e-09,0.0,20000.0,10.0,800.0
+H,HCO+,H2;CO+,modified Arrhenius,1.3e-09,0.0,24500.0,10.0,800.0
+H2,S+,H;H;S+,modified Arrhenius,3e-11,0.5,52000.0,10.0,800.0
+H2,H3+,H;H;H3+,modified Arrhenius,3e-11,0.5,52000.0,10.0,800.0
+H2,HCO+,H;H;HCO+,modified Arrhenius,3e-11,0.5,52000.0,10.0,800.0
+H2,H+,H;H;H+,modified Arrhenius,3e-11,0.5,52000.0,10.0,800.0
+O2,CH2,CO;H2O,modified Arrhenius,2.48e-10,-3.3,1440.0,10.0,800.0
+H,CO,C;OH,modified Arrhenius,1.1e-10,0.5,77700.0,10.0,800.0
+H2,O2,OH;OH,modified Arrhenius,3.16e-10,0.0,21900.0,10.0,800.0
+O,H2O,OH;OH,modified Arrhenius,1.85e-11,0.95,8570.0,10.0,800.0
+H2,e-,H;H;e-,modified Arrhenius,2e-09,0.5,116000.0,10.0,800.0
+H,H2,H;H;H,modified Arrhenius,1e-10,0.0,52000.0,10.0,800.0
+He,H2,H;H;He,modified Arrhenius,1e-11,0.0,52000.0,10.0,800.0
+H2,H2,H;H;H2,modified Arrhenius,1.25e-11,0.0,52000.0,10.0,800.0
+S,C+,C;S+,modified Arrhenius,1.5e-09,0.0,0.0,10.0,499.0
+S,C+,C;S+,modified Arrhenius,5.54e-12,0.8578,680.7,500.0,50000.0
+C,CO+,CO;C+,modified Arrhenius,1.1e-10,0.0,0.0,10.0,300.0
+H,CO+,CO;H+,modified Arrhenius,4e-10,0.0,0.0,10.0,300.0
+O,CO+,CO;O+,modified Arrhenius,1.4e-10,0.0,0.0,10.0,300.0
+S,CO+,CO;S+,modified Arrhenius,1.1e-09,0.0,0.0,10.0,300.0
+H,H2+,H2;H+,modified Arrhenius,6.4e-10,0.0,0.0,10.0,300.0
+C+,H-,C;H,modified Arrhenius,2.3e-07,-0.5,0.0,10.0,300.0
+H+,H-,H;H,modified Arrhenius,2.3e-07,-0.5,0.0,10.0,300.0
+He+,H-,H;He,modified Arrhenius,2.3e-07,-0.5,0.0,10.0,300.0
+O+,H-,H;O,modified Arrhenius,2.3e-07,-0.5,0.0,10.0,300.0
+S+,H-,H;S,modified Arrhenius,2.3e-07,-0.5,0.0,10.0,300.0
+H2+,H-,H;H2,modified Arrhenius,2.3e-07,-0.5,0.0,10.0,300.0
+H,He+,He;H+,modified Arrhenius,1.9e-15,0.0,0.0,10.0,300.0
+O,H+,H;O+,modified Arrhenius,7e-10,0.0,232.0,10.0,300.0
+S,H+,H;S+,modified Arrhenius,1.3e-09,0.0,0.0,10.0,300.0
+CH,H+,H;CH+,ionpol1,1.0,3.54e-09,3.33,10.0,800.0
+OH,H+,H;OH+,ionpol1,1.0,2.5e-09,5.5,10.0,800.0
+H2O,H+,H;H2O+,ionpol1,1.0,2.85e-09,5.41,10.0,800.0
+H,O+,O;H+,modified Arrhenius,7e-10,0.0,0.0,10.0,300.0
+CH2,O+,O;CH2+,ionpol1,1.0,1.25e-09,1.41,10.0,149.0
+CH2,O+,O;CH2+,ionpol2,1.0,1.25e-09,1.41,150.0,800.0
+H2O,O+,O;H2O+,ionpol1,1.0,9.54e-10,5.41,10.0,800.0
+CH,C+,C;CH+,ionpol1,0.53,1.37e-09,3.33,10.0,800.0
+CH2,C+,C;CH2+,ionpol1,0.5,1.34e-09,1.41,10.0,149.0
+CH2,C+,C;CH2+,ionpol2,0.5,1.34e-09,1.41,150.0,800.0
+CH,CO+,CO;CH+,ionpol1,0.5,1.14e-09,3.33,10.0,800.0
+OH,CO+,CO;OH+,ionpol1,0.5,7.45e-10,5.5,10.0,800.0
+CH2,CO+,CO;CH2+,ionpol1,0.5,1.12e-09,1.41,10.0,149.0
+CH2,CO+,CO;CH2+,ionpol2,0.5,1.12e-09,1.41,150.0,800.0
+H2O,CO+,CO;H2O+,ionpol1,0.659,8.37e-10,5.41,10.0,800.0
+CH,H2+,H2;CH+,ionpol1,0.5,2.59e-09,3.33,10.0,800.0
+CO,H2+,H2;CO+,ionpol2,0.214,2.39e-09,0.251,10.0,800.0
+H2O,He+,He;H2O+,ionpol1,0.333,1.54e-09,5.41,10.0,800.0
+OH,O+,O;OH+,ionpol1,0.5,8.45e-10,5.5,10.0,800.0
+OH,H2+,H2;OH+,ionpol1,0.5,1.81e-09,5.5,10.0,800.0
+CH2,H2+,H2;CH2+,ionpol1,0.5,2.58e-09,1.41,10.0,149.0
+CH2,H2+,H2;CH2+,ionpol2,0.5,2.58e-09,1.41,150.0,800.0
+H2O,H2+,H2;H2O+,ionpol1,0.534,2.07e-09,5.41,10.0,800.0
+CH,He+,He;CH+,ionpol1,0.5,1.95e-09,3.33,10.0,800.0
+H2,He+,He;H2+,modified Arrhenius,9.6e-15,0.0,0.0,10.0,300.0
+S,H2O+,H2O;S+,modified Arrhenius,4.3e-10,0.0,0.0,10.0,300.0
+CH,H2O+,H2O;CH+,ionpol1,0.5,1.24e-09,3.33,10.0,800.0
+CH2,H2O+,H2O;CH2+,ionpol1,0.5,1.21e-09,1.41,10.0,149.0
+CH2,H2O+,H2O;CH2+,ionpol2,0.5,1.21e-09,1.41,150.0,800.0
+CH2,H+,H;CH2+,ionpol1,0.5,3.53e-09,1.41,10.0,149.0
+CH2,H+,H;CH2+,ionpol2,0.5,3.53e-09,1.41,150.0,800.0
+CH,O+,O;CH+,ionpol1,0.5,1.27e-09,3.33,10.0,800.0
+S,CH+,CH;S+,modified Arrhenius,4.7e-10,0.0,0.0,10.0,300.0
+S,OH+,OH;S+,modified Arrhenius,4.3e-10,0.0,0.0,10.0,300.0
+CH,OH+,OH;CH+,ionpol1,0.5,1.26e-09,3.33,10.0,800.0
+CH2,OH+,OH;CH2+,ionpol1,0.5,1.23e-09,1.41,10.0,149.0
+CH2,OH+,OH;CH2+,ionpol2,0.5,1.23e-09,1.41,150.0,800.0
+H2O,OH+,OH;H2O+,ionpol1,0.536,9.39e-10,5.41,10.0,800.0
+H2,H+,H;H2+,modified Arrhenius,6.4e-10,0.0,21300.0,10.0,800.0
+H,C+,C;H+,modified Arrhenius,9.28e-19,1.3,15900.0,10.0,800.0
+H,S+,S;H+,modified Arrhenius,5.75e-16,1.2,27200.0,10.0,800.0
+C,H+,H;C+,modified Arrhenius,1e-14,0.0,0.0,10.0,800.0
+H,C+,CH+,modified Arrhenius,1.7e-17,0.0,0.0,10.0,300.0
+O,C+,CO+,modified Arrhenius,2.5e-18,0.0,0.0,10.0,300.0
+H2,C+,CH2+,modified Arrhenius,2e-16,-1.3,23.0,10.0,298.0
+H,H+,H2+,modified Arrhenius,2e-20,1.0,0.0,10.0,300.0
+C,H,CH,modified Arrhenius,1e-17,0.0,0.0,10.0,300.0
+C,O,CO,modified Arrhenius,2.1e-19,0.0,0.0,10.0,300.0
+C,H2,CH2,modified Arrhenius,1e-17,0.0,0.0,10.0,300.0
+H,O,OH,modified Arrhenius,9.9e-19,-0.38,0.0,10.0,300.0
+O,O,O2,modified Arrhenius,4.9e-20,1.58,0.0,10.0,300.0
+H,OH,H2O,modified Arrhenius,4e-18,-2.0,0.0,10.0,300.0
+C,H-,CH;e-,modified Arrhenius,1e-09,0.0,0.0,10.0,300.0
+H,H-,H2;e-,modified Arrhenius,1.3e-09,0.0,0.0,10.0,300.0
+O,H-,OH;e-,modified Arrhenius,1e-09,0.0,0.0,10.0,300.0
+CH,H-,CH2;e-,modified Arrhenius,1e-10,0.0,0.0,10.0,300.0
+OH,H-,H2O;e-,modified Arrhenius,1e-10,0.0,0.0,10.0,300.0
+H,e-,H-,modified Arrhenius,3e-16,1.0,0.0,10.0,300.0
+CH+,e-,C;H,modified Arrhenius,7e-08,-0.5,0.0,10.0,300.0
+CO+,e-,C;O,modified Arrhenius,2.75e-07,-0.55,0.0,10.0,300.0
+H2+,e-,H2,modified Arrhenius,2.25e-07,-0.4,0.0,10.0,300.0
+H2+,e-,H;H,modified Arrhenius,2.53e-07,-0.5,0.0,10.0,300.0
+OH+,e-,H;O,modified Arrhenius,6.3e-09,-0.48,0.0,10.0,300.0
+CH2+,e-,C;H2,modified Arrhenius,7.7e-08,-0.6,0.0,10.0,300.0
+CH2+,e-,H;CH,modified Arrhenius,1.6e-07,-0.6,0.0,10.0,300.0
+CH2+,e-,C;H;H,modified Arrhenius,4e-07,-0.6,0.0,10.0,300.0
+H2O+,e-,O;H2,modified Arrhenius,3.9e-08,-0.5,0.0,10.0,300.0
+H2O+,e-,H;OH,modified Arrhenius,8.6e-08,-0.5,0.0,10.0,300.0
+H2O+,e-,H;H;O,modified Arrhenius,3.05e-07,-0.5,0.0,10.0,300.0
+H3+,e-,H;H;H,modified Arrhenius,4.36e-08,-0.52,0.0,10.0,300.0
+H3+,e-,H;H2,modified Arrhenius,2.34e-08,-0.52,0.0,10.0,300.0
+HCO+,e-,H;CO,modified Arrhenius,2.8e-07,-0.69,0.0,10.0,300.0
+C+,e-,C,modified Arrhenius,4.4e-12,-0.61,0.0,10.0,300.0
+H+,e-,H,modified Arrhenius,3.5e-12,-0.7,0.0,10.0,300.0
+He+,e-,He,modified Arrhenius,4.5e-12,-0.67,0.0,10.0,300.0
+O+,e-,O,modified Arrhenius,3.4e-12,-0.63,0.0,10.0,300.0
+S+,e-,S,modified Arrhenius,3.9e-12,-0.63,0.0,10.0,300.0
+CH3+,e-,C;H;H2,modified Arrhenius,3e-07,-0.3,0.0,10.0,300.0
+CH3+,e-,H;H;CH,modified Arrhenius,1.6e-07,-0.3,0.0,10.0,300.0
+CH3+,e-,CH;H2,modified Arrhenius,1.4e-07,-0.3,0.0,10.0,300.0
+CH3+,e-,H;CH2,modified Arrhenius,4e-07,-0.3,0.0,10.0,300.0
+JC,JO,JCO,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JC,JO,CO,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JC,JO2,JCO;JO,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JC,JO2,CO;O,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JC,JOH,JCO;JH,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JC,JOH,CO;H,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JH,JC,JCH,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JH,JC,CH,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JH,JCH,JCH2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JH,JCH,CH2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JH,JH,JH2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JH,JH,H2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JH,JO,JOH,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JH,JO,OH,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JH,JOH,JH2O,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JH,JOH,H2O,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JH2,JC,JCH2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JH2,JC,CH2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JH2,JOH,JH2O;JH,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JH2,JOH,H2O;H,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JO,JO,JO2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JO,JO,O2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JH2,JH2,JH2;H2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
+JC,,C,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JCH,,CH,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JCH2,,CH2,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JCO,,CO,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JH,,H,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JH2,,H2,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JH2O,,H2O,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JHe,,He,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JO,,O,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JO2,,O2,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JOH,,OH,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JS,,S,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JC,,C,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JCH,,CH,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JCH2,,CH2,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JCO,,CO,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JH,,H,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JH2,,H2,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JH2O,,H2O,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JHe,,He,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JO,,O,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JO2,,O2,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JOH,,OH,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JS,,S,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
+JCH,,JC;JH,CR ionization,730.0,0.0,0.0,-9999.0,9999.0
+JCO,,JC;JO,CR ionization,5.0,0.0,0.0,-9999.0,9999.0
+JH2O,,JOH;JH,CR ionization,970.0,0.0,0.0,-9999.0,9999.0
+JO2,,JO;JO,CR ionization,750.0,0.0,0.0,-9999.0,9999.0
+JOH,,JO;JH,CR ionization,510.0,0.0,0.0,-9999.0,9999.0
+JCH2,,JC;JH2,CR ionization,60.4,0.0,0.0,-9999.0,9999.0
+JCH2,,JCH;JH,CR ionization,126.0,0.0,0.0,-9999.0,9999.0
+JCH2,,JC;JH;JH,CR ionization,314.0,0.0,0.0,-9999.0,9999.0
+JCO,,JO;JC,CR ionization,3.0,0.0,0.0,-9999.0,9999.0
+JO2,,JO;JO,CR ionization,117.0,0.0,0.0,-9999.0,9999.0
+JCH,,JC;JH,photodissociation,1.4e-10,0.0,1.5,-9999.0,9999.0
+JCH2,,JCH;JH,photodissociation,5e-11,0.0,1.7,-9999.0,9999.0
+JCO,,JC;JO,photodissociation,3.1e-11,0.0,2.54,-9999.0,9999.0
+JH2O,,JOH;JH,photodissociation,3.28e-10,0.0,1.63,-9999.0,9999.0
+JO2,,JO;JO,photodissociation,3.3e-10,0.0,1.4,-9999.0,9999.0
+JOH,,JO;JH,photodissociation,1.68e-10,0.0,1.66,-9999.0,9999.0
+JCH,,JC;JH,photodissociation,2.9e-10,0.0,2.8,-9999.0,9999.0
+JCH2,,JC;JH2,photodissociation,1.21e-10,0.0,2.3,-9999.0,9999.0
+JCH2,,JCH;JH,photodissociation,2.51e-10,0.0,2.3,-9999.0,9999.0
+JCH2,,JC;JH;JH,photodissociation,6.28e-10,0.0,2.3,-9999.0,9999.0
+JH2O,,JH2;JO,photodissociation,1.9e-12,0.0,3.1,-9999.0,9999.0
+JH2O,,JOH;JH,photodissociation,4.2e-12,0.0,3.1,-9999.0,9999.0
+JH2O,,JO;JH;JH,photodissociation,1.49e-11,0.0,3.1,-9999.0,9999.0
+JO2,,JO;JO,photodissociation,6.2e-12,0.0,3.1,-9999.0,9999.0
+JOH,,JO;JH,photodissociation,1.6e-12,0.0,3.1,-9999.0,9999.0
+JC,,C,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JCH,,CH,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JCH2,,CH2,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JCO,,CO,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JH,,H,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JH2,,H2,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JH2O,,H2O,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JHe,,He,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JO,,O,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JO2,,O2,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JOH,,OH,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JS,,S,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JC,,C,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JCH,,CH,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JCH2,,CH2,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JCO,,CO,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JH,,H,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JH2,,H2,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JH2O,,H2O,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JHe,,He,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JO,,O,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JO2,,O2,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JOH,,OH,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JS,,S,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+JH2O,,OH;H,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
+C,,JC,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
+CH,,JCH,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
+CH2,,JCH2,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
+CO,,JCO,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
+H,,JH,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
+H2,,JH2,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
+H2O,,JH2O,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
+He,,JHe,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
+O,,JO,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
+O2,,JO2,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
+OH,,JOH,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
+S,,JS,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
