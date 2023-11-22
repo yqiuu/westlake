@@ -57,7 +57,7 @@ class SurfaceMantleTransition(nn.Module):
         self._params_reac_s2m = params_reac.indexing(inds_fm_dict["surface to mantle"])
         self.register_buffer("inds_reac", inds_reac)
         self.register_buffer("layer_factor",
-            torch.tensor(1./(config.dtg_num_ratio_0*config.num_sites_per_grain)))
+            torch.tensor(1./(config.dtg_num_ratio*config.num_sites_per_grain)))
         self.register_buffer("alpha_gain", self.layer_factor/config.num_active_layers)
 
     def forward(self, params_med, y_in, inds_mant, y_surf, y_mant, dy_surf_gain, dy_surf_loss):

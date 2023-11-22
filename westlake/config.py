@@ -19,7 +19,7 @@ class Config:
         site_density (float): Site density on one grain [cm^-2].
         grain_density (float): Grain mass density [g cm^-3].
         grain_radius (float): Grain radius [cm].
-        dtg_mass_ratio_0 (float): Initial dust to gas mass ratio.
+        dtg_mass_ratio (float): Initial dust to gas mass ratio.
         diffusion_barrier_thickness (float): Diffusion_barrier_thickness [cm].
         chemical_barrier_thickness (float): Grain reaction activation energy
             barrier width [cm].
@@ -44,7 +44,7 @@ class Config:
 
         use_photodesorption (bool): If True, enable photodesorption.
 
-        den_Av_ratio_0 (float): Density to Av ratio to compute self-shielding.
+        den_Av_ratio (float): Density to Av ratio to compute self-shielding.
         H2_shielding (str): Set "Lee+1996" to turn on H2 shielding. Set None to
             turn off.
         CO_shielding (str): Set "Lee+1996" to turn on CO shielding. Set None to
@@ -66,7 +66,7 @@ class Config:
     site_density: float = 1.5e15
     grain_density: float = 3.
     grain_radius: float = 1e-5
-    dtg_mass_ratio_0: float = 1e-2
+    dtg_mass_ratio: float = 1e-2
     diffusion_barrier_thickness: float = 1e-8
     chemical_barrier_thickness: float = 1e-8
     rate_cr_ion: float = 1.3e-17
@@ -87,7 +87,7 @@ class Config:
     use_photodesorption: bool = False
 
     # Sheilding
-    den_Av_ratio_0: float = 1./(5.34e-22)
+    den_Av_ratio: float = 1./(5.34e-22)
     H2_shielding: str = None # "Lee+1996"
     CO_shielding: str = None # "Lee+1996"
 
@@ -117,9 +117,9 @@ class Config:
         return 4*math.pi/3*self.grain_radius**3*self.grain_density/M_ATOM
 
     @property
-    def dtg_num_ratio_0(self):
+    def dtg_num_ratio(self):
         """Initial dust to gas number ratio."""
-        return self.dtg_mass_ratio_0/self.grain_mass
+        return self.dtg_mass_ratio/self.grain_mass
 
     @property
     def num_sites_per_grain(self):
@@ -127,8 +127,8 @@ class Config:
         return 4.*math.pi*self.grain_radius**2*self.site_density
 
 
-def fixed_dtg_mass_ratio_0(ab_He, dtg_mass_ratio_0=None):
+def fixed_dtg_mass_ratio(ab_He, dtg_mass_ratio=None):
     """Fix the initial DTG mass ratio using the He abundance."""
-    if dtg_mass_ratio_0 is None:
-        dtg_mass_ratio_0 = Config.dtg_mass_ratio_0
-    return dtg_mass_ratio_0*(1 + 4*ab_He)
+    if dtg_mass_ratio is None:
+        dtg_mass_ratio = Config.dtg_mass_ratio
+    return dtg_mass_ratio*(1 + 4*ab_He)

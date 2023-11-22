@@ -130,21 +130,21 @@ class GasGrainReaction(ReactionRate):
 class SurfaceHAccretion(ReactionRate):
     def __init__(self, config):
         super().__init__(["alpha", "beta"])
-        self.register_buffer("dtg_num_ratio_0", torch.tensor(config.dtg_num_ratio_0))
+        self.register_buffer("dtg_num_ratio", torch.tensor(config.dtg_num_ratio))
 
     def forward(self, params_med, params_reac, **params_extra):
         return params_reac["alpha"]*(params_med["T_gas"]/300)**params_reac["beta"] \
-            *self.dtg_num_ratio_0*params_med["den_gas"]
+            *self.dtg_num_ratio*params_med["den_gas"]
 
 
 class SurfaceH2Formation(ReactionRate):
     def __init__(self, config):
         super().__init__(["alpha"])
-        self.register_buffer("inv_dtg_num_ratio_0", torch.tensor(1./config.dtg_num_ratio_0))
+        self.register_buffer("inv_dtg_num_ratio", torch.tensor(1./config.dtg_num_ratio))
 
     def forward(self, params_med, params_reac, **params_extra):
         return 1.186e7*params_reac["alpha"]*torch.exp(-225./params_med["T_gas"]) \
-            *self.inv_dtg_num_ratio_0/params_med["den_gas"]
+            *self.inv_dtg_num_ratio/params_med["den_gas"]
 
 
 def clamp_gas_temperature(params_med, params_reac):

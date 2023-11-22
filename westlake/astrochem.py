@@ -350,7 +350,7 @@ def derive_initial_abundances(ab_0_dict, spec_table, config):
     ab_0[spec_table.index.get_indexer(ab_0_dict.keys())] = list(ab_0_dict.values())
 
     # Derive the grain abundances
-    ab_0[spec_table.index.get_indexer(["GRAIN0"]).item()] = config.dtg_mass_ratio_0/config.grain_mass
+    ab_0[spec_table.index.get_indexer(["GRAIN0"]).item()] = config.dtg_mass_ratio/config.grain_mass
     ab_0[spec_table.index.get_indexer(["GRAIN-"]).item()] = 0.
 
     # Derive the electron abundance aussming the system is neutral

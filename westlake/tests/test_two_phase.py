@@ -40,7 +40,7 @@ def solve_two_phase():
     # Create config
     config = westlake.Config(
         model="two phase",
-        dtg_mass_ratio_0=westlake.fixed_dtg_mass_ratio_0(ab_0_dict['He']),
+        dtg_mass_ratio=westlake.fixed_dtg_mass_ratio(ab_0_dict['He']),
         H2_shielding="Lee+1996",
         CO_shielding="Lee+1996",
         Av=2.7,

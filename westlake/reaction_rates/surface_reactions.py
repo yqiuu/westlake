@@ -83,17 +83,17 @@ class CRPhotodesorption(ReactionRate):
 class SurfaceAccretion(ReactionRate):
     def __init__(self, config):
         super().__init__(["alpha", "factor_rate_acc_r1"])
-        self.register_buffer("dtg_num_ratio_0", torch.tensor(config.dtg_num_ratio_0))
+        self.register_buffer("dtg_num_ratio", torch.tensor(config.dtg_num_ratio))
 
     def forward(self, params_med, params_reac, **params_extra):
         return params_reac["alpha"]*params_reac["factor_rate_acc_r1"] \
-            *(params_med["T_gas"].sqrt()*params_med["den_gas"]*self.dtg_num_ratio_0)
+            *(params_med["T_gas"].sqrt()*params_med["den_gas"]*self.dtg_num_ratio)
 
 
 class SurfaceReaction(ReactionRate):
     def __init__(self, config):
         super().__init__(["alpha", "branching_ratio", "E_act", "log_prob_surf_tunl"])
-        self.register_buffer("inv_dtg_num_ratio_0", torch.tensor(1./config.dtg_num_ratio_0))
+        self.register_buffer("inv_dtg_num_ratio", torch.tensor(1./config.dtg_num_ratio))
 
     def forward(self, params_med, params_reac, **params_extra):
         rate_hopping = params_med["rate_hopping"][:, params_reac["inds_r"]].sum(dim=-1)
@@ -101,7 +101,7 @@ class SurfaceReaction(ReactionRate):
         log_prob = torch.maximum(log_prob, params_reac["log_prob_surf_tunl"].unsqueeze(0))
         prob = log_prob.exp()
         return params_reac["alpha"]*params_reac["branching_ratio"]/params_med["den_gas"] \
-            *self.inv_dtg_num_ratio_0*rate_hopping*prob
+            *self.inv_dtg_num_ratio*rate_hopping*prob
 
 
 def compute_evaporation_rate(factor, freq_vib, E_d, T_dust):
