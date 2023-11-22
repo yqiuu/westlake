@@ -31,6 +31,8 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
         df_reac = df_reac.copy()
         df_spec = df_spec.copy()
 
+    df_reac = assign_reaction_key(df_reac)
+
     if meta_params.use_static_medium and medium is None:
         medium = StaticMedium({
             'Av': meta_params.Av,
@@ -100,6 +102,23 @@ def create_astrochem_model(df_reac, df_spec, df_surf, meta_params,
         )
     else:
         raise ValueError(f"Unknown model: {meta_params.model}")
+
+
+def assign_reaction_key(df_reac):
+    keys = []
+    for reac_1, reac_2, prods in zip(
+        df_reac["reactant_1"], df_reac["reactant_2"], df_reac["products"]
+    ):
+        if reac_2 == "":
+            key = f"{reac_1}>{prods}"
+        else:
+            key = f"{reac_1};{reac_2}>{prods}"
+        keys.append(key)
+    if "key" in df_reac:
+        df_reac["key"] = keys
+    else:
+        df_reac.insert(0, "key", keys)
+    return df_reac
 
 
 def add_H2_shielding(df_reac, df_spec, meta_params, formula_dict_ex):
