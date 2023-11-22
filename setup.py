@@ -18,5 +18,7 @@ setup(
     author_email="hpc_yqiuu@163.com",
     install_requires=install_requires,
     packages=find_packages(),
-    include_package_data=True,
+    package_data={
+        "westlake": ["data/*.pickle"],
+    }
 )
