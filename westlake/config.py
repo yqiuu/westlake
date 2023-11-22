@@ -13,7 +13,6 @@ class Config:
     Args:
         ab_0_min (float): Minimum initial abundances.
 
-        T_dust_0 (float): Initial dust temperature [K].
         site_density (float): Site density on one grain [cm^-2].
         grain_density (float): Grain mass density [g cm^-3].
         grain_radius (float): Grain radius [cm].
@@ -50,7 +49,6 @@ class Config:
     model: str
 
     # Grain parameters
-    T_dust_0: float = 10.
     site_density: float = 1.5e15
     grain_density: float = 3.
     grain_radius: float = 1e-5
