@@ -1,22 +1,22 @@
 reactant_1,reactant_2,products,formula,alpha,beta,gamma,T_min,T_max
-H,,H+;e-,CR ionization,0.46,0.0,0.0,-9999.0,9999.0
-He,,He+;e-,CR ionization,0.5,0.0,0.0,-9999.0,9999.0
-O,,O+;e-,CR ionization,2.8,0.0,0.0,-9999.0,9999.0
-H2,,H2+;e-,CR ionization,0.93,0.0,0.0,-9999.0,9999.0
-CO,,C;O,CR ionization,5.0,0.0,0.0,-9999.0,9999.0
-CO,,CO+;e-,CR ionization,3.0,0.0,0.0,-9999.0,9999.0
-H2,,H;H,CR ionization,0.1,0.0,0.0,-9999.0,9999.0
-H2,,H;H+;e-,CR ionization,0.022,0.0,0.0,-9999.0,9999.0
-H2,,H+;H-,CR ionization,0.0003,0.0,0.0,-9999.0,9999.0
-CH+,,H;C+,CR ionization,112.0,0.0,0.0,-9999.0,9999.0
-CH+,,C;H+,CR ionization,64.0,0.0,0.0,-9999.0,9999.0
-O2,,O;O,CR ionization,750.0,0.0,0.0,-9999.0,9999.0
-OH,,H;O,CR ionization,510.0,0.0,0.0,-9999.0,9999.0
-CH2,,CH2+;e-,CR ionization,500.0,0.0,0.0,-9999.0,9999.0
-H2O,,H;OH,CR ionization,970.0,0.0,0.0,-9999.0,9999.0
-C,,C+;e-,CR ionization,1020.0,0.0,0.0,-9999.0,9999.0
-S,,S+;e-,CR ionization,960.0,0.0,0.0,-9999.0,9999.0
-CH,,C;H,CR ionization,730.0,0.0,0.0,-9999.0,9999.0
+H,,H+;e-,CR dissociation,0.46,0.0,0.0,-9999.0,9999.0
+He,,He+;e-,CR dissociation,0.5,0.0,0.0,-9999.0,9999.0
+O,,O+;e-,CR dissociation,2.8,0.0,0.0,-9999.0,9999.0
+H2,,H2+;e-,CR dissociation,0.93,0.0,0.0,-9999.0,9999.0
+CO,,C;O,CR dissociation,5.0,0.0,0.0,-9999.0,9999.0
+CO,,CO+;e-,CR dissociation,3.0,0.0,0.0,-9999.0,9999.0
+H2,,H;H,CR dissociation,0.1,0.0,0.0,-9999.0,9999.0
+H2,,H;H+;e-,CR dissociation,0.022,0.0,0.0,-9999.0,9999.0
+H2,,H+;H-,CR dissociation,0.0003,0.0,0.0,-9999.0,9999.0
+CH+,,H;C+,CRP dissociation,112.0,0.0,0.0,-9999.0,9999.0
+CH+,,C;H+,CRP dissociation,64.0,0.0,0.0,-9999.0,9999.0
+O2,,O;O,CRP dissociation,750.0,0.0,0.0,-9999.0,9999.0
+OH,,H;O,CRP dissociation,510.0,0.0,0.0,-9999.0,9999.0
+CH2,,CH2+;e-,CRP dissociation,500.0,0.0,0.0,-9999.0,9999.0
+H2O,,H;OH,CRP dissociation,970.0,0.0,0.0,-9999.0,9999.0
+C,,C+;e-,CRP dissociation,1020.0,0.0,0.0,-9999.0,9999.0
+S,,S+;e-,CRP dissociation,960.0,0.0,0.0,-9999.0,9999.0
+CH,,C;H,CRP dissociation,730.0,0.0,0.0,-9999.0,9999.0
 CH+,,C;H+,photodissociation,2.5e-10,0.0,2.94,-9999.0,9999.0
 H2+,,H;H+,photodissociation,5.7e-10,0.0,2.37,-9999.0,9999.0
 OH+,,O;H+,photodissociation,1.1e-11,0.0,3.5,-9999.0,9999.0
@@ -296,16 +296,16 @@ JO,,O,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
 JO2,,O2,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
 JOH,,OH,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
 JS,,S,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JCH,,JC;JH,CR ionization,730.0,0.0,0.0,-9999.0,9999.0
-JCO,,JC;JO,CR ionization,5.0,0.0,0.0,-9999.0,9999.0
-JH2O,,JOH;JH,CR ionization,970.0,0.0,0.0,-9999.0,9999.0
-JO2,,JO;JO,CR ionization,750.0,0.0,0.0,-9999.0,9999.0
-JOH,,JO;JH,CR ionization,510.0,0.0,0.0,-9999.0,9999.0
-JCH2,,JC;JH2,CR ionization,60.4,0.0,0.0,-9999.0,9999.0
-JCH2,,JCH;JH,CR ionization,126.0,0.0,0.0,-9999.0,9999.0
-JCH2,,JC;JH;JH,CR ionization,314.0,0.0,0.0,-9999.0,9999.0
-JCO,,JO;JC,CR ionization,3.0,0.0,0.0,-9999.0,9999.0
-JO2,,JO;JO,CR ionization,117.0,0.0,0.0,-9999.0,9999.0
+JCH,,JC;JH,CR dissociation,730.0,0.0,0.0,-9999.0,9999.0
+JCO,,JC;JO,CR dissociation,5.0,0.0,0.0,-9999.0,9999.0
+JH2O,,JOH;JH,CR dissociation,970.0,0.0,0.0,-9999.0,9999.0
+JO2,,JO;JO,CR dissociation,750.0,0.0,0.0,-9999.0,9999.0
+JOH,,JO;JH,CR dissociation,510.0,0.0,0.0,-9999.0,9999.0
+JCH2,,JC;JH2,CR dissociation,60.4,0.0,0.0,-9999.0,9999.0
+JCH2,,JCH;JH,CR dissociation,126.0,0.0,0.0,-9999.0,9999.0
+JCH2,,JC;JH;JH,CR dissociation,314.0,0.0,0.0,-9999.0,9999.0
+JCO,,JO;JC,CR dissociation,3.0,0.0,0.0,-9999.0,9999.0
+JO2,,JO;JO,CR dissociation,117.0,0.0,0.0,-9999.0,9999.0
 JCH,,JC;JH,photodissociation,1.4e-10,0.0,1.5,-9999.0,9999.0
 JCH2,,JCH;JH,photodissociation,5e-11,0.0,1.7,-9999.0,9999.0
 JCO,,JC;JO,photodissociation,3.1e-11,0.0,2.54,-9999.0,9999.0

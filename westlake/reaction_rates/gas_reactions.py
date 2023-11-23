@@ -7,7 +7,8 @@ from .reaction_rates import ReactionRate
 
 def builtin_gas_reactions(config):
     return {
-        "CR ionization": CosmicRayIonization(config.rate_cr_ion),
+        "CR dissociation": CRDissociation(config.rate_cr_ion),
+        "CRP dissociation": CRDissociation(config.rate_cr_ion),
         "photodissociation": Photodissociation(config),
         "modified Arrhenius": ModifiedArrhenius(),
         "ionpol1": Ionpol1(),
@@ -18,7 +19,7 @@ def builtin_gas_reactions(config):
     }
 
 
-class CosmicRayIonization(ReactionRate):
+class CRDissociation(ReactionRate):
     """Cosmic-ray ionization.
 
     Args:

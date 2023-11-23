@@ -102,7 +102,12 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
         df_reac = df_reac.copy()
         df_spec = df_spec.copy()
 
+    # Preprocess reactions
     df_reac = assign_reaction_key(df_reac)
+    remove_second_reactant(df_reac)
+    prepare_piecewise_rates(df_reac)
+    reaction_matrix = ReactionMatrix(df_reac, df_spec)
+    rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
 
     if config.use_static_medium and medium is None:
         medium = StaticMedium({
@@ -111,8 +116,6 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
             "T_gas": config.T_gas,
             "T_dust": config.T_dust
         })
-
-    prepare_piecewise_rates(df_reac)
     if config.model != "simple":
         prepare_surface_reaction_params(
             df_reac, df_spec, df_surf, config,
@@ -120,9 +123,6 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
             df_barr=df_barr, df_gap=df_gap, df_ma=df_ma,
         )
         medium = add_hopping_rate_module(medium, df_spec, config)
-
-    reaction_matrix = ReactionMatrix(df_reac, df_spec)
-    rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
 
     # Find and add special formulae
     formula_dict_ex_ = {}
@@ -193,6 +193,14 @@ def assign_reaction_key(df_reac):
     else:
         df_reac.insert(0, "key", keys)
     return df_reac
+
+
+def remove_second_reactant(df_reac):
+    "Remove the second reactant for first order reactions"
+    cond = (df_reac["formula"] == "CR dissociation") \
+        | (df_reac["formula"] == "CRP dissociation") \
+        | (df_reac["formula"] == "photodissociation")
+    df_reac.loc[cond, "reactant_2"] = ""
 
 
 def add_H2_shielding(df_reac, df_spec, config, formula_dict_ex):
