@@ -2,9 +2,10 @@ from setuptools import setup, find_packages
 
 
 install_requires = [
+    "setuptools>=49.2",
     "astropy>=5.2",
     "numpy>=1.23",
-    "scipy>=1.10"
+    "scipy>=1.10",
     "pandas>=2.0",
     'torch>=2.0',
 ]
