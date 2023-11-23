@@ -104,7 +104,7 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
 
     # Preprocess reactions
     df_reac = assign_reaction_key(df_reac)
-    remove_second_reactant(df_reac)
+    remove_special_species(df_reac, config)
     prepare_piecewise_rates(df_reac)
     reaction_matrix = ReactionMatrix(df_reac, df_spec)
     rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
@@ -195,12 +195,15 @@ def assign_reaction_key(df_reac):
     return df_reac
 
 
-def remove_second_reactant(df_reac):
-    "Remove the second reactant for first order reactions"
-    cond = (df_reac["formula"] == "CR dissociation") \
-        | (df_reac["formula"] == "CRP dissociation") \
-        | (df_reac["formula"] == "photodissociation")
-    df_reac.loc[cond, "reactant_2"] = ""
+def remove_special_species(df_reac, config):
+    "Replace special species such as CR with ''."
+    replace_dict = {key: "" for key in config.special_species}
+    df_reac.replace(replace_dict, inplace=True)
+
+    def _remove(products):
+        return ";".join([prod for prod in products.split(";")
+                         if prod not in config.special_species])
+    df_reac["products"] = df_reac["products"].map(_remove).values
 
 
 def add_H2_shielding(df_reac, df_spec, config, formula_dict_ex):

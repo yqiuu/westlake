@@ -59,6 +59,9 @@ class Config:
 
         to_second (float): A unit factor that converts the desired unit to
             second. The default value converts year to second.
+
+        special_species (tuple): Species whose abundance is irrelevant in the
+            simulation, e.g. CR, CRP and Photon.
     """
     model: str
 
@@ -109,6 +112,9 @@ class Config:
 
     #
     to_second: float = units.year.to(units.second)
+
+    #
+    special_species: tuple = ("CR", "CRP", "Photon")
 
 
     @property
