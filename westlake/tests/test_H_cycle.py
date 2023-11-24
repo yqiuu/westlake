@@ -10,6 +10,7 @@ import westlake
 from utils import get_abs_fname
 
 
+torch.set_num_threads(1)
 torch.set_default_dtype(torch.float64)
 FILE_NAME = "H_cycle.pickle"
 RTOL = 1e-5
