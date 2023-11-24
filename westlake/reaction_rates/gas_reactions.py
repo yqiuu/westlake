@@ -7,8 +7,8 @@ from .reaction_rates import ReactionRate
 
 def builtin_gas_reactions(config):
     return {
-        "CR dissociation": CRDissociation(config.rate_cr_ion),
-        "CRP dissociation": CRDissociation(config.rate_cr_ion),
+        "CR dissociation": CRDissociation(config),
+        "CRP dissociation": CRDissociation(config),
         "photodissociation": Photodissociation(config),
         "modified Arrhenius": ModifiedArrhenius(),
         "ionpol1": Ionpol1(),
@@ -20,14 +20,9 @@ def builtin_gas_reactions(config):
 
 
 class CRDissociation(ReactionRate):
-    """Cosmic-ray ionization.
-
-    Args:
-        rate_cr_ion (float): H2 cosmic-ray ionization rate [s^-1].
-    """
-    def __init__(self, rate_cr_ion):
+    def __init__(self, config):
         super().__init__(["alpha"])
-        self.register_buffer("rate_cr_ion", torch.tensor(rate_cr_ion))
+        self.register_buffer("xi_cr_xr", torch.tensor(config.rate_cr_ion + config.rate_x_ion))
 
     def forward(self, params_med, params_reac, **params_extra):
         """
@@ -38,8 +33,7 @@ class CRDissociation(ReactionRate):
         Returns:
             tensor: (R,). Reaction rate.
         """
-        rate = params_reac["alpha"]*self.rate_cr_ion
-        return rate
+        return params_reac["alpha"]*self.xi_cr_xr
 
 
 class Photodissociation(ReactionRate):
