@@ -26,6 +26,11 @@ def test_two_phase():
 def solve_two_phase():
     dirname = get_dirname()
     df_reac = pd.read_csv(dirname/Path("reactions.csv"), na_filter=False)
+    cond = (df_reac["formula"] != "UV photodesorption") \
+        & (df_reac["formula"] != "CR photodesorption")
+    df_reac = df_reac[cond]
+    df_reac.reset_index(drop=True, inplace=True)
+
     df_spec = pd.read_csv(dirname/Path("species.csv"), index_col="specie")
     df_surf = pd.read_csv(dirname/Path("surface_parameters.csv"), index_col="specie")
 

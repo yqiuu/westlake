@@ -125,4 +125,4 @@ class Result:
 
     def append(self, res):
         self._time = np.append(self._time, res.t)
-        self._ab = np.concatenate(self._ab, res.y, axis=-1)
+        self._ab = np.concatenate([self._ab, res.y], axis=-1)

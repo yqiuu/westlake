@@ -134,9 +134,6 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
             formula_dict_[key] = NoReaction()
     else:
         formula_dict_.update(formula_dict_surf)
-        if not config.use_photodesorption:
-            formula_dict_["CR photodesorption"] = NoReaction()
-            formula_dict_["UV photodesorption"] = NoReaction()
     if formula_dict is not None:
         formula_dict_.update(formula_dict)
     rmod, rmod_ex = create_formula_dict_reaction_module(
@@ -154,11 +151,8 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
         rmat_2nd_surf, rmat_2nd_other = split_surface_reactions(df_reac, rmat_2nd)
         rmat_2nd_surf_gain, rmat_2nd_surf_loss = split_gain_loss(rmat_2nd_surf)
 
-        if config.use_photodesorption:
-            formula_list = ["CR photodesorption", "UV photodesorption"]
-            rmat_photodeso = extract_by_formula(rmat_1st, df_reac, formula_list)
-        else:
-            rmat_photodeso = None
+        formula_list = ["CR photodesorption", "UV photodesorption"]
+        rmat_photodeso = extract_by_formula(rmat_1st, df_reac, formula_list)
 
         inds_surf = df_spec.index.map(lambda name: name.startswith("J")).values
         inds_mant = df_spec.index.map(lambda name: name.startswith("K")).values
