@@ -24,7 +24,7 @@ class LinearInterpolation(nn.Module):
             msg = ", ".join([f"'{opn}'" for opn in options])
             raise ValueError(f"Choose boundary from ({msg}).")
 
-    def forward(self, x_in):
+    def forward(self, x_in, *args):
         # x_in (B,)
         x_in = x_in.ravel()
         x_in = x_in.clamp_min(self.x_node[0])

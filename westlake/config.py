@@ -95,7 +95,6 @@ class Config:
     CO_shielding: str = None # "Lee+1996"
 
     # Physcial parameters
-    use_static_medium: bool = True
     Av: float = 10.
     den_gas: float = 2.e+4
     T_gas: float = 10.

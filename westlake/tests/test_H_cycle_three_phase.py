@@ -35,10 +35,10 @@ def solve_H_cycle():
     config = westlake.Config(
         model="three phase", atol=ATOL, ab_0_min=1e-40,
         t_start=t_start, t_end=t_end,
+        Av=10., den_gas=1e4, T_gas=17., T_dust=17.
     )
-    medium = westlake.StaticMedium({'Av': 10., "den_gas": 1e4, "T_gas": 17., "T_dust": 17.})
     reaction_term = westlake.create_astrochem_model(
-        df_reac, df_spec, df_surf, config, medium, df_barr=df_barr
+        df_reac, df_spec, df_surf, config, df_barr=df_barr
     )
 
     n_eval = 100

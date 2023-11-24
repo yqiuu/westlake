@@ -1,63 +1,50 @@
-"""Medium modules are used to compute any parameters that evolve with time.
-
-Args:
-    t_in (tensor): Time. (B, 1)
-    params_med (dict): Medium parameters. (B, X) for each element.
-
-Returns:
-    dict: Medium parameters. This should include input parameters.
-"""
 import torch
 from torch import nn
 
-from .utils import LinearInterpolation
 
+class Medium(nn.Module):
+    """Medium modules are used to compute any parameters that evolve with time."""
+    def __init__(self, config, Av=None, den_gas=None, T_gas=None, T_dust=None):
+        super().__init__()
+        self._constants = {}
+        self._module_dict = nn.ModuleDict()
+        key = ["Av", "den_gas", "T_gas", "T_dust"]
+        values = [Av, den_gas, T_gas, T_dust]
+        for key, val in zip(key, values):
+            if val is None:
+                self._constants[key] = getattr(config, key)
+            else:
+                self.add_medium_parameter(key, val)
 
-class SequentialMedium(nn.ModuleList):
-    def __init__(self, *args):
-        super(SequentialMedium, self).__init__(args)
+    def add_medium_parameter(self, key, val):
+        try:
+            fval = float(val)
+        except:
+            fval = None
+        if fval is not None:
+            self._constants[key] = val
+            return
 
-    def forward(self, t_in, params_med=None):
-        for module in self:
-            params_med = module(t_in, params_med)
-        return params_med
+        if isinstance(val, nn.Module):
+            self._module_dict[key] = val
+        else:
+            raise TypeError("'val' can only be float or nn.Module.")
 
+    def forward(self, t_in):
+        """
+        Args:
+            t_in (tensor): Time. (B, 1)
 
-class StaticMedium(nn.Module):
-    def __init__(self, params_dict):
-        super(StaticMedium, self).__init__()
-        params_med = torch.tensor(
-            list(params_dict.values()), dtype=torch.get_default_dtype()).reshape(-1, 1, 1)
-        self.register_buffer("params_med", params_med)
-        self.columns = tuple(params_dict.keys())
-
-    def forward(self, t_in=None, params_med=None):
-        params = self.params_med
-        return {col: params[i_col] for i_col, col in enumerate(self.columns)}
-
-
-class InterpolationMedium(nn.Module):
-    def __init__(self, tau, params, columns, config):
-        super(InterpolationMedium, self).__init__()
-        self.interp = LinearInterpolation(
-            torch.tensor(tau*config.to_second, dtype=torch.get_default_dtype()),
-            torch.tensor(params, dtype=torch.get_default_dtype()),
-        )
-        self.columns = columns
-
-    def forward(self, t_in, params_med=None):
-        params_p = self.interp(t_in)
-        return {col: params_p[:, i_col, None] for i_col, col in enumerate(self.columns)}
-
-
-class CoevolutionMedium(nn.Module):
-    def __init__(self, name_new, name_co):
-        super(CoevolutionMedium, self).__init__()
-        self.name_new = name_new
-        self.name_co = name_co
-
-    def forward(self, t_in, params_med):
-        params_med[self.name_new] = params_med[self.name_co]
+        Returns:
+            dict: Medium parameters. (B, X) for each element.
+        """
+        params_med = {}
+        for key, val in self._constants.items():
+            params_med[key] = torch.full(
+                (t_in.shape[0], 1), val, dtype=t_in.dtype, device=t_in.device
+            )
+        for key, module in self._module_dict.items():
+            params_med[key] = module(t_in, params_med)
         return params_med
 
 
@@ -70,7 +57,6 @@ class ThermalHoppingRate(nn.Module):
             torch.tensor(1./config.num_sites_per_grain))
 
     def forward(self, t_in, params_med):
-        params_med["rate_hopping"] = self.freq_vib \
+        return self.freq_vib \
             * torch.exp(-self.E_barr/params_med["T_dust"]) \
             * self.inv_num_sites_per_grain
-        return params_med

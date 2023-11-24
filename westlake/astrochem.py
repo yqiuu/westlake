@@ -10,7 +10,7 @@ from .reaction_rates import (
 )
 from .reaction_rates.shielding import H2Shielding_Lee1996, COShielding_Lee1996
 from .preprocesses import prepare_piecewise_rates
-from .medium import StaticMedium, SequentialMedium, ThermalHoppingRate
+from .medium import Medium, ThermalHoppingRate
 from .reaction_matrices import ReactionMatrix
 from .reaction_terms import TwoPhaseTerm, ThreePhaseTerm
 from .solver import solve_rate_equation
@@ -109,20 +109,15 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
     reaction_matrix = ReactionMatrix(df_reac, df_spec)
     rmat_1st, rmat_2nd = reaction_matrix.create_index_matrices()
 
-    if config.use_static_medium and medium is None:
-        medium = StaticMedium({
-            'Av': config.Av,
-            "den_gas": config.den_gas,
-            "T_gas": config.T_gas,
-            "T_dust": config.T_dust
-        })
+    if medium is None:
+        medium = Medium(config)
     if config.model != "simple":
         prepare_surface_reaction_params(
             df_reac, df_spec, df_surf, config,
             df_act=df_act, df_br=df_br,
             df_barr=df_barr, df_gap=df_gap, df_ma=df_ma,
         )
-        medium = add_hopping_rate_module(medium, df_spec, config)
+        add_hopping_rate_module(medium, df_spec, config)
 
     # Find and add special formulae
     formula_dict_ex_ = {}
@@ -296,11 +291,7 @@ def add_hopping_rate_module(medium, df_spec, config):
     module = ThermalHoppingRate(
         df_spec["E_barr"].values, df_spec["freq_vib"].values, config
     )
-    if isinstance(medium, SequentialMedium):
-        medium.append(module)
-    else:
-        medium = SequentialMedium(medium, module)
-    return medium
+    medium.add_medium_parameter("rate_hopping", module)
 
 
 def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config,
