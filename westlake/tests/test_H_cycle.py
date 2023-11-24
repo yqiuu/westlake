@@ -42,12 +42,14 @@ def solve_H_cycle():
         df_reac, df_spec, df_surf, config, df_barr=df_barr
     )
 
-    t_begin = 0.
-    t_end = 1e5
     n_eval = 100
-    t_eval = np.linspace(t_begin, t_end, n_eval)
-    res = westlake.solve_rate_equation_astrochem(
-        reaction_term, ab_0_dict, df_spec, config, t_eval=t_eval
+    t_eval = np.linspace(t_start, t_end, n_eval)
+    ab_0 = westlake.derive_initial_abundances(ab_0_dict, df_spec, config)
+    t_span = (t_start, t_end)
+    res = westlake.solve_rate_equation(
+        reaction_term, t_span, ab_0,
+        u_factor=config.to_second, t_eval=t_eval, method=config.solver,
+        rtol=config.rtol, atol=config.atol,
     )
     return res
 

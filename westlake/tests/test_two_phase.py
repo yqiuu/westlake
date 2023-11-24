@@ -59,8 +59,8 @@ def solve_two_phase():
         reac_term, ab_0_dict, df_spec, config, t_eval=t_eval
     )
 
-    ab_dict = {"time": res.t}
-    for spec, ab in zip(df_spec.index, res.y):
+    ab_dict = {"time": res["time"]}
+    for spec, ab in zip(df_spec.index, res.ab):
         ab_dict[spec] = ab
     return ab_dict
 

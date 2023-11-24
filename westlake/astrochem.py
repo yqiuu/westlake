@@ -13,7 +13,7 @@ from .preprocesses import prepare_piecewise_rates
 from .medium import Medium, ThermalHoppingRate
 from .reaction_matrices import ReactionMatrix
 from .reaction_terms import TwoPhaseTerm, ThreePhaseTerm
-from .solver import solve_rate_equation
+from .solver import solve_rate_equation, Result
 
 
 def builtin_astrochem_reactions(config):
@@ -331,6 +331,7 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config,
         device=device,
         show_progress=show_progress
     )
+    res = Result(res, df_spec)
     return res
 
 

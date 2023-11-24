@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from torch.func import jacrev
 from scipy.integrate import solve_ivp
@@ -82,3 +83,46 @@ def solve_rate_equation(reaction_term, t_span, ab_0, method="LSODA",
     if show_progress:
         print(f"\r[{100.:.1f}%] t = {t_span[1]/u_factor:12.6e}")
     return res
+
+
+class Result:
+    def __init__(self, res, df_spec):
+        self._message = res.message
+        self._success = res.success
+        self._time = res.t
+        self._ab = res.y
+        self._species = {key: idx for idx, key in enumerate(df_spec.index)}
+
+    def __repr__(self):
+        return f"message: {self._message}\nsuccess: {self._success}"
+
+    def __getitem__(self, key):
+        if key == "time":
+            return self._time
+        else:
+            return self._ab[self._species[key]]
+
+    @property
+    def message(self):
+        return self._message
+
+    @property
+    def success(self):
+        return self._success
+
+    @property
+    def species(self):
+        """List of all species."""
+        return tuple(self._species.keys())
+
+    @property
+    def ab(self):
+        """Abundance data."""
+        return self._ab
+
+    def last(self):
+        return self._ab[:, -1]
+
+    def append(self, res):
+        self._time = np.append(self._time, res.t)
+        self._ab = np.concatenate(self._ab, res.y, axis=-1)
