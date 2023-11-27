@@ -22,7 +22,7 @@ def builtin_gas_reactions(config):
 class CRDissociation(ReactionRate):
     def __init__(self, config):
         super().__init__(["alpha"])
-        self.register_buffer("xi_cr_xr", torch.tensor(config.rate_cr_ion + config.rate_x_ion))
+        self.register_buffer("zeta_cr_xr", torch.tensor(config.zeta_cr + config.zeta_xr))
 
     def forward(self, params_med, params_reac, **params_extra):
         """
@@ -33,7 +33,7 @@ class CRDissociation(ReactionRate):
         Returns:
             tensor: (R,). Reaction rate.
         """
-        return params_reac["alpha"]*self.xi_cr_xr
+        return params_reac["alpha"]*self.zeta_cr_xr
 
 
 class Photodissociation(ReactionRate):

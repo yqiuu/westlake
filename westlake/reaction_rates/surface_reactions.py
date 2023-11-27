@@ -41,8 +41,8 @@ class ThermalEvaporation(ReactionRate):
 class CosmicRayEvaporation(ReactionRate):
     def __init__(self, config):
         super().__init__(["alpha", "freq_vib_r1", "E_deso_r1"])
-        prefactor = (config.rate_cr_ion + config.rate_x_ion)/1.3e-17 \
-            *(config.rate_fe_ion*config.tau_cr_peak)
+        prefactor = (config.zeta_cr + config.zeta_xr)/1.3e-17 \
+            *(config.zeta_fe*config.tau_cr_peak)
         self.register_buffer("prefactor", torch.tensor(prefactor))
         self.register_buffer("T_grain_cr_peak", torch.tensor(config.T_grain_cr_peak))
 
@@ -70,7 +70,7 @@ class CRPhotodesorption(ReactionRate):
     def __init__(self, config):
         super().__init__(["alpha"])
         self.register_buffer("prefactor",
-            torch.tensor(1e4/config.site_density*1.3e-17/config.rate_cr_ion)
+            torch.tensor(1e4/config.site_density*1.3e-17/config.zeta_cr)
         )
 
     def forward(self, params_med, params_reac, decay_factor=None, **params_extra):

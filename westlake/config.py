@@ -23,9 +23,9 @@ class Config:
         diffusion_barrier_thickness (float): Diffusion_barrier_thickness [cm].
         chemical_barrier_thickness (float): Grain reaction activation energy
             barrier width [cm].
-        rate_cr_ion (float): Cosmic ray ionisation rate [s^-1].
-        rate_x_ion: (float): X-ray ionisation rate [s^-1].
-        rate_fe_ion: (float): Fe-ion-grain encounter [s^-1].
+        zeta_cr (float): Cosmic ray ionisation rate [s^-1].
+        zeta_xr: (float): X-ray ionisation rate [s^-1].
+        zeta_fe: (float): Fe-ion-grain encounter [s^-1].
         tau_cr_peak (float): Duration of peak grain temperature [s^-1].
         T_grain_cr_peak (float): Peak grain temperature due to cosmic ray
             heating [K].
@@ -72,9 +72,9 @@ class Config:
     dtg_mass_ratio: float = 1e-2
     diffusion_barrier_thickness: float = 1e-8
     chemical_barrier_thickness: float = 1e-8
-    rate_cr_ion: float = 1.3e-17
-    rate_x_ion: float = 0.
-    rate_fe_ion: float = 3e-14
+    zeta_cr: float = 1.3e-17
+    zeta_xr: float = 0.
+    zeta_fe: float = 3e-14
     tau_cr_peak: float = 1e-5
     T_grain_cr_peak: float = 70.
     sticking_coeff_neutral: float = 1.
