@@ -80,3 +80,11 @@ def data_frame_to_tensor_dict(df):
             dtype = None
         tensors.append(torch.tensor(arr, dtype=dtype))
     return TensorDict(names, tensors)
+
+
+def get_specie_index(df_spec, spec):
+    """Give the index of the given specie in the specie table."""
+    idx = df_spec.index.get_indexer([spec]).item()
+    if idx == -1:
+        raise ValueError(f"{spec} is not in the specie table.")
+    return idx

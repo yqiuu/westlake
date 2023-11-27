@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+from .utils import get_specie_index
 from .reaction_modules import create_formula_dict_reaction_module, create_surface_mantle_transition
 from .reaction_rates import (
     builtin_gas_reactions,
@@ -198,7 +199,8 @@ def remove_special_species(df_reac, config):
 def add_H2_shielding(df_reac, df_spec, config, formula_dict_ex):
     """Add H2 shielding to `formula_dict_ex` if applicable.
 
-    This function changes `formula_dict_ex` inplace.
+    This function changes `formula_dict_ex` inplace. The specie table must
+    have H2.
 
     Returns:
         pd.DataFrame: Reaction data with updated H2 shielding formula.
@@ -214,7 +216,7 @@ def add_H2_shielding(df_reac, df_spec, config, formula_dict_ex):
             fm_name = "H2 Shielding"
             df_reac = df_reac.copy()
             df_reac.loc[idx_reac, "formula"] = fm_name
-            idx_H2 = df_spec.index.get_indexer(["H2"]).item()
+            idx_H2 = get_specie_index(df_spec, "H2")
             formula_dict_ex[fm_name] = H2Shielding_Lee1996(idx_H2, config)
         else:
             raise ValueError("Multiple H2 shielding reactions.")
@@ -228,7 +230,8 @@ def add_H2_shielding(df_reac, df_spec, config, formula_dict_ex):
 def add_CO_shielding(df_reac, df_spec, config, formula_dict_ex):
     """Add CO shielding to `formula_dict_ex` if applicable.
 
-    This function changes `formula_dict_ex` inplace.
+    This function changes `formula_dict_ex` inplace. The specie table must
+    have H2 and CO.
 
     Returns:
         pd.DataFrame: Reaction data with updated CO shielding formula.
@@ -244,8 +247,8 @@ def add_CO_shielding(df_reac, df_spec, config, formula_dict_ex):
             fm_name = "CO Shielding (Lee+1996)"
             df_reac = df_reac.copy()
             df_reac.loc[idx_reac, "formula"] = fm_name
-            idx_CO = df_spec.index.get_indexer(["CO"]).item()
-            idx_H2 = df_spec.index.get_indexer(["H2"]).item()
+            idx_CO = get_specie_index(df_spec, "CO")
+            idx_H2 = get_specie_index(df_spec, "H2")
             formula_dict_ex[fm_name] = COShielding_Lee1996(idx_CO, idx_H2, config)
         else:
             raise ValueError("Multiple CO shielding reactions.")
