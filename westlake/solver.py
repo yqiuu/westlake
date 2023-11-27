@@ -34,7 +34,9 @@ def solve_rate_equation(reaction_term, t_span, ab_0, method="LSODA",
 
     def wrapper(t_in, y_in):
         if show_progress:
-            print(f"\r[{t_in/t_span[1]*100.:5.1f}%] t = {t_in/u_factor:<12.5e}", end='')
+            percent = (t_in - t_span[0])/t_span[1]*100
+            t_show = t_in/u_factor
+            print("\r[{:5.1f}%] t = {:<12.5e}".format(percent, t_show), end='')
 
         t_in = torch.tensor(t_in, dtype=dtype, device=device)
         t_in = torch.atleast_1d(t_in)
@@ -81,7 +83,8 @@ def solve_rate_equation(reaction_term, t_span, ab_0, method="LSODA",
     res.t /= u_factor
 
     if show_progress:
-        print(f"\r[{100.:.1f}%] t = {t_span[1]/u_factor:12.6e}")
+        t_show = t_span[1]/u_factor
+        print("\r[100.0%] t = {:<12.5e}".format(t_show))
     return res
 
 
