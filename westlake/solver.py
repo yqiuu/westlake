@@ -34,7 +34,7 @@ def solve_rate_equation(reaction_term, t_span, ab_0, method="LSODA",
 
     def wrapper(t_in, y_in):
         if show_progress:
-            percent = (t_in - t_span[0])/t_span[1]*100
+            percent = (t_in - t_span[0])/(t_span[1] - t_span[0])*100
             t_show = t_in/u_factor
             print("\r[{:5.1f}%] t = {:<12.5e}".format(percent, t_show), end='')
 
