@@ -87,10 +87,10 @@ class TwoPhaseTerm(nn.Module):
 
 
 class ThreePhaseTerm(nn.Module):
-    def __init__(self, rmod, rmod_smt,
+    def __init__(self, rmod, rmod_ex, rmod_smt,
                  rmat_1st, rmat_1st_surf_gain, rmat_1st_surf_loss,
                  rmat_2nd, rmat_2nd_surf_gain, rmat_2nd_surf_loss,
-                 rmat_photodeso, inds_surf, inds_mant, module_med):
+                 inds_surf, inds_mant, module_med, config):
         super().__init__()
         if module_med is None \
             or isinstance(module_med, TensorDict) or isinstance(module_med, nn.Module):
@@ -99,6 +99,7 @@ class ThreePhaseTerm(nn.Module):
             raise ValueError("Unknown 'module_med'.")
         #
         self.rmod = rmod
+        self.rmod_ex = rmod_ex
         self.rmod_smt = rmod_smt
         #
         self.asm_1st = Assembler(rmat_1st)
@@ -111,14 +112,11 @@ class ThreePhaseTerm(nn.Module):
         #
         self.inds_id_1st = rmat_1st.inds_id_uni
         self.inds_id_2nd = rmat_2nd.inds_id_uni
-        # Photodesorption
-        if rmat_photodeso is not None:
-            self.register_buffer("inds_id_photodeso", torch.as_tensor(rmat_photodeso.inds_id_uni))
-        else:
-            self.inds_id_photodeso = None
         #
         self.register_buffer("inds_surf", torch.tensor(inds_surf))
         self.register_buffer("inds_mant", torch.tensor(inds_mant))
+        self.register_buffer("layer_factor", torch.tensor(config.layer_factor))
+        self.register_buffer("num_active_layers", torch.tensor(config.num_active_layers))
 
     def forward(self, t_in, y_in, **params_extra):
         coeffs, den_norm = self.compute_rate_coeffs(t_in, y_in, **params_extra)
@@ -138,21 +136,23 @@ class ThreePhaseTerm(nn.Module):
         n_reac = len(inds_id_1st) + len(inds_id_2nd)
         coeffs = torch.zeros([len(t_in), n_reac], device=t_in.device)
 
-        #
-        self.rmod.assign_rate_coeffs(coeffs, params_med)
-
         y_in = torch.atleast_2d(y_in)
         y_surf = y_in[:, self.inds_surf].sum(dim=-1, keepdim=True)
         y_mant = y_in[:, self.inds_mant].sum(dim=-1, keepdim=True)
+        n_layer_surf = self.layer_factor*y_surf
+        n_layer_mant = self.layer_factor*y_mant
+        decay_factor = self.num_active_layers/(n_layer_surf + n_layer_mant)
+        deacy_factor = decay_factor.clamp_max(1.)
+        params_extra = {
+            "n_layer_surf": n_layer_surf,
+            "n_layer_mant": n_layer_mant,
+            "decay_factor": deacy_factor
+        }
 
-        if self.inds_id_photodeso is not None:
-            decay_factor = torch.minimum(
-                1./(self.rmod_smt.alpha_gain*(y_surf + y_mant)),
-                torch.ones_like(y_surf)
-            )
-            coeffs[:, self.inds_id_photodeso] = coeffs[:, self.inds_id_photodeso]*decay_factor
-
-        y_in = torch.atleast_2d(y_in)
+        #
+        self.rmod.assign_rate_coeffs(coeffs, params_med)
+        if self.rmod_ex is not None:
+            self.rmod_ex.assign_rate_coeffs(coeffs, params_med, y_in, params_extra)
 
         dy_1st_gain = self.asm_1st_surf_gain(y_in, coeffs, den_norm)[:, self.inds_surf]
         dy_2nd_gain = self.asm_2nd_surf_gain(y_in, coeffs, den_norm)[:, self.inds_surf]
@@ -175,9 +175,23 @@ class ThreePhaseTerm(nn.Module):
         return coeffs
 
 
-class VariableModule(nn.ModuleDict):
-    def forward(self, coeffs, params_med, y_in):
-        var_dict = {}
-        for key, module in self.items():
-            var_dict[key] = module(coeffs, params_med, y_in, var_dict)
+class VariableModule(nn.ModuleList):
+    def __init__(self):
+        super().__init__()
+        self._name_list = []
+
+    def add_variable(self, name, module):
+        self._name_list.append(name)
+        self.append(module)
+
+    def forward(self, coeffs, params_med, y_in, var_dict=None):
+        if var_dict is None:
+            var_dict = {}
+        for name, module in zip(self._name_list, self):
+            if isinstance(name, str):
+                var_dict[name] = module(coeffs, params_med, y_in, var_dict)
+            else:
+                variables = module(coeffs, params_med, y_in, var_dict)
+                for nm, var in zip(name, variables):
+                    var_dict[nm] = var
         return var_dict

@@ -59,10 +59,11 @@ class UVPhotodesorption(ReactionRate):
         self.register_buffer("prefactor",
             torch.tensor(1e8/config.site_density*config.uv_flux))
 
-    def forward(self, params_med, params_reac, decay_factor=None, **params_extra):
+    def forward(self, params_med, params_reac, params_extra=None, **kwargs):
         rate = self.prefactor*params_reac["alpha"]*torch.exp(-2.*params_med["Av"])
-        if decay_factor is not None:
-            rate = rate*decay_factor
+        if params_extra is not None:
+            print(params_extra.keys())
+            rate = rate*params_extra["decay_factor"]
         return rate
 
 
@@ -73,10 +74,10 @@ class CRPhotodesorption(ReactionRate):
             torch.tensor(1e4/config.site_density*1.3e-17/config.zeta_cr)
         )
 
-    def forward(self, params_med, params_reac, decay_factor=None, **params_extra):
+    def forward(self, params_med, params_reac, params_extra=None, **kwargs):
         rate = self.prefactor*params_reac["alpha"]
-        if decay_factor is not None:
-            rate = rate*decay_factor
+        if params_extra is not None:
+            rate = rate*params_extra["decay_factor"]
         return rate
 
 

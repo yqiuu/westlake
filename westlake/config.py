@@ -131,6 +131,11 @@ class Config:
         """Number of sites per grain."""
         return 4.*math.pi*self.grain_radius**2*self.site_density
 
+    @property
+    def layer_factor(self):
+        """Layer factor (num_layer = ab*layer_factor)."""
+        return 1./(self.dtg_num_ratio*self.num_sites_per_grain)
+
 
 def fixed_dtg_mass_ratio(ab_He, dtg_mass_ratio=None):
     """Fix the initial DTG mass ratio using the He abundance."""

@@ -151,6 +151,10 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
         formula_dict_ex_["surface reaction"] = SurfaceReactionWithCompetition(config)
         formula_dict_.pop("surface reaction")
 
+    if config.model == "three phase":
+        formula_dict_ex_["UV photodesorption"] = formula_dict_.pop("UV photodesorption")
+        formula_dict_ex_["CR photodesorption"] = formula_dict_.pop("CR photodesorption")
+
     # Add user-defined formulae
     if formula_dict is not None:
         formula_dict_.update(formula_dict)
@@ -163,7 +167,7 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
 
     #
     module_var = VariableModule()
-    module_var["k_evapor"] = create_evapor_rate_module(df_reac, df_spec)
+    module_var.add_variable("k_evapor", create_evapor_rate_module(df_reac, df_spec))
 
     if config.model == "simple" or config.model == "two phase":
         return TwoPhaseTerm(rmod, rmod_ex, module_var, rmat_1st, rmat_2nd, medium)
@@ -176,17 +180,14 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
         rmat_2nd_surf, rmat_2nd_other = split_surface_reactions(df_reac, rmat_2nd)
         rmat_2nd_surf_gain, rmat_2nd_surf_loss = split_gain_loss(rmat_2nd_surf)
 
-        formula_list = ["CR photodesorption", "UV photodesorption"]
-        rmat_photodeso = extract_by_formula(rmat_1st, df_reac, formula_list)
-
         inds_surf = df_spec.index.map(lambda name: name.startswith("J")).values
         inds_mant = df_spec.index.map(lambda name: name.startswith("K")).values
 
         return ThreePhaseTerm(
-            rmod, rmod_smt,
+            rmod, rmod_ex, rmod_smt,
             rmat_1st, rmat_1st_surf_gain, rmat_1st_surf_loss,
             rmat_2nd, rmat_2nd_surf_gain, rmat_2nd_surf_loss,
-            rmat_photodeso, inds_surf, inds_mant, medium
+            inds_surf, inds_mant, medium, config
         )
     else:
         raise ValueError(f"Unknown model: {config.model}")
