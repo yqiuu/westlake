@@ -103,7 +103,7 @@ class Config:
     # Numerics
     t_start: float = 0.
     t_end: float = 1.e+6
-    solver: str = "LSODA"
+    solver: str = "BDF"
     rtol: float = 1e-4
     atol: float = 1e-20
     ab_0_min: float = 0.

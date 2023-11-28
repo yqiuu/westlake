@@ -4,7 +4,7 @@ from torch.func import jacrev
 from scipy.integrate import solve_ivp
 
 
-def solve_rate_equation(reaction_term, t_span, ab_0, method="LSODA",
+def solve_rate_equation(reaction_term, t_span, ab_0, method="BDF",
                         rtol=1e-4, atol=1e-20, t_eval=None, u_factor=1.,
                         use_auto_jac=False, device="cpu", show_progress=True):
     """Solve the rate equations.
@@ -13,7 +13,7 @@ def solve_rate_equation(reaction_term, t_span, ab_0, method="LSODA",
         reaction_term (nn.Module): Definition of the rate equations.
         t_span (tuple): (t_start, t_end). Time range to solve the equations
         ab_0 (array): Initial abundances.
-        method (str, optional): ODE solver. Defaults to "LSODA".
+        method (str, optional): ODE solver. Defaults to "BDF".
         rtol (float, optional): Relative tolerance. Defaults to 1e-4.
         atol (float, optional): Absolute tolerance. Defaults to 1e-20.
         t_eval (array, optional): Time grid for the solution if this is given;
