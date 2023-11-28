@@ -32,7 +32,7 @@ class ConstantRateTerm(nn.Module):
 
 
 class TwoPhaseTerm(nn.Module):
-    def __init__(self, rmod, rmod_ex, rmat_1st, rmat_2nd, module_med):
+    def __init__(self, rmod, rmod_ex, module_var, rmat_1st, rmat_2nd, module_med):
         super(TwoPhaseTerm, self).__init__()
         if module_med is None \
             or isinstance(module_med, TensorDict) or isinstance(module_med, nn.Module):
@@ -41,6 +41,7 @@ class TwoPhaseTerm(nn.Module):
             raise ValueError("Unknown 'module_med'.")
         self.rmod = rmod
         self.rmod_ex = rmod_ex
+        self.module_var = module_var
         self.asm_1st = Assembler(rmat_1st)
         self.asm_2nd = Assembler(rmat_2nd)
         self.inds_id_1st = rmat_1st.inds_id_uni
@@ -56,12 +57,12 @@ class TwoPhaseTerm(nn.Module):
         return self.asm_1st.jacobain(y_in, coeffs, den_norm) \
             + self.asm_2nd.jacobain(y_in, coeffs, den_norm)
 
-    def compute_rate_coeffs(self, t_in, y_in, **params_extra):
+    def compute_rate_coeffs(self, t_in, y_in):
         if self.module_med is None:
             params_med = None
             den_norm = None
         else:
-            params_med = self.module_med(t_in, **params_extra)
+            params_med = self.module_med(t_in)
             den_norm = params_med['den_gas']
 
         inds_id_1st = self.inds_id_1st
@@ -69,8 +70,12 @@ class TwoPhaseTerm(nn.Module):
         n_reac = len(inds_id_1st) + len(inds_id_2nd)
         coeffs = torch.zeros([len(t_in), n_reac], device=t_in.device)
         self.rmod.assign_rate_coeffs(coeffs, params_med)
+        if self.module_var is None:
+            params_extra = None
+        else:
+            params_extra = self.module_var(coeffs, params_med, y_in)
         if self.rmod_ex is not None:
-            self.rmod_ex.assign_rate_coeffs(coeffs, params_med, y_in)
+            self.rmod_ex.assign_rate_coeffs(coeffs, params_med, y_in, params_extra)
         return coeffs, den_norm
 
     def reproduce_rate_coeffs(self, t_in=None, y_in=None):
@@ -168,3 +173,11 @@ class ThreePhaseTerm(nn.Module):
         coeffs, _ = self.compute_rate_coeffs(t_in, y_in)
         coeffs = coeffs.T.squeeze()
         return coeffs
+
+
+class VariableModule(nn.ModuleDict):
+    def forward(self, coeffs, params_med, y_in):
+        var_dict = {}
+        for key, module in self.items():
+            var_dict[key] = module(coeffs, params_med, y_in, var_dict)
+        return var_dict

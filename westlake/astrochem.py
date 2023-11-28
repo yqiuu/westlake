@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import torch
+from torch import nn
 
 from .utils import get_specie_index
 from .reaction_modules import create_formula_dict_reaction_module, create_surface_mantle_transition
@@ -8,12 +10,14 @@ from .reaction_rates import (
     builtin_surface_reactions,
     prepare_surface_reaction_params,
     NoReaction,
+    H2Shielding_Lee1996,
+    COShielding_Lee1996,
+    SurfaceReactionWithCompetition
 )
-from .reaction_rates.shielding import H2Shielding_Lee1996, COShielding_Lee1996
 from .preprocesses import prepare_piecewise_rates
 from .medium import Medium, ThermalHoppingRate
 from .reaction_matrices import ReactionMatrix
-from .reaction_terms import TwoPhaseTerm, ThreePhaseTerm
+from .reaction_terms import TwoPhaseTerm, ThreePhaseTerm, VariableModule
 from .solver import solve_rate_equation, Result
 
 
@@ -126,32 +130,43 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
         )
         add_hopping_rate_module(medium, df_spec, config)
 
-    # Find and add special formulae
+    # Prepare formula dict
+    formula_dict_ = builtin_gas_reactions(config)
     formula_dict_ex_ = {}
 
-    #
+    # Shielding
     df_reac = add_H2_shielding(df_reac, df_spec, config, formula_dict_ex_)
     df_reac = add_CO_shielding(df_reac, df_spec, config, formula_dict_ex_)
 
-    #
-    formula_dict_ex_.update(formula_dict_ex)
-
-    # Create reaction module
-    formula_dict_ = builtin_gas_reactions(config)
+    # Add surface reactions
     formula_dict_surf = builtin_surface_reactions(config)
     if config.model == "simple":
         for key in formula_dict_surf:
             formula_dict_[key] = NoReaction()
     else:
         formula_dict_.update(formula_dict_surf)
+
+    # Competition
+    if config.use_competition:
+        formula_dict_ex_["surface reaction"] = SurfaceReactionWithCompetition(config)
+        formula_dict_.pop("surface reaction")
+
+    # Add user-defined formulae
     if formula_dict is not None:
         formula_dict_.update(formula_dict)
-    rmod, rmod_ex = create_formula_dict_reaction_module(
+    if formula_dict_ex is not None:
+        formula_dict_ex_.update(formula_dict_ex)
+
+    rmod, rmod_ex =  create_formula_dict_reaction_module(
         df_reac, df_spec, formula_dict_, formula_dict_ex_,
     )
 
+    #
+    module_var = VariableModule()
+    module_var["k_evapor"] = create_evapor_rate_module(df_reac, df_spec)
+
     if config.model == "simple" or config.model == "two phase":
-        return TwoPhaseTerm(rmod, rmod_ex, rmat_1st, rmat_2nd, medium)
+        return TwoPhaseTerm(rmod, rmod_ex, module_var, rmat_1st, rmat_2nd, medium)
     elif config.model == "three phase":
         rmod_smt = create_surface_mantle_transition(df_reac, df_spec, config)
 
@@ -367,3 +382,37 @@ def derive_initial_abundances(ab_0_dict, spec_table, config):
     ab_0[spec_table.index.get_indexer(["e-"]).item()] = np.sum(spec_table["charge"].values*ab_0)
 
     return ab_0
+
+
+def create_evapor_rate_module(df_reac, df_spec):
+    cond = (df_reac["formula"] == "thermal evaporation") \
+        | (df_reac["formula"] == "CR evaporation") \
+        | (df_reac["formula"] == "UV photodesorption") \
+        | (df_reac["formula"] == "CR photodesorption")
+    inds_evapor = np.where(cond.values)[0]
+    inds_evapor = torch.tensor(inds_evapor)
+
+    # Evaporation reactions by definition only have one reactant
+    reacs = df_reac.loc[cond, "reactant_1"]
+    inds_r = df_spec.index.get_indexer(reacs)
+    inds_r = torch.tensor(inds_r)
+
+    n_spec = len(df_spec)
+    return EvaporationRate(inds_evapor, inds_r, n_spec)
+
+
+class EvaporationRate(nn.Module):
+    def __init__(self, inds_evapor, inds_r, n_spec):
+        super().__init__()
+        self.register_buffer("inds_evapor", inds_evapor)
+        self.register_buffer("inds_r", inds_r)
+        self.n_spec = n_spec
+
+    def forward(self, coeffs, params_med, y_in, var_dict):
+        # coeffs (B, R)
+        # params_med (B, )
+        # y_in (B, N)
+        k_evapor = torch.zeros(
+            [coeffs.shape[0], self.n_spec], dtype=coeffs.dtype, device=coeffs.device)
+        k_evapor.index_add_(1, self.inds_r, coeffs[:, self.inds_evapor])
+        return k_evapor

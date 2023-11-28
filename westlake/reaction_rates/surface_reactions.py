@@ -104,6 +104,31 @@ class SurfaceReaction(ReactionRate):
             *self.inv_dtg_num_ratio*rate_hopping*prob
 
 
+class SurfaceReactionWithCompetition(ReactionRate):
+    def __init__(self, config):
+        super().__init__([
+            "alpha", "branching_ratio", "E_act", "log_prob_surf_tunl",
+            "freq_vib_r1", "freq_vib_r2"
+        ])
+        self.register_buffer("inv_dtg_num_ratio", torch.tensor(1./config.dtg_num_ratio))
+        self.register_buffer("num_sites_per_grain", torch.tensor(config.num_sites_per_grain))
+
+    def forward(self, params_med, params_reac, params_extra, **kwargs):
+        exp_act = -params_reac["E_act"]/params_med["T_dust"] # (B, R)
+        exp_act = torch.maximum(exp_act, params_reac["log_prob_surf_tunl"].unsqueeze(0))
+        rate_hopping = params_med["rate_hopping"][:, params_reac["inds_r"]].sum(dim=-1)
+
+        prob_reac = torch.maximum(params_reac["freq_vib_r1"], params_reac["freq_vib_r2"]) \
+            * torch.exp(exp_act)
+        prob_deso = params_extra["k_evapor"][:, params_reac["inds_r"]].sum(dim=-1)
+        prob_diff = rate_hopping*self.num_sites_per_grain
+
+        prob = prob_reac/(prob_reac + prob_deso + prob_diff)
+        prob[:, params_reac["E_act"] == 0.] = 1.
+        return params_reac["alpha"]*params_reac["branching_ratio"]/params_med["den_gas"] \
+            *self.inv_dtg_num_ratio*rate_hopping*prob
+
+
 def compute_evaporation_rate(factor, freq_vib, E_d, T_dust):
     return factor*freq_vib*torch.exp(-E_d/T_dust)
 
@@ -241,10 +266,10 @@ def assign_surface_params(df_reac, df_spec, df_surf):
     for col in columns:
         df_reac[f"{col}_r1"] = df_surf.loc[df_reac["reactant_1"], col].values
 
-    #columns = ["E_barr", "freq_vib"]
-    #df_tmp = df_reac.loc[df_reac["reactant_2"] != "", "reactant_2"]
-    #for col in columns:
-    #    df_reac.loc[df_tmp.index, f"{col}_r2"] = df_surf.loc[df_tmp, col].values
+    columns = ["freq_vib"]
+    df_tmp = df_reac.loc[df_reac["reactant_2"] != "", "reactant_2"]
+    for col in columns:
+        df_reac.loc[df_tmp.index, f"{col}_r2"] = df_surf.loc[df_tmp, col].values
     df_reac.fillna(0., inplace=True)
 
 

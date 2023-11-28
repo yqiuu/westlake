@@ -86,6 +86,9 @@ class Config:
     num_active_layers: float = 2.
     uv_flux: float = 1.
 
+    #
+    use_competition: bool = False
+
     # Sheilding
     den_Av_ratio: float = 1./(5.34e-22)
     H2_shielding: str = None # "Lee+1996"
