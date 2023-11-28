@@ -89,6 +89,9 @@ def create_formula_dict_reaction_module(df_reac, df_spec, formula_dict, formula_
     for fm in formula_dict.values():
         for prop in fm.required_props:
             param_names[prop] = 0
+    for fm in formula_dict_ex.values():
+        for prop in fm.required_props:
+            param_names[prop] = 0
     param_names = list(param_names.keys())
     params_reac = prepare_params_reac(df_reac, df_spec, param_names)
     #
