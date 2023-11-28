@@ -27,7 +27,8 @@ def builtin_astrochem_reactions(config):
 def create_astrochem_model(df_reac, df_spec, df_surf, config,
                            medium=None, df_act=None, df_br=None,
                            df_barr=None, df_gap=None, df_ma=None,
-                           formula_dict=None, use_copy=True):
+                           formula_dict=None, formula_dict_ex=None,
+                           use_copy=True):
     """Create the primary object for computing the chemical model.
 
     Args:
@@ -93,6 +94,11 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
             - key: Formula name.
             - value: An instance of `ReactionRate`.
 
+        formula_dict_ex (dict, optional): User-defined extra reaction formulae.
+            Defaults to None.
+            - key: Formula name.
+            - value: An instance of `ReactionRate`.
+
         use_copy (bool, optional): If True, copy the input reaction and specie
             dataframe. Defaults to True.
 
@@ -126,6 +132,9 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
     #
     df_reac = add_H2_shielding(df_reac, df_spec, config, formula_dict_ex_)
     df_reac = add_CO_shielding(df_reac, df_spec, config, formula_dict_ex_)
+
+    #
+    formula_dict_ex_.update(formula_dict_ex)
 
     # Create reaction module
     formula_dict_ = builtin_gas_reactions(config)
