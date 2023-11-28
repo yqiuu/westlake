@@ -4,6 +4,7 @@ from pathlib import Path
 import torch
 from torch import nn
 
+from .reaction_rates import ReactionRate
 from ..utils import LinearInterpolation
 
 
@@ -17,7 +18,7 @@ def load_CO_shielding_data():
     return pickle.load(open(fname, "rb"))
 
 
-class H2Shielding_Lee1996(nn.Module):
+class H2Shielding_Lee1996(ReactionRate):
     def __init__(self, idx_H2, config):
         super().__init__()
         data = load_H2_shielding_data()
@@ -35,7 +36,7 @@ class H2Shielding_Lee1996(nn.Module):
         return self.uv_flux*self.interp(den_H2)
 
 
-class COShielding_Lee1996(nn.Module):
+class COShielding_Lee1996(ReactionRate):
     def __init__(self, idx_CO, idx_H2, config):
         super().__init__()
         data = load_CO_shielding_data()
