@@ -150,6 +150,8 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
     if config.use_competition:
         formula_dict_ex_["surface reaction"] = SurfaceReactionWithCompetition(config)
         formula_dict_.pop("surface reaction")
+    elif config.model == "three phase":
+        formula_dict_ex_["surface reaction"] = formula_dict_.pop("surface reaction")
 
     if config.model == "three phase":
         formula_dict_ex_["UV photodesorption"] = formula_dict_.pop("UV photodesorption")

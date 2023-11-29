@@ -157,9 +157,15 @@ def prepare_params_reac(df_sub, df_spec, param_names):
     params_reac = data_frame_to_tensor_dict(df_sub[param_names])
     # inds_r is used to extract specie propeties.
     inds_r = df_spec.index.get_indexer(df_sub["reactant_1"])
-    inds_r = np.vstack([inds_r, np.zeros_like(inds_r)])
+    inds_r = np.vstack([inds_r, np.zeros_like(inds_r)]) # (2, N)
     cond = (df_sub["reactant_2"] != "").values
     inds_r[1, cond] = df_spec.index.get_indexer(df_sub.loc[cond, "reactant_2"].values)
-    inds_r = torch.tensor(inds_r.T)
+    #
+    is_mant = df_spec.index.map(lambda name: name.startswith("K")).values
+    is_mant = is_mant[inds_r[0]]
+
+    inds_r = torch.tensor(inds_r.T) # (N, 2)
     params_reac.add("inds_r", inds_r)
+    is_mant = torch.tensor(is_mant)
+    params_reac.add("is_mant_r1", is_mant)
     return params_reac

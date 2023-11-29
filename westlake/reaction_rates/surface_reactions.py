@@ -96,13 +96,17 @@ class SurfaceReaction(ReactionRate):
         super().__init__(["alpha", "branching_ratio", "E_act", "log_prob_surf_tunl"])
         self.register_buffer("inv_dtg_num_ratio", torch.tensor(1./config.dtg_num_ratio))
 
-    def forward(self, params_med, params_reac, **params_extra):
+    def forward(self, params_med, params_reac, params_extra=None, **kwargs):
         rate_hopping = params_med["rate_hopping"][:, params_reac["inds_r"]].sum(dim=-1)
         log_prob = -params_reac["E_act"]/params_med["T_dust"] # (B, R)
         log_prob = torch.maximum(log_prob, params_reac["log_prob_surf_tunl"].unsqueeze(0))
         prob = log_prob.exp()
-        return params_reac["alpha"]*params_reac["branching_ratio"]/params_med["den_gas"] \
+        rates = params_reac["alpha"]*params_reac["branching_ratio"]/params_med["den_gas"] \
             *self.inv_dtg_num_ratio*rate_hopping*prob
+        if params_extra is not None:
+            rates[:, params_reac["is_mant_r1"]] \
+                = rates[:, params_reac["is_mant_r1"]]/params_extra["n_layer_mant"].clamp_min(1.)
+        return rates
 
 
 class SurfaceReactionWithCompetition(ReactionRate):
