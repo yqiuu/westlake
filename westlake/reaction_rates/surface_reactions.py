@@ -62,7 +62,6 @@ class UVPhotodesorption(ReactionRate):
     def forward(self, params_med, params_reac, params_extra=None, **kwargs):
         rate = self.prefactor*params_reac["alpha"]*torch.exp(-2.*params_med["Av"])
         if params_extra is not None:
-            print(params_extra.keys())
             rate = rate*params_extra["decay_factor"]
         return rate
 
@@ -97,16 +96,13 @@ class SurfaceReaction(ReactionRate):
         self.register_buffer("inv_dtg_num_ratio", torch.tensor(1./config.dtg_num_ratio))
 
     def forward(self, params_med, params_reac, params_extra=None, **kwargs):
-        rate_hopping = params_med["rate_hopping"][:, params_reac["inds_r"]].sum(dim=-1)
         log_prob = -params_reac["E_act"]/params_med["T_dust"] # (B, R)
         log_prob = torch.maximum(log_prob, params_reac["log_prob_surf_tunl"].unsqueeze(0))
         prob = log_prob.exp()
-        rates = params_reac["alpha"]*params_reac["branching_ratio"]/params_med["den_gas"] \
-            *self.inv_dtg_num_ratio*rate_hopping*prob
-        if params_extra is not None:
-            rates[:, params_reac["is_mant_r1"]] \
-                = rates[:, params_reac["is_mant_r1"]]/params_extra["n_layer_mant"].clamp_min(1.)
-        return rates
+        rate_hopping = params_med["rate_hopping"][:, params_reac["inds_r"]].sum(dim=-1)
+        return compute_surface_reaction_rate(
+            params_reac, params_med, params_extra, rate_hopping, prob, self.inv_dtg_num_ratio
+        )
 
 
 class SurfaceReactionWithCompetition(ReactionRate):
@@ -121,17 +117,27 @@ class SurfaceReactionWithCompetition(ReactionRate):
     def forward(self, params_med, params_reac, params_extra, **kwargs):
         exp_act = -params_reac["E_act"]/params_med["T_dust"] # (B, R)
         exp_act = torch.maximum(exp_act, params_reac["log_prob_surf_tunl"].unsqueeze(0))
-        rate_hopping = params_med["rate_hopping"][:, params_reac["inds_r"]].sum(dim=-1)
-
         prob_reac = torch.maximum(params_reac["freq_vib_r1"], params_reac["freq_vib_r2"]) \
             * torch.exp(exp_act)
         prob_deso = params_extra["k_evapor"][:, params_reac["inds_r"]].sum(dim=-1)
+        prob_deso[:, params_reac["is_mant_r1"]] = 0.
+        rate_hopping = params_med["rate_hopping"][:, params_reac["inds_r"]].sum(dim=-1)
         prob_diff = rate_hopping*self.num_sites_per_grain
-
         prob = prob_reac/(prob_reac + prob_deso + prob_diff)
         prob[:, params_reac["E_act"] == 0.] = 1.
-        return params_reac["alpha"]*params_reac["branching_ratio"]/params_med["den_gas"] \
-            *self.inv_dtg_num_ratio*rate_hopping*prob
+        return compute_surface_reaction_rate(
+            params_reac, params_med, params_extra, rate_hopping, prob, self.inv_dtg_num_ratio
+        )
+
+
+def compute_surface_reaction_rate(params_reac, params_med, params_extra,
+                                  rate_hopping, prob, inv_dtg_num_ratio):
+    rates = params_reac["alpha"]*params_reac["branching_ratio"]/params_med["den_gas"] \
+        *inv_dtg_num_ratio*rate_hopping*prob
+    if params_extra is not None:
+        rates[:, params_reac["is_mant_r1"]] \
+            = rates[:, params_reac["is_mant_r1"]]/params_extra["n_layer_mant"].clamp_min(1.)
+    return rates
 
 
 def compute_evaporation_rate(factor, freq_vib, E_d, T_dust):

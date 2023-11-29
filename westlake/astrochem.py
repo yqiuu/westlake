@@ -186,7 +186,7 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
         inds_mant = df_spec.index.map(lambda name: name.startswith("K")).values
 
         return ThreePhaseTerm(
-            rmod, rmod_ex, rmod_smt,
+            rmod, rmod_ex, module_var, rmod_smt,
             rmat_1st, rmat_1st_surf_gain, rmat_1st_surf_loss,
             rmat_2nd, rmat_2nd_surf_gain, rmat_2nd_surf_loss,
             inds_surf, inds_mant, medium, config

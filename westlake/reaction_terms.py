@@ -87,7 +87,7 @@ class TwoPhaseTerm(nn.Module):
 
 
 class ThreePhaseTerm(nn.Module):
-    def __init__(self, rmod, rmod_ex, rmod_smt,
+    def __init__(self, rmod, rmod_ex, module_var, rmod_smt,
                  rmat_1st, rmat_1st_surf_gain, rmat_1st_surf_loss,
                  rmat_2nd, rmat_2nd_surf_gain, rmat_2nd_surf_loss,
                  inds_surf, inds_mant, module_med, config):
@@ -100,6 +100,7 @@ class ThreePhaseTerm(nn.Module):
         #
         self.rmod = rmod
         self.rmod_ex = rmod_ex
+        self.module_var = module_var
         self.rmod_smt = rmod_smt
         #
         self.asm_1st = Assembler(rmat_1st)
@@ -151,6 +152,8 @@ class ThreePhaseTerm(nn.Module):
 
         #
         self.rmod.assign_rate_coeffs(coeffs, params_med)
+        if self.module_var is not None:
+            params_extra = self.module_var(coeffs, params_med, y_in, params_extra)
         if self.rmod_ex is not None:
             self.rmod_ex.assign_rate_coeffs(coeffs, params_med, y_in, params_extra)
 
