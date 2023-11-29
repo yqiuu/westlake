@@ -123,6 +123,12 @@ class Result:
         """Abundance data."""
         return self._ab
 
+    def to_dict(self):
+        data = {"time": self._time}
+        for spec, ab in zip(self.species, self.ab):
+            data[spec] = ab
+        return data
+
     def last(self):
         return self._ab[:, -1]
 
