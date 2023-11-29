@@ -134,7 +134,7 @@ def compute_surface_reaction_rate(params_reac, params_med, params_extra,
                                   rate_hopping, prob, inv_dtg_num_ratio):
     rates = params_reac["alpha"]*params_reac["branching_ratio"]/params_med["den_gas"] \
         *inv_dtg_num_ratio*rate_hopping*prob
-    if params_extra is not None:
+    if params_extra is not None and "n_layer_mant" in params_extra:
         rates[:, params_reac["is_mant_r1"]] \
             = rates[:, params_reac["is_mant_r1"]]/params_extra["n_layer_mant"].clamp_min(1.)
     return rates
