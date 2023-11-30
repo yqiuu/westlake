@@ -1,12 +1,10 @@
+import math
+
 import numpy as np
-from scipy.linalg import lu_factor, lu_solve
-from scipy.sparse import issparse, csc_matrix, eye
-from scipy.sparse.linalg import splu
-from scipy.optimize._numdiff import group_columns
-from scipy.integrate._ivp.common import (validate_max_step, validate_tol, select_initial_step,
-                     norm, EPS, num_jac, validate_first_step,
-                     warn_extraneous)
-from scipy.integrate._ivp.base import OdeSolver, DenseOutput
+from scipy.integrate._ivp.common import (
+    validate_max_step, validate_tol,
+    EPS, validate_first_step
+)
 import torch
 
 
@@ -16,86 +14,37 @@ MIN_FACTOR = 0.2
 MAX_FACTOR = 10
 
 
-def solve(reaction_term, t_span, ab_0, method="BDF",
-          rtol=1e-4, atol=1e-20, t_eval=None, u_factor=1.,
-          use_auto_jac=False, device="cpu", show_progress=True):
-    dtype = torch.get_default_dtype()
-
-    def wrapper_fun(t_in, y_in):
-        if show_progress:
-            percent = (t_in - t_span[0])/(t_span[1] - t_span[0])*100
-            t_show = t_in/u_factor
-            print("\r[{:5.1f}%] t = {:<12.5e}".format(percent, t_show), end='')
-
-        t_in = torch.tensor(t_in, dtype=dtype, device=device)
-        t_in = torch.atleast_1d(t_in)
-        y_in = torch.tensor(y_in, dtype=dtype, device=device)
-        y_in = torch.atleast_1d(y_in)
-        if y_in.ndim == 2:
-            y_in = y_in.T
-        y_out = reaction_term(t_in, y_in)
-        if y_out.ndim == 2:
-            y_out = y_out.T
-        return y_out.cpu().numpy()
-
-    def wrapper_jac(t_in, y_in):
-        t_in = torch.tensor(t_in, dtype=dtype, device=device)
-        t_in = torch.atleast_1d(t_in)
-        y_in = torch.tensor(y_in, dtype=dtype, device=device)
-        y_in = torch.atleast_1d(y_in)
-        jac_out = reaction_term.jacobian(t_in, y_in)
-        return jac_out.cpu().numpy()
-
-    t_span = tuple(t*u_factor for t in t_span)
-    t_start, t_end = t_span
-
-    t_ret = []
-    y_ret = []
-    solver = BDF(wrapper_fun, wrapper_jac, t_start, ab_0, rtol=rtol, atol=atol)
-    while True:
-        success, message = solver.step(t_end)
-        t_new = solver.t
-        y_new = solver.y
-        t_ret.append(t_new)
-        y_ret.append(y_new)
-        if t_new >= t_end:
-            break
-    t_ret = np.array(t_ret)/u_factor
-    y_ret = np.vstack(y_ret).T
-    return t_ret, y_ret
-
-
 def compute_R(order, factor):
     """Compute the matrix for changing the differences array."""
-    I = np.arange(1, order + 1)[:, None]
-    J = np.arange(1, order + 1)
-    M = np.zeros((order + 1, order + 1))
+    I = torch.arange(1, order + 1)[:, None]
+    J = torch.arange(1, order + 1)
+    M = torch.zeros((order + 1, order + 1))
     M[1:, 1:] = (I - 1 - factor * J) / I
     M[0] = 1
-    return np.cumprod(M, axis=0)
+    return torch.cumprod(M, dim=0)
 
 
 def change_D(D, order, factor):
     """Change differences array in-place when step size is changed."""
     R = compute_R(order, factor)
     U = compute_R(order, 1)
-    RU = R.dot(U)
-    D[:order + 1] = np.dot(RU.T, D[:order + 1])
+    RU = torch.matmul(R, U)
+    D[:order + 1] = torch.matmul(RU.T, D[:order + 1])
 
 
 def solve_bdf_system(fun, t_new, y_predict, c, psi, LU, solve_lu, scale, tol):
     """Solve the algebraic system resulting from BDF method."""
     d = 0
-    y = y_predict.copy()
+    y = y_predict.clone()
     dy_norm_old = None
     converged = False
     for k in range(NEWTON_MAXITER):
         f = fun(t_new, y)
-        if not np.all(np.isfinite(f)):
+        if not torch.all(torch.isfinite(f)):
             break
 
         dy = solve_lu(LU, c * f - psi - d)
-        inds = np.argsort(dy)[::-1]
+        #inds = torch.argsort(dy)[::-1]
         dy_norm = norm(dy / scale)
 
         if dy_norm_old is None:
@@ -120,34 +69,70 @@ def solve_bdf_system(fun, t_new, y_predict, c, psi, LU, solve_lu, scale, tol):
     return converged, k + 1, y, d
 
 
-class BDF(OdeSolver):
-    """
-    Attributes
+def select_initial_step(fun, t0, y0, f0, direction, order, rtol, atol):
+    """Empirically select a good initial step.
+
+    The algorithm is described in [1]_.
+
+    Parameters
     ----------
-    n : int
-        Number of equations.
-    status : string
-        Current status of the solver: 'running', 'finished' or 'failed'.
-    t_bound : float
-        Boundary time.
+    fun : callable
+        Right-hand side of the system.
+    t0 : float
+        Initial value of the independent variable.
+    y0 : ndarray, shape (n,)
+        Initial value of the dependent variable.
+    f0 : ndarray, shape (n,)
+        Initial value of the derivative, i.e., ``fun(t0, y0)``.
     direction : float
-        Integration direction: +1 or -1.
-    t : float
-        Current time.
-    y : ndarray
-        Current state.
-    t_old : float
-        Previous time. None if no steps were made yet.
-    step_size : float
-        Size of the last successful step. None if no steps were made yet.
-    nfev : int
-        Number of evaluations of the right-hand side.
-    njev : int
-        Number of evaluations of the Jacobian.
-    nlu : int
-        Number of LU decompositions.
+        Integration direction.
+    order : float
+        Error estimator order. It means that the error controlled by the
+        algorithm is proportional to ``step_size ** (order + 1)`.
+    rtol : float
+        Desired relative tolerance.
+    atol : float
+        Desired absolute tolerance.
+
+    Returns
+    -------
+    h_abs : float
+        Absolute value of the suggested initial step.
+
+    References
+    ----------
+    .. [1] E. Hairer, S. P. Norsett G. Wanner, "Solving Ordinary Differential
+           Equations I: Nonstiff Problems", Sec. II.4.
     """
-    def __init__(self, fun, jac, t0, y0, first_step=None, max_step=np.inf,
+    if y0.size == 0:
+        return math.inf
+
+    scale = atol + np.abs(y0) * rtol
+    d0 = norm(y0 / scale)
+    d1 = norm(f0 / scale)
+    if d0 < 1e-5 or d1 < 1e-5:
+        h0 = 1e-6
+    else:
+        h0 = 0.01 * d0 / d1
+
+    y1 = y0 + h0 * direction * f0
+    f1 = fun(t0 + h0 * direction, y1)
+    d2 = norm((f1 - f0) / scale) / h0
+
+    if d1 <= 1e-15 and d2 <= 1e-15:
+        h1 = max(1e-6, h0 * 1e-3)
+    else:
+        h1 = (0.01 / max(d1, d2)) ** (1 / (order + 1))
+
+    return min(100 * h0, h1)
+
+
+def norm(x):
+    return torch.linalg.norm(x)/math.sqrt(len(x))
+
+
+class BDF:
+    def __init__(self, fun, jac, t0, y0, first_step=None, max_step=math.inf,
                  rtol=1e-4, atol=1e-20):
         self.nfev = 0
         self.njev = 0
@@ -167,12 +152,14 @@ class BDF(OdeSolver):
         self.fun = fun_wrapped
         self.jac = jac_wrapped
 
+        y0 = torch.tensor(y0, dtype=torch.get_default_dtype())
         self.t = t0
-        self.direction = 1
         dydt = fun_wrapped(t0, y0)
         self.J = jac_wrapped(t0, y0)
+        self.direction = 1
         n_y = len(y0)
         self.rtol, self.atol = validate_tol(rtol, atol, n_y)
+        self.atol = torch.tensor(self.atol)
 
         self.max_step = validate_max_step(max_step)
         if first_step is None:
@@ -180,7 +167,7 @@ class BDF(OdeSolver):
                 fun_wrapped, t0, y0, dydt, self.direction, 1, rtol, atol
             )
         else:
-            self.h_abs = validate_first_step(first_step, t0, np.inf)
+            self.h_abs = validate_first_step(first_step, t0, math.inf)
 
         self.h_abs_old = None
         self.error_norm_old = None
@@ -188,23 +175,26 @@ class BDF(OdeSolver):
 
         def lu(A):
             self.nlu += 1
-            return lu_factor(A, overwrite_a=True)
+            return torch.linalg.lu_factor(A)
 
         def solve_lu(LU, b):
-            return lu_solve(LU, b, overwrite_b=True)
+            return torch.linalg.lu_solve(LU.LU, LU.pivots, b[:, None])[:, 0]
 
-        I = np.identity(n_y, dtype=y0.dtype)
+        I = torch.eye(n_y)
 
         self.lu = lu
         self.solve_lu = solve_lu
         self.I = I
 
-        kappa = np.array([0, -0.1850, -1/9, -0.0823, -0.0415, 0])
-        self.gamma = np.hstack((0, np.cumsum(1 / np.arange(1, MAX_ORDER + 1))))
+        kappa = torch.tensor([0, -0.1850, -1/9, -0.0823, -0.0415, 0])
+        self.gamma = torch.concat((
+            torch.zeros(1),
+            torch.cumsum(1/torch.arange(1, MAX_ORDER + 1), dim=0)
+        ))
         self.alpha = (1 - kappa) * self.gamma
-        self.error_const = kappa * self.gamma + 1 / np.arange(1, MAX_ORDER + 2)
+        self.error_const = kappa * self.gamma + 1 / torch.arange(1, MAX_ORDER + 2)
 
-        D = np.empty((MAX_ORDER + 3, n_y), dtype=y0.dtype)
+        D = torch.empty((MAX_ORDER + 3, n_y), dtype=y0.dtype)
         D[0] = y0
         D[1] = dydt * self.h_abs * self.direction
         self.D = D
@@ -218,7 +208,7 @@ class BDF(OdeSolver):
         D = self.D
 
         max_step = self.max_step
-        min_step = 2 * np.abs(np.nextafter(t, self.direction * np.inf) - t)
+        min_step = 2 * abs(np.nextafter(t, self.direction * math.inf) - t)
         if self.h_abs > max_step:
             h_abs = max_step
             change_D(D, self.order, max_step / self.h_abs)
@@ -231,7 +221,6 @@ class BDF(OdeSolver):
             h_abs = self.h_abs
 
         atol = self.atol
-        #atol = np.maximum(self.atol, self.rtol*np.abs(self.y))
         rtol = self.rtol
         order = self.order
 
@@ -254,17 +243,15 @@ class BDF(OdeSolver):
             if self.direction * (t_new - t_bound) > 0:
                 t_new = t_bound
                 h = t_new - t
-                change_D(D, order, np.abs(t_new - t) / h_abs)
+                change_D(D, order, torch.abs(t_new - t) / h_abs)
                 self.n_equal_steps = 0
                 LU = None
 
-            #h = t_new - t
             h_abs = np.abs(h)
+            y_predict = torch.sum(D[:order + 1], dim=0)
 
-            y_predict = np.sum(D[:order + 1], axis=0)
-
-            scale = atol + rtol * np.abs(y_predict)
-            psi = np.dot(D[1: order + 1].T, gamma[1: order + 1]) / alpha[order]
+            scale = atol + rtol * torch.abs(y_predict)
+            psi = torch.matmul(D[1: order + 1].T, gamma[1: order + 1]) / alpha[order]
 
             converged = False
             c = h / alpha[order]
@@ -284,7 +271,6 @@ class BDF(OdeSolver):
                     current_jac = True
 
             if not converged:
-                #print("A")
                 factor = 0.5
                 h_abs *= factor
                 change_D(D, order, factor)
@@ -295,14 +281,11 @@ class BDF(OdeSolver):
             safety = 0.9 * (2 * NEWTON_MAXITER + 1) / (2 * NEWTON_MAXITER
                                                        + n_iter)
 
-            scale = atol + rtol * np.abs(y_new)
+            scale = atol + rtol * torch.abs(y_new)
             error = error_const[order] * d
             error_norm = norm(error / scale)
 
             if error_norm > 1:
-                #idx = np.argmax(error)
-                #print(idx, error[idx])
-
                 factor = max(MIN_FACTOR,
                              safety * error_norm ** (-1 / (order + 1)))
                 h_abs *= factor
@@ -339,13 +322,13 @@ class BDF(OdeSolver):
             error_m = error_const[order - 1] * D[order]
             error_m_norm = norm(error_m / scale)
         else:
-            error_m_norm = np.inf
+            error_m_norm = math.inf
 
         if order < MAX_ORDER:
             error_p = error_const[order + 1] * D[order + 2]
             error_p_norm = norm(error_p / scale)
         else:
-            error_p_norm = np.inf
+            error_p_norm = math.inf
 
         error_norms = np.array([error_m_norm, error_norm, error_p_norm])
         with np.errstate(divide='ignore'):
@@ -357,7 +340,6 @@ class BDF(OdeSolver):
 
         factor = min(MAX_FACTOR, safety * np.max(factors))
         self.h_abs *= factor
-        #print("{:.4e}, {:.4e}".format(factor, self.h_abs))
         change_D(D, order, factor)
         self.n_equal_steps = 0
         self.LU = None

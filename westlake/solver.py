@@ -3,6 +3,57 @@ import torch
 from torch.func import jacrev
 from scipy.integrate import solve_ivp
 
+from .bdf import BDF
+
+
+def solve_torch(reaction_term, t_span, ab_0,
+          rtol=1e-4, atol=1e-20, t_eval=None, u_factor=1.,
+          use_auto_jac=False, device="cpu", show_progress=True):
+    dtype = torch.get_default_dtype()
+
+    def wrapper_fun(t_in, y_in):
+        if show_progress:
+            percent = (t_in - t_span[0])/(t_span[1] - t_span[0])*100
+            t_show = t_in/u_factor
+            print("\r[{:5.1f}%] t = {:<12.5e}".format(percent, t_show), end='')
+
+        t_in = torch.as_tensor(t_in, dtype=dtype, device=device)
+        t_in = torch.atleast_1d(t_in)
+        y_in = torch.as_tensor(y_in, dtype=dtype, device=device)
+        y_in = torch.atleast_1d(y_in)
+        if y_in.ndim == 2:
+            y_in = y_in.T
+        y_out = reaction_term(t_in, y_in)
+        if y_out.ndim == 2:
+            y_out = y_out.T
+        return y_out.cpu()#.numpy()
+
+    def wrapper_jac(t_in, y_in):
+        t_in = torch.as_tensor(t_in, dtype=dtype, device=device)
+        t_in = torch.atleast_1d(t_in)
+        y_in = torch.as_tensor(y_in, dtype=dtype, device=device)
+        y_in = torch.atleast_1d(y_in)
+        jac_out = reaction_term.jacobian(t_in, y_in)
+        return jac_out.cpu()#.numpy()
+
+    t_span = tuple(t*u_factor for t in t_span)
+    t_start, t_end = t_span
+
+    t_ret = []
+    y_ret = []
+    solver = BDF(wrapper_fun, wrapper_jac, t_start, ab_0, rtol=rtol, atol=atol)
+    while True:
+        success, message = solver.step(t_end)
+        t_new = solver.t
+        y_new = solver.y
+        t_ret.append(t_new)
+        y_ret.append(y_new)
+        if t_new >= t_end:
+            break
+    t_ret = np.array(t_ret)/u_factor
+    y_ret = np.vstack(y_ret).T
+    return t_ret, y_ret
+
 
 def solve_rate_equation(reaction_term, t_span, ab_0, method="BDF",
                         rtol=1e-4, atol=1e-20, t_eval=None, u_factor=1.,
