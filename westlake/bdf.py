@@ -14,20 +14,20 @@ MIN_FACTOR = 0.2
 MAX_FACTOR = 10
 
 
-def compute_R(order, factor):
+def compute_R(order, factor, device):
     """Compute the matrix for changing the differences array."""
-    I = torch.arange(1, order + 1)[:, None]
-    J = torch.arange(1, order + 1)
-    M = torch.zeros((order + 1, order + 1))
+    I = torch.arange(1, order + 1, device=device)[:, None]
+    J = torch.arange(1, order + 1, device=device)
+    M = torch.zeros((order + 1, order + 1), device=device)
     M[1:, 1:] = (I - 1 - factor * J) / I
     M[0] = 1
     return torch.cumprod(M, dim=0)
 
 
-def change_D(D, order, factor):
+def change_D(D, order, factor, device):
     """Change differences array in-place when step size is changed."""
-    R = compute_R(order, factor)
-    U = compute_R(order, 1)
+    R = compute_R(order, factor, device)
+    U = compute_R(order, 1, device)
     RU = torch.matmul(R, U)
     D[:order + 1] = torch.matmul(RU.T, D[:order + 1])
 
@@ -107,7 +107,7 @@ def select_initial_step(fun, t0, y0, f0, direction, order, rtol, atol):
     if y0.size == 0:
         return math.inf
 
-    scale = atol + np.abs(y0) * rtol
+    scale = atol + torch.abs(y0) * rtol
     d0 = norm(y0 / scale)
     d1 = norm(f0 / scale)
     if d0 < 1e-5 or d1 < 1e-5:
@@ -119,6 +119,8 @@ def select_initial_step(fun, t0, y0, f0, direction, order, rtol, atol):
     f1 = fun(t0 + h0 * direction, y1)
     d2 = norm((f1 - f0) / scale) / h0
 
+    d1 = d1.cpu().numpy()
+    d2 = d2.cpu().numpy()
     if d1 <= 1e-15 and d2 <= 1e-15:
         h1 = max(1e-6, h0 * 1e-3)
     else:
@@ -133,33 +135,42 @@ def norm(x):
 
 class BDF:
     def __init__(self, fun, jac, t0, y0, first_step=None, max_step=math.inf,
-                 rtol=1e-4, atol=1e-20):
+                 rtol=1e-4, atol=1e-20, device="cpu"):
         self.nfev = 0
         self.njev = 0
         self.nlu = 0
 
         def fun_wrapped(t, y):
-            if len(y.shape) == 1:
+            t = torch.as_tensor(t, dtype=y.dtype, device=y.device)
+            t = torch.atleast_1d(t)
+            if y.ndim == 1:
                 self.nfev += 1
             else:
+                y = y.T
                 self.nfev += y.shape[0]
-            return fun(t, y)
+            f = fun(t, y)
+            if f.ndim == 2:
+                f = f.T
+            return f
 
         def jac_wrapped(t, y):
+            t = torch.as_tensor(t, dtype=y.dtype, device=y.device)
+            t = torch.atleast_1d(t)
             self.njev += 1
             return jac(t, y)
 
         self.fun = fun_wrapped
         self.jac = jac_wrapped
 
-        y0 = torch.tensor(y0, dtype=torch.get_default_dtype())
+        y0 = torch.tensor(y0, dtype=torch.get_default_dtype(), device=device)
         self.t = t0
         dydt = fun_wrapped(t0, y0)
         self.J = jac_wrapped(t0, y0)
         self.direction = 1
         n_y = len(y0)
         self.rtol, self.atol = validate_tol(rtol, atol, n_y)
-        self.atol = torch.tensor(self.atol)
+        self.atol = torch.tensor(self.atol, device=device)
+        self.device = device
 
         self.max_step = validate_max_step(max_step)
         if first_step is None:
@@ -180,21 +191,21 @@ class BDF:
         def solve_lu(LU, b):
             return torch.linalg.lu_solve(LU.LU, LU.pivots, b[:, None])[:, 0]
 
-        I = torch.eye(n_y)
+        I = torch.eye(n_y, device=device)
 
         self.lu = lu
         self.solve_lu = solve_lu
         self.I = I
 
-        kappa = torch.tensor([0, -0.1850, -1/9, -0.0823, -0.0415, 0])
+        kappa = torch.tensor([0, -0.1850, -1/9, -0.0823, -0.0415, 0], device=device)
         self.gamma = torch.concat((
-            torch.zeros(1),
-            torch.cumsum(1/torch.arange(1, MAX_ORDER + 1), dim=0)
+            torch.zeros(1, device=device),
+            torch.cumsum(1/torch.arange(1, MAX_ORDER + 1, device=device), dim=0)
         ))
-        self.alpha = (1 - kappa) * self.gamma
-        self.error_const = kappa * self.gamma + 1 / torch.arange(1, MAX_ORDER + 2)
+        self.alpha = (1 - kappa)*self.gamma
+        self.error_const = kappa*self.gamma + 1/torch.arange(1, MAX_ORDER + 2, device=device)
 
-        D = torch.empty((MAX_ORDER + 3, n_y), dtype=y0.dtype)
+        D = torch.empty((MAX_ORDER + 3, n_y), dtype=torch.get_default_dtype(), device=device)
         D[0] = y0
         D[1] = dydt * self.h_abs * self.direction
         self.D = D
@@ -211,11 +222,11 @@ class BDF:
         min_step = 2 * abs(np.nextafter(t, self.direction * math.inf) - t)
         if self.h_abs > max_step:
             h_abs = max_step
-            change_D(D, self.order, max_step / self.h_abs)
+            change_D(D, self.order, max_step / self.h_abs, self.device)
             self.n_equal_steps = 0
         elif self.h_abs < min_step:
             h_abs = min_step
-            change_D(D, self.order, min_step / self.h_abs)
+            change_D(D, self.order, min_step / self.h_abs, self.device)
             self.n_equal_steps = 0
         else:
             h_abs = self.h_abs
@@ -237,13 +248,16 @@ class BDF:
             if h_abs < min_step:
                 return False, self.TOO_SMALL_STEP
 
+            if isinstance(h_abs, torch.Tensor):
+                h_abs = h_abs.item()
+
             h = h_abs * self.direction
             t_new = t + h
 
             if self.direction * (t_new - t_bound) > 0:
                 t_new = t_bound
                 h = t_new - t
-                change_D(D, order, torch.abs(t_new - t) / h_abs)
+                change_D(D, order, abs(t_new - t)/h_abs, device=self.device)
                 self.n_equal_steps = 0
                 LU = None
 
@@ -251,7 +265,7 @@ class BDF:
             y_predict = torch.sum(D[:order + 1], dim=0)
 
             scale = atol + rtol * torch.abs(y_predict)
-            psi = torch.matmul(D[1: order + 1].T, gamma[1: order + 1]) / alpha[order]
+            psi = torch.matmul(D[1: order + 1].T, gamma[1: order + 1])/alpha[order]
 
             converged = False
             c = h / alpha[order]
@@ -273,7 +287,7 @@ class BDF:
             if not converged:
                 factor = 0.5
                 h_abs *= factor
-                change_D(D, order, factor)
+                change_D(D, order, factor, self.device)
                 self.n_equal_steps = 0
                 LU = None
                 continue
@@ -289,7 +303,7 @@ class BDF:
                 factor = max(MIN_FACTOR,
                              safety * error_norm ** (-1 / (order + 1)))
                 h_abs *= factor
-                change_D(D, order, factor)
+                change_D(D, order, factor, self.device)
                 self.n_equal_steps = 0
                 # As we didn't have problems with convergence, we don't
                 # reset LU here.
@@ -321,15 +335,18 @@ class BDF:
         if order > 1:
             error_m = error_const[order - 1] * D[order]
             error_m_norm = norm(error_m / scale)
+            error_m_norm = error_m_norm.item()
         else:
             error_m_norm = math.inf
 
         if order < MAX_ORDER:
             error_p = error_const[order + 1] * D[order + 2]
             error_p_norm = norm(error_p / scale)
+            error_p_norm = error_p_norm.item()
         else:
             error_p_norm = math.inf
 
+        error_norm = error_norm.cpu().item()
         error_norms = np.array([error_m_norm, error_norm, error_p_norm])
         with np.errstate(divide='ignore'):
             factors = error_norms ** (-1 / np.arange(order, order + 3))
@@ -340,7 +357,7 @@ class BDF:
 
         factor = min(MAX_FACTOR, safety * np.max(factors))
         self.h_abs *= factor
-        change_D(D, order, factor)
+        change_D(D, order, factor, device=self.device)
         self.n_equal_steps = 0
         self.LU = None
 

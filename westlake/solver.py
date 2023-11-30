@@ -8,48 +8,44 @@ from .bdf import BDF
 
 def solve_torch(reaction_term, t_span, ab_0,
           rtol=1e-4, atol=1e-20, t_eval=None, u_factor=1.,
-          use_auto_jac=False, device="cpu", show_progress=True):
-    dtype = torch.get_default_dtype()
-
-    def wrapper_fun(t_in, y_in):
-        if show_progress:
-            percent = (t_in - t_span[0])/(t_span[1] - t_span[0])*100
-            t_show = t_in/u_factor
-            print("\r[{:5.1f}%] t = {:<12.5e}".format(percent, t_show), end='')
-
-        t_in = torch.as_tensor(t_in, dtype=dtype, device=device)
-        t_in = torch.atleast_1d(t_in)
-        y_in = torch.as_tensor(y_in, dtype=dtype, device=device)
-        y_in = torch.atleast_1d(y_in)
-        if y_in.ndim == 2:
-            y_in = y_in.T
-        y_out = reaction_term(t_in, y_in)
-        if y_out.ndim == 2:
-            y_out = y_out.T
-        return y_out.cpu()#.numpy()
-
-    def wrapper_jac(t_in, y_in):
-        t_in = torch.as_tensor(t_in, dtype=dtype, device=device)
-        t_in = torch.atleast_1d(t_in)
-        y_in = torch.as_tensor(y_in, dtype=dtype, device=device)
-        y_in = torch.atleast_1d(y_in)
-        jac_out = reaction_term.jacobian(t_in, y_in)
-        return jac_out.cpu()#.numpy()
-
+          use_auto_jac=False, update_atol=True, device="cpu", show_progress=True):
     t_span = tuple(t*u_factor for t in t_span)
     t_start, t_end = t_span
 
     t_ret = []
     y_ret = []
-    solver = BDF(wrapper_fun, wrapper_jac, t_start, ab_0, rtol=rtol, atol=atol)
+    solver = BDF(
+        reaction_term, reaction_term.jacobian,
+        t_start, ab_0, rtol=rtol, atol=atol, device=device
+    )
+    if update_atol:
+        ab_0 = torch.as_tensor(ab_0, dtype=torch.get_default_dtype(), device=device)
+        solver.atol = torch.maximum(rtol*ab_0, torch.tensor(atol, device=device))
+
+    i_step = 0
     while True:
         success, message = solver.step(t_end)
         t_new = solver.t
         y_new = solver.y
+
+        if update_atol:
+            solver.atol = torch.maximum(rtol*y_new, torch.tensor(atol, device=device))
+        #y_new = torch.relu(y_new)
+        solver.y = y_new
+
         t_ret.append(t_new)
-        y_ret.append(y_new)
+        y_ret.append(y_new.cpu().numpy())
+
+        if show_progress:
+            percent = (t_new - t_span[0])/(t_span[1] - t_span[0])*100
+            t_show = t_new/u_factor
+            print("\r[{:5.1f}%] t = {:<12.5e}".format(percent, t_show), end='')
+
         if t_new >= t_end:
             break
+        i_step += 1
+    print()
+
     t_ret = np.array(t_ret)/u_factor
     y_ret = np.vstack(y_ret).T
     return t_ret, y_ret
