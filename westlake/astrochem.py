@@ -245,7 +245,6 @@ def add_H2_shielding(df_reac, df_spec, config, formula_dict_ex):
     Returns:
         pd.DataFrame: Reaction data with updated H2 shielding formula.
     """
-    # H2 shielding
     if config.H2_shielding == "Lee+1996":
         cond = (df_reac["formula"] == "photodissociation") & (df_reac["reactant_1"] == "H2")
         n_reac = np.count_nonzero(cond)
@@ -276,7 +275,6 @@ def add_CO_shielding(df_reac, df_spec, config, formula_dict_ex):
     Returns:
         pd.DataFrame: Reaction data with updated CO shielding formula.
     """
-    # H2 shielding
     if config.CO_shielding == "Lee+1996":
         cond = (df_reac["formula"] == "photodissociation") & (df_reac["reactant_1"] == "CO")
         n_reac = np.count_nonzero(cond)
