@@ -46,17 +46,3 @@ class Medium(nn.Module):
         for key, module in self._module_dict.items():
             params_med[key] = module(t_in, params_med)
         return params_med
-
-
-class ThermalHoppingRate(nn.Module):
-    def __init__(self, E_barr, freq_vib, config):
-        super().__init__()
-        self.register_buffer("E_barr", torch.tensor(E_barr, dtype=torch.get_default_dtype()))
-        self.register_buffer("freq_vib", torch.tensor(freq_vib, dtype=torch.get_default_dtype()))
-        self.register_buffer("inv_num_sites_per_grain",
-            torch.tensor(1./config.num_sites_per_grain))
-
-    def forward(self, t_in, params_med):
-        return self.freq_vib \
-            * torch.exp(-self.E_barr/params_med["T_dust"]) \
-            * self.inv_num_sites_per_grain

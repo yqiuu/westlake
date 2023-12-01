@@ -32,7 +32,7 @@ class ConstantRateTerm(nn.Module):
 
 
 class TwoPhaseTerm(nn.Module):
-    def __init__(self, rmod, rmod_ex, module_var, rmat_1st, rmat_2nd, module_med):
+    def __init__(self, rmod, rmod_ex, vmod, vmod_ex, rmat_1st, rmat_2nd, module_med):
         super(TwoPhaseTerm, self).__init__()
         if module_med is None \
             or isinstance(module_med, TensorDict) or isinstance(module_med, nn.Module):
@@ -41,7 +41,8 @@ class TwoPhaseTerm(nn.Module):
             raise ValueError("Unknown 'module_med'.")
         self.rmod = rmod
         self.rmod_ex = rmod_ex
-        self.module_var = module_var
+        self.vmod = vmod
+        self.vmod_ex = vmod_ex
         self.asm_1st = Assembler(rmat_1st)
         self.asm_2nd = Assembler(rmat_2nd)
         self.inds_id_1st = rmat_1st.inds_id_uni
@@ -58,22 +59,30 @@ class TwoPhaseTerm(nn.Module):
             + self.asm_2nd.jacobain(y_in, coeffs, den_norm)
 
     def compute_rate_coeffs(self, t_in, y_in):
-        if self.module_med is None:
-            params_med = None
-            den_norm = None
-        else:
-            params_med = self.module_med(t_in)
-            den_norm = params_med['den_gas']
-
+        params_med = self.module_med(t_in)
+        if self.vmod is not None and params_med is not None:
+            var_dict = self.vmod(
+                t_in=t_in,
+                y_in=None,
+                coeffs=None,
+                params_med=params_med
+            )
+            params_med.update(var_dict)
+        den_norm = params_med['den_gas']
         inds_id_1st = self.inds_id_1st
         inds_id_2nd = self.inds_id_2nd
         n_reac = len(inds_id_1st) + len(inds_id_2nd)
         coeffs = torch.zeros([len(t_in), n_reac], device=t_in.device)
         self.rmod.assign_rate_coeffs(coeffs, params_med)
-        if self.module_var is None:
+        if self.rmod_ex is None:
             params_extra = None
         else:
-            params_extra = self.module_var(coeffs, params_med, y_in)
+            params_extra = self.vmod_ex(
+                t_in=None,
+                y_in=y_in,
+                coeffs=coeffs,
+                params_med=params_med,
+            )
         if self.rmod_ex is not None:
             self.rmod_ex.assign_rate_coeffs(coeffs, params_med, y_in, params_extra)
         return coeffs, den_norm
@@ -87,7 +96,7 @@ class TwoPhaseTerm(nn.Module):
 
 
 class ThreePhaseTerm(nn.Module):
-    def __init__(self, rmod, rmod_ex, module_var, rmod_smt,
+    def __init__(self, rmod, rmod_ex, vmod, vmod_ex, rmod_smt,
                  rmat_1st, rmat_1st_surf_gain, rmat_1st_surf_loss,
                  rmat_2nd, rmat_2nd_surf_gain, rmat_2nd_surf_loss,
                  inds_surf, inds_mant, module_med, config):
@@ -100,7 +109,8 @@ class ThreePhaseTerm(nn.Module):
         #
         self.rmod = rmod
         self.rmod_ex = rmod_ex
-        self.module_var = module_var
+        self.vmod = vmod
+        self.vmod_ex = vmod_ex
         self.rmod_smt = rmod_smt
         #
         self.asm_1st = Assembler(rmat_1st)
@@ -131,6 +141,14 @@ class ThreePhaseTerm(nn.Module):
 
     def compute_rate_coeffs(self, t_in, y_in, **params_extra):
         params_med = self.module_med(t_in, **params_extra)
+        if self.vmod is not None and params_med is not None:
+            var_dict = self.vmod(
+                t_in=t_in,
+                y_in=None,
+                coeffs=None,
+                params_med=params_med
+            )
+            params_med.update(var_dict)
         den_norm = params_med['den_gas']
         inds_id_1st = self.inds_id_1st
         inds_id_2nd = self.inds_id_2nd
@@ -152,8 +170,14 @@ class ThreePhaseTerm(nn.Module):
 
         #
         self.rmod.assign_rate_coeffs(coeffs, params_med)
-        if self.module_var is not None:
-            params_extra = self.module_var(coeffs, params_med, y_in, params_extra)
+        if self.vmod_ex is not None:
+            params_extra = self.vmod_ex(
+                t_in=None,
+                y_in=y_in,
+                coeffs=coeffs,
+                params_med=params_med,
+                var_dict=params_extra
+            )
         if self.rmod_ex is not None:
             self.rmod_ex.assign_rate_coeffs(coeffs, params_med, y_in, params_extra)
 
@@ -187,14 +211,57 @@ class VariableModule(nn.ModuleList):
         self._name_list.append(name)
         self.append(module)
 
-    def forward(self, coeffs, params_med, y_in, var_dict=None):
+    def forward(self, t_in, y_in, coeffs, params_med, var_dict=None):
         if var_dict is None:
             var_dict = {}
         for name, module in zip(self._name_list, self):
             if isinstance(name, str):
-                var_dict[name] = module(coeffs, params_med, y_in, var_dict)
+                var_dict[name] = module(
+                    t_in=t_in,
+                    y_in=y_in,
+                    coeffs=coeffs,
+                    params_med=params_med,
+                    var_dict=var_dict
+                )
             else:
-                variables = module(coeffs, params_med, y_in, var_dict)
+                variables = module(
+                    t_in=t_in,
+                    y_in=y_in,
+                    coeffs=coeffs,
+                    params_med=params_med,
+                    var_dict=var_dict
+                )
                 for nm, var in zip(name, variables):
                     var_dict[nm] = var
         return var_dict
+
+
+class EvaporationRate(nn.Module):
+    def __init__(self, inds_evapor, inds_r, n_spec):
+        super().__init__()
+        self.register_buffer("inds_evapor", inds_evapor)
+        self.register_buffer("inds_r", inds_r)
+        self.n_spec = n_spec
+
+    def forward(self, coeffs, **kwargs):
+        # coeffs (B, R)
+        # params_med (B,)
+        # y_in (B, N)
+        k_evapor = torch.zeros(
+            [coeffs.shape[0], self.n_spec], dtype=coeffs.dtype, device=coeffs.device)
+        k_evapor.index_add_(1, self.inds_r, coeffs[:, self.inds_evapor])
+        return k_evapor
+
+
+class ThermalHoppingRate(nn.Module):
+    def __init__(self, E_barr, freq_vib, config):
+        super().__init__()
+        self.register_buffer("E_barr", torch.tensor(E_barr, dtype=torch.get_default_dtype()))
+        self.register_buffer("freq_vib", torch.tensor(freq_vib, dtype=torch.get_default_dtype()))
+        self.register_buffer("inv_num_sites_per_grain",
+            torch.tensor(1./config.num_sites_per_grain))
+
+    def forward(self, params_med, **kwargs):
+        return self.freq_vib \
+            * torch.exp(-self.E_barr/params_med["T_dust"]) \
+            * self.inv_num_sites_per_grain

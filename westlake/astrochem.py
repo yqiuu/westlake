@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import torch
-from torch import nn
 
 from .utils import get_specie_index
 from .reaction_modules import create_formula_dict_reaction_module, create_surface_mantle_transition
@@ -15,9 +14,15 @@ from .reaction_rates import (
     SurfaceReactionWithCompetition
 )
 from .preprocesses import prepare_piecewise_rates
-from .medium import Medium, ThermalHoppingRate
+from .medium import Medium
 from .reaction_matrices import ReactionMatrix
-from .reaction_terms import TwoPhaseTerm, ThreePhaseTerm, VariableModule
+from .reaction_terms import (
+    TwoPhaseTerm,
+    ThreePhaseTerm,
+    VariableModule,
+    ThermalHoppingRate,
+    EvaporationRate,
+)
 from .solver import solve_rate_equation, Result
 
 
@@ -128,8 +133,10 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
             df_act=df_act, df_br=df_br,
             df_barr=df_barr, df_gap=df_gap, df_ma=df_ma,
         )
-        add_hopping_rate_module(medium, df_spec, config)
-
+        vmod = VariableModule()
+        vmod.add_variable("rate_hopping", create_hopping_rate_module(df_spec, config))
+    else:
+        vmod = None
     # Prepare formula dict
     formula_dict_ = builtin_gas_reactions(config)
     formula_dict_ex_ = {}
@@ -168,11 +175,11 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
     )
 
     #
-    module_var = VariableModule()
-    module_var.add_variable("k_evapor", create_evapor_rate_module(df_reac, df_spec))
+    vmod_ex = VariableModule()
+    vmod_ex.add_variable("k_evapor", create_evapor_rate_module(df_reac, df_spec))
 
     if config.model == "simple" or config.model == "two phase":
-        return TwoPhaseTerm(rmod, rmod_ex, module_var, rmat_1st, rmat_2nd, medium)
+        return TwoPhaseTerm(rmod, rmod_ex, vmod, vmod_ex, rmat_1st, rmat_2nd, medium)
     elif config.model == "three phase":
         rmod_smt = create_surface_mantle_transition(df_reac, df_spec, config)
 
@@ -186,7 +193,7 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
         inds_mant = df_spec.index.map(lambda name: name.startswith("K")).values
 
         return ThreePhaseTerm(
-            rmod, rmod_ex, module_var, rmod_smt,
+            rmod, rmod_ex, vmod, vmod_ex, rmod_smt,
             rmat_1st, rmat_1st_surf_gain, rmat_1st_surf_loss,
             rmat_2nd, rmat_2nd_surf_gain, rmat_2nd_surf_loss,
             inds_surf, inds_mant, medium, config
@@ -311,11 +318,10 @@ def split_gain_loss(rmat):
     return rmat.split(cond, use_id_uni=False)
 
 
-def add_hopping_rate_module(medium, df_spec, config):
-    module = ThermalHoppingRate(
+def create_hopping_rate_module(df_spec, config):
+    return ThermalHoppingRate(
         df_spec["E_barr"].values, df_spec["freq_vib"].values, config
     )
-    medium.add_medium_parameter("rate_hopping", module)
 
 
 def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config,
@@ -402,20 +408,3 @@ def create_evapor_rate_module(df_reac, df_spec):
 
     n_spec = len(df_spec)
     return EvaporationRate(inds_evapor, inds_r, n_spec)
-
-
-class EvaporationRate(nn.Module):
-    def __init__(self, inds_evapor, inds_r, n_spec):
-        super().__init__()
-        self.register_buffer("inds_evapor", inds_evapor)
-        self.register_buffer("inds_r", inds_r)
-        self.n_spec = n_spec
-
-    def forward(self, coeffs, params_med, y_in, var_dict):
-        # coeffs (B, R)
-        # params_med (B, )
-        # y_in (B, N)
-        k_evapor = torch.zeros(
-            [coeffs.shape[0], self.n_spec], dtype=coeffs.dtype, device=coeffs.device)
-        k_evapor.index_add_(1, self.inds_r, coeffs[:, self.inds_evapor])
-        return k_evapor
