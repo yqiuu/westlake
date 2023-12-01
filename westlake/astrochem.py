@@ -1,9 +1,15 @@
+from copy import deepcopy
+
 import numpy as np
 import pandas as pd
 import torch
 
 from .utils import get_specie_index
-from .reaction_modules import create_formula_dict_reaction_module, create_surface_mantle_transition
+from .reaction_modules import (
+    create_formula_dict_reaction_module,
+    create_surface_mantle_transition,
+    ConstantRateModule
+)
 from .reaction_rates import (
     builtin_gas_reactions,
     builtin_surface_reactions,
@@ -350,6 +356,7 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config,
         rtol = config.rtol
     if atol is None:
         atol = config.atol
+    reaction_term = replace_with_constant_rate_module(reaction_term, df_spec)
     res = solve_rate_equation(
         reaction_term, t_span, ab_0,
         method=method,
@@ -408,3 +415,14 @@ def create_evapor_rate_module(df_reac, df_spec):
 
     n_spec = len(df_spec)
     return EvaporationRate(inds_evapor, inds_r, n_spec)
+
+
+def replace_with_constant_rate_module(reac_term, df_spec):
+    """Use constant module to improve the performance if possible."""
+    if reac_term.module_med.is_static():
+        reac_term_new = deepcopy(reac_term)
+        coeffs = reac_term_new.reproduce_rate_coeffs(y_in=torch.zeros(len(df_spec)))
+        rmod = ConstantRateModule(coeffs, reac_term_new.rmod.inds_reac.clone())
+        reac_term_new.rmod = rmod
+        return reac_term_new
+    return reac_term

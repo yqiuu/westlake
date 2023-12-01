@@ -69,6 +69,22 @@ class SurfaceMantleTransition(nn.Module):
         )
 
 
+class ConstantRateModule(nn.Module):
+    """Constant rate module.
+
+    Args:
+        coeffs: (R,)
+        inds_reac: (R,) or (N,)
+    """
+    def __init__(self, coeffs, inds_reac):
+        super().__init__()
+        self.register_buffer("coeffs", coeffs[inds_reac])
+        self.register_buffer("inds_reac", inds_reac)
+
+    def assign_rate_coeffs(self, coeffs, params_med):
+        coeffs[:, self.inds_reac] = self.coeffs
+
+
 def create_formula_dict_reaction_module(df_reac, df_spec, formula_dict, formula_dict_ex):
     inds_fm_dict_all = defaultdict(list)
     for i_fm, fm in enumerate(df_reac["formula"]):

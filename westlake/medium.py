@@ -30,6 +30,10 @@ class Medium(nn.Module):
         else:
             raise TypeError("'val' can only be float or nn.Module.")
 
+    def is_static(self):
+        """Check if any medium parameters evolve with time."""
+        return len(self._module_dict) == 0
+
     def forward(self, t_in):
         """
         Args:
