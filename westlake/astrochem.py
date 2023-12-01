@@ -372,31 +372,35 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config,
     return res
 
 
-def derive_initial_abundances(ab_0_dict, spec_table, config):
+def derive_initial_abundances(ab_0_dict, df_spec, config):
     """Derive the initial abundances of grains and electrons.
 
     Args:
         ab_0_dict (dict): Initial abundance of each specie.
-        spec_table (pd.DataFrame): Specie table.
+        df_spec (pd.DataFrame): Specie table.
         config (Config): Config.
 
     Returns:
         array: Initial abundances.
     """
-    if not all(np.in1d(list(ab_0_dict.keys()), spec_table.index.values)):
+    if not all(np.in1d(list(ab_0_dict.keys()), df_spec.index.values)):
         raise ValueError("Find unrecognized species in 'ab_0'.")
 
-    ab_0 = np.full(len(spec_table), config.ab_0_min)
-    ab_0[spec_table.index.get_indexer(ab_0_dict.keys())] = list(ab_0_dict.values())
+    ab_0 = np.full(len(df_spec), config.ab_0_min)
+    ab_0[df_spec.index.get_indexer(ab_0_dict.keys())] = list(ab_0_dict.values())
 
     # Derive the grain abundances
-    ab_0[spec_table.index.get_indexer(["GRAIN0"]).item()] = config.dtg_mass_ratio/config.grain_mass
-    ab_0[spec_table.index.get_indexer(["GRAIN-"]).item()] = 0.
+    idx = get_specie_index(df_spec, "GRAIN0", raise_error=False)
+    if idx is not None:
+        ab_0[idx] = config.dtg_mass_ratio/config.grain_mass
+    idx = get_specie_index(df_spec, "GRAIN-", raise_error=False)
+    if idx is not None:
+        ab_0[idx] = 0.
 
     # Derive the electron abundance aussming the system is neutral
-    ab_0[spec_table.index.get_indexer(["e-"]).item()] = 0.
-    ab_0[spec_table.index.get_indexer(["e-"]).item()] = np.sum(spec_table["charge"].values*ab_0)
-
+    idx = get_specie_index(df_spec, "e-")
+    ab_0[idx] = 0.
+    ab_0[idx] = np.sum(df_spec["charge"].values*ab_0)
     return ab_0
 
 

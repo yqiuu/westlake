@@ -82,9 +82,11 @@ def data_frame_to_tensor_dict(df):
     return TensorDict(names, tensors)
 
 
-def get_specie_index(df_spec, spec):
+def get_specie_index(df_spec, spec, raise_error=True):
     """Give the index of the given specie in the specie table."""
     idx = df_spec.index.get_indexer([spec]).item()
     if idx == -1:
-        raise ValueError(f"{spec} is not in the specie table.")
+        if raise_error:
+            raise ValueError(f"Fail to find '{spec}' in the specie table.")
+        return
     return idx
