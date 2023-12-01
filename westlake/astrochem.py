@@ -328,6 +328,23 @@ def create_hopping_rate_module(df_spec, config):
     )
 
 
+def create_evapor_rate_module(df_reac, df_spec):
+    cond = (df_reac["formula"] == "thermal evaporation") \
+        | (df_reac["formula"] == "CR evaporation") \
+        | (df_reac["formula"] == "UV photodesorption") \
+        | (df_reac["formula"] == "CR photodesorption")
+    inds_evapor = np.where(cond.values)[0]
+    inds_evapor = torch.tensor(inds_evapor)
+
+    # Evaporation reactions by definition only have one reactant
+    reacs = df_reac.loc[cond, "reactant_1"]
+    inds_r = df_spec.index.get_indexer(reacs)
+    inds_r = torch.tensor(inds_r)
+
+    n_spec = len(df_spec)
+    return EvaporationRate(inds_evapor, inds_r, n_spec)
+
+
 def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config,
                                   t_span=None, t_eval=None, method=None, rtol=None, atol=None,
                                   use_auto_jac=None, device="cpu", show_progress=True):
@@ -400,23 +417,6 @@ def derive_initial_abundances(ab_0_dict, df_spec, config):
     ab_0[idx] = 0.
     ab_0[idx] = np.sum(df_spec["charge"].values*ab_0)
     return ab_0
-
-
-def create_evapor_rate_module(df_reac, df_spec):
-    cond = (df_reac["formula"] == "thermal evaporation") \
-        | (df_reac["formula"] == "CR evaporation") \
-        | (df_reac["formula"] == "UV photodesorption") \
-        | (df_reac["formula"] == "CR photodesorption")
-    inds_evapor = np.where(cond.values)[0]
-    inds_evapor = torch.tensor(inds_evapor)
-
-    # Evaporation reactions by definition only have one reactant
-    reacs = df_reac.loc[cond, "reactant_1"]
-    inds_r = df_spec.index.get_indexer(reacs)
-    inds_r = torch.tensor(inds_r)
-
-    n_spec = len(df_spec)
-    return EvaporationRate(inds_evapor, inds_r, n_spec)
 
 
 def replace_with_constant_rate_module(reac_term, df_spec):
