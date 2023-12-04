@@ -157,6 +157,8 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
         for key in formula_dict_surf:
             formula_dict_[key] = NoReaction()
     else:
+        formula_dict_["surface H2 formation"] = NoReaction()
+        formula_dict_["surface H accretion"] = NoReaction()
         formula_dict_.update(formula_dict_surf)
 
     # Competition
