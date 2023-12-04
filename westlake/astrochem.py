@@ -345,7 +345,7 @@ def create_evapor_rate_module(df_reac, df_spec):
     return EvaporationRate(inds_evapor, inds_r, n_spec)
 
 
-def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config,
+def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *, medium_list=None,
                                   t_span=None, t_eval=None, method=None, rtol=None, atol=None,
                                   use_auto_jac=None, device="cpu", show_progress=True):
     """Solve the rate equations for astrochemical problems.
@@ -360,31 +360,47 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config,
     Returns:
         object: A result object returned by a scipy ODE solver.
     """
-    ab_0 = derive_initial_abundances(ab_0_dict, df_spec, config)
+    def _solve(reac_term, df_spec, t_span, ab_0, kwargs):
+        reac_term = replace_with_constant_rate_module(reac_term, df_spec)
+        res = solve_rate_equation(reaction_term, t_span, ab_0, **kwargs)
+        res = Result(res, df_spec)
+        return res
+
     if t_span is None:
         t_span = (config.t_start, config.t_end)
+    kwargs = {
+        "t_eval": t_eval,
+        "u_factor": config.to_second,
+        "device": device,
+        "show_progress": show_progress,
+    }
     if method is None:
-        method = config.solver
+        kwargs["method"] = config.solver
     if use_auto_jac is None:
-        use_auto_jac = config.use_auto_jac
+        kwargs["use_auto_jac"] = config.use_auto_jac
     if rtol is None:
-        rtol = config.rtol
+        kwargs["rtol"] = config.rtol
     if atol is None:
-        atol = config.atol
-    reaction_term = replace_with_constant_rate_module(reaction_term, df_spec)
-    res = solve_rate_equation(
-        reaction_term, t_span, ab_0,
-        method=method,
-        rtol=rtol,
-        atol=atol,
-        t_eval=t_eval,
-        u_factor=config.to_second,
-        use_auto_jac=use_auto_jac,
-        device=device,
-        show_progress=show_progress
-    )
-    res = Result(res, df_spec)
-    return res
+        kwargs["atol"] = config.atol
+
+    ab_0 = derive_initial_abundances(ab_0_dict, df_spec, config)
+    if medium_list is None:
+        return _solve(reaction_term, df_spec, t_span, ab_0, kwargs)
+
+    res_tot = None
+    reaction_term = deepcopy(reaction_term)
+    for i_stage, module_med in enumerate(medium_list):
+        reaction_term.module_med = module_med
+        t_span_sub = (t_span[i_stage], t_span[i_stage + 1])
+        res = _solve(reaction_term, df_spec, t_span_sub, ab_0, kwargs)
+        if not res.success:
+            raise ValueError(res.message)
+        ab_0 = res.last()
+        if res_tot is None:
+            res_tot = res
+        else:
+            res_tot.append(res)
+    return res_tot
 
 
 def derive_initial_abundances(ab_0_dict, df_spec, config):

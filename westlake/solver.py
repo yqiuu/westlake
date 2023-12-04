@@ -133,5 +133,5 @@ class Result:
         return self._ab[:, -1]
 
     def append(self, res):
-        self._time = np.append(self._time, res.t[1:])
-        self._ab = np.concatenate([self._ab, res.y[:, 1:]], axis=-1)
+        self._time = np.append(self._time, res._time[1:])
+        self._ab = np.concatenate([self._ab, res._ab[:, 1:]], axis=-1)
