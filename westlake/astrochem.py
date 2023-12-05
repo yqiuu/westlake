@@ -1,3 +1,4 @@
+from collections import Counter
 from copy import deepcopy
 
 import numpy as np
@@ -120,6 +121,9 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
     Returns:
         nn.Module: A callable that can be passed to a ODE solver.
     """
+    validate_specie_params(df_spec, "'df_spec'")
+    validate_specie_params(df_surf, "'df_surf'")
+
     if use_copy:
         df_reac = df_reac.copy()
         df_spec = df_spec.copy()
@@ -448,3 +452,13 @@ def replace_with_constant_rate_module(reac_term, df_spec):
         reac_term_new.rmod = rmod
         return reac_term_new
     return reac_term
+
+
+def validate_specie_params(df_spec, var_name):
+    counts = Counter(df_spec.index.values)
+    dups = []
+    for spec, num in counts.items():
+        if num != 1:
+            dups.append(spec)
+    if len(dups) != 0:
+        raise ValueError(f"Find duplicated species in {var_name}: " + ", ".join(dups))
