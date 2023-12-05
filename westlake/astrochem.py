@@ -441,7 +441,9 @@ def replace_with_constant_rate_module(reac_term, df_spec):
     """Use constant module to improve the performance if possible."""
     if reac_term.module_med.is_static():
         reac_term_new = deepcopy(reac_term)
-        coeffs = reac_term_new.reproduce_rate_coeffs(y_in=torch.zeros(len(df_spec)))
+        t_in = torch.zeros(1)
+        y_in = torch.zeros(len(df_spec))
+        coeffs = reac_term_new.reproduce_rate_coeffs(t_in, y_in)
         rmod = ConstantRateModule(coeffs, reac_term_new.rmod.inds_reac.clone())
         reac_term_new.rmod = rmod
         return reac_term_new
