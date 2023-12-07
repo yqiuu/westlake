@@ -312,14 +312,14 @@ def assign_activation_energy(df_reac, df_act):
         df_tmp["reactant_2"].values,
         df_tmp["products"].values,
     ):
-        if prods.startswith("J") or prods.startswith("K"):
-            continue
-        prods = prods.split(";")
-        prods = [f"J{prod}" for prod in prods]
-        prods = ";".join(prods)
-        key = f"{reac_1};{reac_2}>{prods}"
-        inds.append(idx)
-        inds_surf.append(lookup_idx[key])
+        if reac_1.startswith("J") and reac_2.startswith("J") \
+            and not (prods.startswith("J") or prods.startswith("K")):
+            prods = prods.split(";")
+            prods = [f"J{prod}" for prod in prods]
+            prods = ";".join(prods)
+            key = f"{reac_1};{reac_2}>{prods}"
+            inds.append(idx)
+            inds_surf.append(lookup_idx[key])
     df_reac.loc[inds, "E_act"] = df_reac.loc[inds_surf, "E_act"].values
 
 
