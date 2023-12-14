@@ -1,3 +1,4 @@
+import sys
 from collections import defaultdict
 
 import numpy as np
@@ -86,6 +87,8 @@ class ConstantRateModule(nn.Module):
 
 
 def create_formula_dict_reaction_module(df_reac, df_spec, formula_dict, formula_dict_ex):
+    check_reaction_formulae(df_reac, formula_dict, formula_dict_ex)
+
     inds_fm_dict_all = defaultdict(list)
     for i_fm, fm in enumerate(df_reac["formula"]):
         inds_fm_dict_all[fm].append(i_fm)
@@ -124,6 +127,19 @@ def create_formula_dict_reaction_module(df_reac, df_spec, formula_dict, formula_
         rmod_ex = None
     #
     return rmod, rmod_ex
+
+
+def check_reaction_formulae(df_reac, formula_dict, formula_dict_ex):
+    fm_set_1 = set(df_reac["formula"])
+    fm_set_2 = set(formula_dict.keys())
+    fm_set_2.update(formula_dict_ex.keys())
+    missing = fm_set_1 - fm_set_2
+    if len(missing) != 0:
+        cond = np.full(len(df_reac), False)
+        for fm in missing:
+            cond |= df_reac["formula"] == fm
+        print(df_reac.loc[cond, ["key", "formula"]].to_string(), file=sys.stderr)
+        raise ValueError("Undefined reaction formulae")
 
 
 def create_surface_mantle_transition(df_reac, df_spec, config):
