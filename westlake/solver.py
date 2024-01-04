@@ -119,6 +119,11 @@ class Result:
         return tuple(self._species.keys())
 
     @property
+    def time(self):
+        """Time."""
+        return self._time
+
+    @property
     def ab(self):
         """Abundance data."""
         return self._ab
