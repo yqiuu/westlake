@@ -2,8 +2,10 @@ import numpy as np
 
 
 class MainReactionTracer:
+    len_reac = 40
+
     def __init__(self, df_reac, df_spec, time, ab, den_gas, rates, is_coeff, special_species):
-        df_reac = df_reac[["key", "reactant_1", "reactant_2", "products"]].copy()
+        df_reac = df_reac[["key", "reactant_1", "reactant_2", "products", "formula"]].copy()
         df_reac["products"] = df_reac["products"].map(lambda name: tuple(name.split(";")))
         if is_coeff:
             rates = self.compute_reaction_rates(
@@ -31,31 +33,42 @@ class MainReactionTracer:
         rates[cond] = rates[cond]*ab[inds_r]*den_gas
         return rates
 
-    def trace_instant(self, specie, t_form, percent_cut=1., rate_cut=0.):
+    def trace_instant(self, specie, t_form, percent_cut=1., rate_cut=0., quiet=False):
         cond_prod, cond_dest = self._select_prod_dest(specie)
 
         idx_t = np.argmin(np.abs(t_form - self._time))
-        print("idx_t = {}, t = {:.3e}".format(idx_t, self._time[idx_t]))
+        df_prod = self._trace(cond_prod, percent_cut, rate_cut, idx_t)
+        df_dest = self._trace(cond_dest, percent_cut, rate_cut, idx_t)
 
-        print("Production")
-        self._trace(cond_prod, percent_cut, rate_cut, idx_t)
-        print("\nDestruction")
-        self._trace(cond_dest, percent_cut, rate_cut, idx_t)
+        if not quiet:
+            print("idx_t = {}, t = {:.3e}".format(idx_t, self._time[idx_t]))
+            print("\nProduction")
+            self._print_reactions(df_prod)
+            print("\nDestruction")
+            self._print_reactions(df_dest)
 
-    def trace_period(self, specie, t_start, t_end, percent_cut=1., rate_cut=0.):
+        return df_prod, df_dest
+
+    def trace_period(self, specie, t_start, t_end, percent_cut=1., rate_cut=0., quiet=False):
         cond_prod, cond_dest = self._select_prod_dest(specie)
 
         idx_start = np.argmin(np.abs(t_start - self._time))
-        print("idx_start = {}, t = {:.3e}".format(idx_start, self._time[idx_start]))
         idx_end = np.argmin(np.abs(t_end - self._time))
-        print("idx_end = {}, t = {:.3e}".format(idx_end, self._time[idx_end]))
         if idx_end <= idx_start:
             raise ValueError("'t_end' should be greater than 't_start'.")
 
-        print("Production")
-        self._trace(cond_prod, percent_cut, rate_cut, idx_start, idx_end)
-        print("\nDestruction")
-        self._trace(cond_dest, percent_cut, rate_cut, idx_start, idx_end)
+        df_prod = self._trace(cond_prod, percent_cut, rate_cut, idx_start, idx_end)
+        df_dest = self._trace(cond_dest, percent_cut, rate_cut, idx_start, idx_end)
+
+        if not quiet:
+            print("idx_start = {}, t = {:.3e}".format(idx_start, self._time[idx_start]))
+            print("idx_end = {}, t = {:.3e}".format(idx_end, self._time[idx_end]))
+            print("\nProduction")
+            self._print_reactions(df_prod)
+            print("\nDestruction")
+            self._print_reactions(df_dest)
+
+        return df_prod, df_dest
 
     def _select_prod_dest(self, specie):
         df_reac = self._df_reac
@@ -88,11 +101,18 @@ class MainReactionTracer:
         percents = percents[inds]
         df_sub = df_sub.iloc[inds]
 
-        for idx, reac, rate, percent in zip(df_sub.index, df_sub["key"], rates, percents):
-            reac = reac.replace(";", " + ")
-            reac = reac.replace(">", " > ")
-            line = "{:5d}   ".format(idx) + reac \
-                + " "*(40 - len(reac)) + "{:.5e}   {:.1f}%".format(rate, percent)
-            print(line)
+        df_ret = df_sub[["reactant_1", "reactant_2", "products", "formula"]].copy()
+        df_ret["products"] = df_ret["products"].map(lambda prods: ";".join(prods))
+        df_ret["rate"] = rates
+        df_ret["percent"] = percents
+        return df_ret
 
-        return df_sub, rates, percents
+    def _print_reactions(self, df_reac):
+        for idx, reac_1, reac_2, prods, rate, percent in zip(
+            df_reac.index, df_reac["reactant_1"], df_reac["reactant_2"],
+            df_reac["products"], df_reac["rate"], df_reac["percent"]
+        ):
+            reac = f"{reac_1} + {reac_2} -> " + prods.replace(";", " + ")
+            line = "{:5d}   ".format(idx) + reac \
+            + " "*(self.len_reac - len(reac)) + "{:.5e}   {:.1f}%".format(rate, percent)
+            print(line)
