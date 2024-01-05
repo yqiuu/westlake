@@ -482,7 +482,15 @@ class Result:
         self._coeffs = coeffs
 
     def __repr__(self):
-        return f"message: {self._message}\nsuccess: {self._success}"
+        text = f"message: {self._message}\n" \
+            + f"success: {self._success}.\n" \
+            + f"species: Specie list ({len(self.species)},).\n" \
+            + f"time: Time {self.time.shape}.\n" \
+            + f"ab: Abundances {self.ab.shape}.\n" \
+            + f"den_gas: Gas density {self.den_gas.shape}."
+        if self.coeffs is not None:
+            text += f"\ncoeffs: Rate coefficients {self.coeffs.shape}."
+        return text
 
     def __getitem__(self, key):
         if key == "time":
