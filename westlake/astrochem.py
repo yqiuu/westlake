@@ -30,7 +30,7 @@ from .reaction_terms import (
     ThermalHoppingRate,
     EvaporationRate,
 )
-from .solver import solve_rate_equation, Result
+from .solver import solve_rate_equation
 
 
 def builtin_astrochem_reactions(config):
@@ -369,8 +369,15 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *, 
     def _solve(reac_term, df_spec, t_span, ab_0, kwargs):
         reac_term = replace_with_constant_rate_module(reac_term, df_spec)
         res = solve_rate_equation(reaction_term, t_span, ab_0, **kwargs)
-        res = Result(res, df_spec)
-        return res
+        t_in = torch.as_tensor(res.t)[:, None] # (N_time, 1)
+        y_in = torch.as_tensor(res.y).T # (N_time, N_spec)
+        coeffs, den_gas = reac_term.compute_rate_coeffs(t_in, y_in)
+        den_gas = den_gas.numpy()
+        if not config.save_rate_coeffs:
+            coeffs = None
+        else:
+            coeffs = coeffs.numpy().T # (N_reac, N_time)
+        return Result(res, df_spec, den_gas, coeffs)
 
     if t_span is None:
         t_span = (config.t_start, config.t_end)
@@ -462,3 +469,70 @@ def validate_specie_params(df_spec, var_name):
             dups.append(spec)
     if len(dups) != 0:
         raise ValueError(f"Find duplicated species in {var_name}: " + ", ".join(dups))
+
+
+class Result:
+    def __init__(self, res, df_spec, den_gas, coeffs):
+        self._message = res.message
+        self._success = res.success
+        self._time = res.t
+        self._ab = res.y
+        self._species = {key: idx for idx, key in enumerate(df_spec.index)}
+        self._den_gas = den_gas
+        self._coeffs = coeffs
+
+    def __repr__(self):
+        return f"message: {self._message}\nsuccess: {self._success}"
+
+    def __getitem__(self, key):
+        if key == "time":
+            return self._time
+        else:
+            return self._ab[self._species[key]]
+
+    @property
+    def message(self):
+        return self._message
+
+    @property
+    def success(self):
+        return self._success
+
+    @property
+    def species(self):
+        """Species."""
+        return tuple(self._species.keys())
+
+    @property
+    def time(self):
+        """Time (N_time,)."""
+        return self._time
+
+    @property
+    def ab(self):
+        """Abundance data (N_spec, N_time)."""
+        return self._ab
+
+    @property
+    def den_gas(self):
+        """Gas density (N_time,)."""
+        return self._den_gas
+
+    @property
+    def coeffs(self):
+        """Rate coefficients (N_reac, N_time)."""
+        return self._coeffs
+
+    def to_dict(self):
+        data = {"time": self._time}
+        for spec, ab in zip(self.species, self.ab):
+            data[spec] = ab
+        data["den_gas"] = self._den_gas
+        return data
+
+    def last(self):
+        return self._ab[:, -1]
+
+    def append(self, res):
+        self._time = np.append(self._time, res._time[1:])
+        self._ab = np.concatenate([self._ab, res._ab[:, 1:]], axis=-1)

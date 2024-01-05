@@ -110,6 +110,9 @@ class Config:
     use_auto_jac: bool = False
 
     #
+    save_rate_coeffs: bool = True
+
+    #
     to_second: float = units.year.to(units.second)
 
     #
