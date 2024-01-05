@@ -372,7 +372,7 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *, 
         t_in = torch.as_tensor(res.t)[:, None] # (N_time, 1)
         y_in = torch.as_tensor(res.y).T # (N_time, N_spec)
         coeffs, den_gas = reac_term.compute_rate_coeffs(t_in, y_in)
-        den_gas = den_gas.numpy()
+        den_gas = np.ravel(den_gas.numpy())
         if not config.save_rate_coeffs:
             coeffs = None
         else:
