@@ -2,22 +2,34 @@ import numpy as np
 
 
 class MainReactionTracer:
-    def __init__(self, df_reac, df_spec, time, ab, rates, den_gas, is_coeff=True):
+    def __init__(self, df_reac, df_spec, time, ab, den_gas, rates, is_coeff, special_species):
         df_reac = df_reac[["key", "reactant_1", "reactant_2", "products"]].copy()
         df_reac["products"] = df_reac["products"].map(lambda name: tuple(name.split(";")))
-
         if is_coeff:
-            rates_coeff = rates
-            inds_r = df_spec.loc[df_reac["reactant_1"], "index"]
-            rates = rates_coeff*ab[inds_r]*den_gas
-
-            cond = df_reac["reactant_2"] != ""
-            inds_r = df_spec.loc[df_reac.loc[cond, "reactant_2"], "index"]
-            rates[cond] = rates[cond]*ab[inds_r]*den_gas
-
+            rates = self.compute_reaction_rates(
+                df_reac, df_spec, ab, den_gas, rates, special_species
+            )
         self._df_reac = df_reac
         self._rates = rates
         self._time = time
+
+    @classmethod
+    def from_result(cls, res, df_reac, df_spec, config):
+        if res.coeffs is None:
+            raise ValueError("Rate coefficients are not saved. Set save_rate_coeffs=True.")
+        return cls(
+            df_reac, df_spec, res.time, res.ab, res.den_gas, res.coeffs,
+            is_coeff=True, special_species=config.special_species
+        )
+
+    def compute_reaction_rates(self, df_reac, df_spec, ab, den_gas, coeffs, special_species):
+        inds_r = df_spec.index.get_indexer(df_reac["reactant_1"])
+        rates = coeffs*ab[inds_r]*den_gas
+
+        cond = df_reac["reactant_2"].map(lambda name: name not in special_species)
+        inds_r = df_spec.index.get_indexer(df_reac["reactant_2"][cond])
+        rates[cond] = rates[cond]*ab[inds_r]*den_gas
+        return rates
 
     def trace_instant(self, specie, t_form, percent_cut=1., rate_cut=0.):
         cond_prod, cond_dest = self._select_prod_dest(specie)
