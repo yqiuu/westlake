@@ -475,6 +475,7 @@ class Result:
     def __init__(self, res, df_spec, den_gas, coeffs):
         self._message = res.message
         self._success = res.success
+        self._stages = [(0, len(res.t) - 1)]
         self._time = res.t
         self._ab = res.y
         self._species = {key: idx for idx, key in enumerate(df_spec.index)}
@@ -485,6 +486,7 @@ class Result:
         text = f"message: {self._message}\n" \
             + f"success: {self._success}.\n" \
             + f"species: Specie list ({len(self.species)},).\n" \
+            + f"stages: Time index pair of each stage ({len(self.stages)},).\n" \
             + f"time: Time {self.time.shape}.\n" \
             + f"ab: Abundances {self.ab.shape}.\n" \
             + f"den_gas: Gas density {self.den_gas.shape}."
@@ -510,6 +512,11 @@ class Result:
     def species(self):
         """Species."""
         return tuple(self._species.keys())
+
+    @property
+    def stages(self):
+        """Time index pair of each stage."""
+        return self._stages
 
     @property
     def time(self):
@@ -542,5 +549,16 @@ class Result:
         return self._ab[:, -1]
 
     def append(self, res):
+        offset = self._stages[-1][-1] + 1
+        stages = []
+        for i_stage, (idx_b, idx_e) in enumerate(res.stages):
+            # The first is removed
+            if i_stage == 0:
+                stages.append((idx_b + offset, idx_e + offset - 1))
+            else:
+                stages.append((idx_b + offset - 1, idx_e + offset - 1))
+        self._stages.extend(stages)
         self._time = np.append(self._time, res._time[1:])
         self._ab = np.concatenate([self._ab, res._ab[:, 1:]], axis=-1)
+        self._den_gas = np.append(self._den_gas, res._den_gas[1:])
+        self._coeffs = np.concatenate([self._coeffs, res._coeffs[:, 1:]], axis=-1)
