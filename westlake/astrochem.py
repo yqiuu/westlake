@@ -1,3 +1,4 @@
+import pickle
 from collections import Counter
 from copy import deepcopy
 
@@ -377,7 +378,15 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *, 
             coeffs = None
         else:
             coeffs = coeffs.numpy().T # (N_reac, N_time)
-        return Result(res, df_spec, den_gas, coeffs)
+        return Result(
+            message=res.message,
+            success=res.success,
+            time=res.t,
+            ab=res.y,
+            species=tuple(df_spec.index),
+            den_gas=den_gas,
+            coeffs=coeffs
+        )
 
     if t_span is None:
         t_span = (config.t_start, config.t_end)
@@ -471,16 +480,40 @@ def validate_specie_params(df_spec, var_name):
         raise ValueError(f"Find duplicated species in {var_name}: " + ", ".join(dups))
 
 
+def save_result(res, fname):
+    pickle.dump(res.to_dict(), open(fname, "wb"))
+
+
+def load_result(fname):
+    return Result(**pickle.load(open(fname, "rb")))
+
+
 class Result:
-    def __init__(self, res, df_spec, den_gas, coeffs):
-        self._message = res.message
-        self._success = res.success
-        self._stages = [(0, len(res.t) - 1)]
-        self._time = res.t
-        self._ab = res.y
-        self._species = {key: idx for idx, key in enumerate(df_spec.index)}
+    """Simulation result.
+
+    Args:
+        message (str): Message returned by the ODE solver.
+        success (bool): Success status returned by the ODE solver.
+        time (array): (N_time,). Simulation time.
+        ab (array): (N_spec, N_time). Abundances.
+        species (list): (N_spec,). Species.
+        den_gas (array): (N_time,). Gas density.
+        coeffs (array): (N_reac, N_time). Rate coefficients. This can be `None`.
+        stages (list): Time index pair of each stage. If this is `None`, the
+            code assumes that there is only one stage.
+    """
+    def __init__(self, message, success, time, ab, species, den_gas, coeffs, stages=None):
+        self._message = message
+        self._success = success
+        self._time = time
+        self._ab = ab
+        self._species = {key: idx for idx, key in enumerate(species)}
         self._den_gas = den_gas
         self._coeffs = coeffs
+        if stages is None:
+            self._stages = [(0, len(time) - 1)]
+        else:
+            self._stages = stages
 
     def __repr__(self):
         text = f"message: {self._message}\n" \
@@ -539,11 +572,16 @@ class Result:
         return self._coeffs
 
     def to_dict(self):
-        data = {"time": self._time}
-        for spec, ab in zip(self.species, self.ab):
-            data[spec] = ab
-        data["den_gas"] = self._den_gas
-        return data
+        return {
+            "message": self._message,
+            "success": self._success,
+            "time": self._time,
+            "ab": self._ab,
+            "species": self._species,
+            "den_gas": self._den_gas,
+            "coeffs": self._coeffs,
+            "stages": self._stages
+        }
 
     def last(self):
         return self._ab[:, -1]
