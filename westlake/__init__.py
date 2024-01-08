@@ -1,3 +1,7 @@
+import torch
+torch.set_num_threads(1)
+torch.set_default_dtype(torch.float64)
+
 from .utils import *
 from .preprocesses import *
 from .reaction_matrices import *
