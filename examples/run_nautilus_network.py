@@ -1,4 +1,4 @@
-import pickle
+import yaml
 from argparse import ArgumentParser
 from pathlib import Path
 
@@ -11,26 +11,21 @@ import westlake
 def main(dirname, use_evolution):
     df_reac, df_spec, df_surf, df_barr, df_ma, df_act, ab_0_dict = \
         load_inputs_nautilus(dirname)
+    config_dict = yaml.safe_load(open(Path(dirname)/Path("config.yml")))
 
     if use_evolution:
-        atol = 1e-30
+        config_dict.update(atol=1e-30)
     else:
-        atol = 1e-23
+        config_dict.update(atol=1e-23)
+    dtg_mass_ratio = westlake.fixed_dtg_mass_ratio(
+        ab_0_dict.get("He", 0.), config_dict.get("dtg_mass_ratio", None))
+    config_dict.update(dtg_mass_ratio=dtg_mass_ratio)
+    config = westlake.Config(**config_dict)
 
-    config = westlake.Config(
-        model="three phase",
-        dtg_mass_ratio=westlake.fixed_dtg_mass_ratio(ab_0_dict['He']),
-        ab_0_min=1e-40,
-        H2_shielding="Lee+1996",
-        CO_shielding="Lee+1996",
-        use_competition=True,
-        atol=atol
-    )
-
-    t_start = 1e-7 # yr
     if use_evolution:
-        data_med = np.loadtxt(dirname/Path("structure_evolution.dat"), comments="!")
-        t_end = data_med[-1, 0]
+        fname = Path(dirname)/Path("structure_evolution.dat")
+        data_med = np.loadtxt(fname, comments="!")
+        t_end = data_med[-1, 0] # yr
         data_med[:, 0] = data_med[:, 0]*config.to_second # sec
         data_med[:, 1:] = 10**data_med[:, 1:]
         data_med = torch.as_tensor(data_med, dtype=torch.get_default_dtype())
@@ -45,7 +40,7 @@ def main(dirname, use_evolution):
     else:
         # Use Av, den_gas, T_gas, T_dust defined in confg
         medium = None
-        t_end = 1e6
+        t_end = config.t_end
 
     reaction_term = westlake.create_astrochem_model(
         df_reac, df_spec, df_surf, config,
@@ -53,9 +48,9 @@ def main(dirname, use_evolution):
     )
     res = westlake.solve_rate_equation_astrochem(
         reaction_term, ab_0_dict, df_spec, config,
-        t_span=(t_start, t_end)
+        t_span=(config.t_start, t_end)
     )
-    save_name = "res.pickle"
+    save_name = Path(dirname)/Path("res.pickle")
     westlake.save_result(res, save_name)
 
 
