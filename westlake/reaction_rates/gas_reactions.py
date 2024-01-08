@@ -7,8 +7,8 @@ from .reaction_rates import ReactionRate
 
 def builtin_gas_reactions(config):
     return {
-        "CR dissociation": CRDissociation(config),
-        "CRP dissociation": CRDissociation(config),
+        "CR dissociation": CRDissociation(),
+        "CRP dissociation": CRDissociation(),
         "photodissociation": Photodissociation(config),
         "modified Arrhenius": ModifiedArrhenius(),
         "ionpol1": Ionpol1(),
@@ -20,9 +20,8 @@ def builtin_gas_reactions(config):
 
 
 class CRDissociation(ReactionRate):
-    def __init__(self, config):
+    def __init__(self):
         super().__init__(["alpha"])
-        self.register_buffer("zeta_cr_xr", torch.tensor(config.zeta_cr + config.zeta_xr))
 
     def forward(self, params_med, params_reac, **params_extra):
         """
@@ -33,7 +32,7 @@ class CRDissociation(ReactionRate):
         Returns:
             tensor: (R,). Reaction rate.
         """
-        return params_reac["alpha"]*self.zeta_cr_xr
+        return params_reac["alpha"]*(params_med["zeta_cr"] + params_med["zeta_xr"])
 
 
 class Photodissociation(ReactionRate):

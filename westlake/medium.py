@@ -4,13 +4,15 @@ from torch import nn
 
 class Medium(nn.Module):
     """Medium modules are used to compute any parameters that evolve with time."""
-    def __init__(self, config, Av=None, den_gas=None, T_gas=None, T_dust=None):
+    def __init__(self, config,
+                 Av=None, den_gas=None, T_gas=None, T_dust=None,
+                 zeta_cr=None, zeta_xr=None):
         super().__init__()
         self._constants = {}
         self._module_dict = nn.ModuleDict()
-        key = ["Av", "den_gas", "T_gas", "T_dust"]
-        values = [Av, den_gas, T_gas, T_dust]
-        for key, val in zip(key, values):
+        keys = ["Av", "den_gas", "T_gas", "T_dust", "zeta_cr", "zeta_xr"]
+        values = [Av, den_gas, T_gas, T_dust, zeta_cr, zeta_xr]
+        for key, val in zip(keys, values):
             if val is None:
                 self._constants[key] = getattr(config, key)
             else:

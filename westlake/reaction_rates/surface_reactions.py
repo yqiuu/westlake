@@ -13,7 +13,7 @@ from ..constants import M_ATOM, K_B, H_BAR, FACTOR_VIB_FREQ
 
 def builtin_surface_reactions(config):
     return {
-        'thermal evaporation': ThermalEvaporation(config),
+        'thermal evaporation': ThermalEvaporation(),
         'CR evaporation': CosmicRayEvaporation(config),
         'complexes reaction': NoReaction(),
         'UV photodesorption': UVPhotodesorption(config),
@@ -28,7 +28,7 @@ def builtin_surface_reactions(config):
 
 
 class ThermalEvaporation(ReactionRate):
-    def __init__(self, config):
+    def __init__(self):
         super().__init__(["alpha", "freq_vib_r1", "E_deso_r1"])
 
     def forward(self, params_med, params_reac, **params_extra):
@@ -41,13 +41,16 @@ class ThermalEvaporation(ReactionRate):
 class CosmicRayEvaporation(ReactionRate):
     def __init__(self, config):
         super().__init__(["alpha", "freq_vib_r1", "E_deso_r1"])
-        prefactor = (config.zeta_cr + config.zeta_xr)/1.3e-17*config.factor_cr_peak
+        prefactor = config.factor_cr_peak/1.3e-17
         self.register_buffer("prefactor", torch.tensor(prefactor))
         self.register_buffer("T_grain_cr_peak", torch.tensor(config.T_grain_cr_peak))
 
     def forward(self, params_med, params_reac, **params_extra):
+        prefactor = self.prefactor \
+            * params_reac["alpha"] \
+            * (params_med["zeta_cr"] + params_med["zeta_xr"])
         return compute_evaporation_rate(
-            self.prefactor*params_reac["alpha"], params_reac["freq_vib_r1"],
+            prefactor, params_reac["freq_vib_r1"],
             params_reac["E_deso_r1"], self.T_grain_cr_peak
         )
 
@@ -69,11 +72,11 @@ class CRPhotodesorption(ReactionRate):
     def __init__(self, config):
         super().__init__(["alpha"])
         self.register_buffer("prefactor",
-            torch.tensor(1e4/config.site_density*1.3e-17/config.zeta_cr)
+            torch.tensor(1e4/config.site_density*1.3e-17)
         )
 
     def forward(self, params_med, params_reac, params_extra=None, **kwargs):
-        rate = self.prefactor*params_reac["alpha"]
+        rate = self.prefactor/params_med["zeta_cr"]*params_reac["alpha"]
         if params_extra is not None:
             rate = rate*params_extra["decay_factor"]
         return rate
