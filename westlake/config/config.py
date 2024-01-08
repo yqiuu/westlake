@@ -74,8 +74,7 @@ class Config:
     chemical_barrier_thickness: float = 1e-8
     zeta_cr: float = 1.3e-17
     zeta_xr: float = 0.
-    zeta_fe: float = 3e-14
-    tau_cr_peak: float = 1e-5
+    factor_cr_peak: float = 3e-19
     T_grain_cr_peak: float = 70.
     sticking_coeff_neutral: float = 1.
     sticking_coeff_positive: float = 0.
