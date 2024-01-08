@@ -67,9 +67,9 @@ t_end: 1.e+6
 #
 solver: "BDF"
 # Relative tolerance
-rtol: float = 1e-4
+rtol: 1.e-4
 # Absolute tolerance
-atol: float = 1e-20
+atol: 1.e-20
 # Minimum initial abundance
 ab_0_min: 0.
 # If True, use automatic differential to compute jacobians, which is slow but
