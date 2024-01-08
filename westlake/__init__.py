@@ -12,6 +12,6 @@ from .medium import *
 from .solver import *
 from .reaction_terms import *
 from .assemblers import *
-from .config import *
+from .config.config import *
 from .analysers import *
 from .misc import *

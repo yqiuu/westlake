@@ -1,0 +1,77 @@
+# Switch to save rate coefficents
+save_rate_coeffs: True
+
+# "two phase" or "three phase"
+model: "two phase"
+# Site density on one grain [cm^-2]
+site_density: 1.5e+15
+# Grain mass density [g cm^-3]
+grain_density: 3.
+# Grain radius [cm]
+grain_radius: 1.e-5
+# Dust-to-gas mass ratio
+dtg_mass_ratio: 1.e-2
+# Diffusion barrier thickness [cm]
+diffusion_barrier_thickness: 1.e-8
+# Grain reaction activation energy barrier width
+chemical_barrier_thickness: 1.e-8
+# CR ionization rate
+zeta_cr: 1.3e-17
+# X-ray ionization rate
+zeta_xr: 0.
+# Fe ionization rate
+zeta_fe: 3.e-14
+# Duration of peak grain temperature [s].
+tau_cr_peak: 1.e-5
+# Peak grain temperature
+T_grain_cr_peak: 70.
+# Sticking coefficient of neutral species
+sticking_coeff_neutral: 1.
+# Sticking coefficient of positive species
+sticking_coeff_positive: 0.
+# Sticking coefficient of negative species
+sticking_coeff_negative: 0.
+#
+vib_to_dissip_freq_ratio: 1.e-2
+#
+surf_diff_to_deso_ratio: 0.4
+#
+mant_diff_to_deso_ratio: 0.8
+# Number of active layers
+num_active_layers: 2.
+# UV flux
+uv_flux: 1.
+# Switch of competition mechanism
+use_competition: false
+# Switch of H2 sheilding (null, Lee+1996)
+H2_shielding: null
+# Switch of CO shielding (null, Lee+1996)
+CO_shielding: null
+
+# Physcial parameters
+# visual extinction
+Av: 10.
+# Gas density
+den_gas: 2.e+4
+# Gas temperature
+T_gas: 10.
+# Dust temperature
+T_dust: 10.
+
+# Start time [yr]
+t_start: 1.e-7
+# End time [yr]
+t_end: 1.e+6
+
+# Numerics
+#
+solver: "BDF"
+# Relative tolerance
+rtol: float = 1e-4
+# Absolute tolerance
+atol: float = 1e-20
+# Minimum initial abundance
+ab_0_min: 0.
+# If True, use automatic differential to compute jacobians, which is slow but
+# accurate.
+use_auto_jac: false

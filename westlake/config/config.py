@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from astropy import units
 
-from .constants import M_ATOM
+from ..constants import M_ATOM
 
 
 @dataclass(frozen=True)

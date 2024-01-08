@@ -22,5 +22,10 @@ setup(
     packages=find_packages(),
     package_data={
         "westlake": ["data/*.pickle"],
-    }
+    },
+    entry_points={
+        'console_scripts': [
+            'westlake-config=westlake.scripts.westlake_config:main',
+        ],
+    },
 )
