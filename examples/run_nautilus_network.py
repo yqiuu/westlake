@@ -56,7 +56,7 @@ def main(dirname, use_evolution):
         t_span=(t_start, t_end)
     )
     save_name = "res.pickle"
-    pickle.dump(res, open(save_name, "wb"))
+    westlake.save_result(res, save_name)
 
 
 def load_inputs_nautilus(dirname):
