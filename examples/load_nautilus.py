@@ -1,7 +1,62 @@
+import pickle
+from argparse import ArgumentParser
 from pathlib import Path
 
+import torch
 import numpy as np
 import pandas as pd
+import westlake
+
+
+def main(dirname, use_evolution):
+    df_reac, df_spec, df_surf, df_barr, df_ma, df_act, ab_0_dict = \
+        load_inputs_nautilus(dirname)
+
+    if use_evolution:
+        atol = 1e-30
+    else:
+        atol = 1e-23
+
+    config = westlake.Config(
+        model="three phase",
+        dtg_mass_ratio=westlake.fixed_dtg_mass_ratio(ab_0_dict['He']),
+        ab_0_min=1e-40,
+        H2_shielding="Lee+1996",
+        CO_shielding="Lee+1996",
+        use_competition=True,
+        atol=atol
+    )
+
+    t_start = 1e-7 # yr
+    if use_evolution:
+        data_med = np.loadtxt(dirname/Path("structure_evolution.dat"), comments="!")
+        t_end = data_med[-1, 0]
+        data_med[:, 0] = data_med[:, 0]*config.to_second # sec
+        data_med[:, 1:] = 10**data_med[:, 1:]
+        data_med = torch.as_tensor(data_med, dtype=torch.get_default_dtype())
+        x_med = data_med[:, 0].contiguous()
+        medium = westlake.Medium(
+            config,
+            Av=westlake.LinearInterpolation(x_med, data_med[:, 1:2]),
+            den_gas=westlake.LinearInterpolation(x_med, data_med[:, 2:3]),
+            T_gas=westlake.LinearInterpolation(x_med, data_med[:, 3:4]),
+            T_dust=westlake.LinearInterpolation(x_med, data_med[:, 3:4]),
+        )
+    else:
+        # Use Av, den_gas, T_gas, T_dust defined in confg
+        medium = None
+        t_end = 1e6
+
+    reaction_term = westlake.create_astrochem_model(
+        df_reac, df_spec, df_surf, config,
+        medium=medium, df_act=df_act, df_barr=df_barr, df_ma=df_ma,
+    )
+    res = westlake.solve_rate_equation_astrochem(
+        reaction_term, ab_0_dict, df_spec, config,
+        t_span=(t_start, t_end)
+    )
+    save_name = "res.pickle"
+    pickle.dump(res, open(save_name, "wb"))
 
 
 def load_inputs_nautilus(dirname):
@@ -185,3 +240,13 @@ def load_initial_abundances(fname):
         val = float(val)
         ab_0_dict[name] = val
     return ab_0_dict
+
+
+if __name__ == "__main__":
+    parser = ArgumentParser(description='Run nautilus network.')
+    parser.add_argument(
+        '--dirname', type=str, default='./', help='Directory of the reaction network')
+    parser.add_argument(
+        '--use_evolution', action='store_true', help="Use structure_evolution.dat")
+    args = parser.parse_args()
+    main(args.dirname, args.use_evolution)
