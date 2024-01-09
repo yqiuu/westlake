@@ -240,7 +240,7 @@ def load_initial_abundances(fname):
 if __name__ == "__main__":
     parser = ArgumentParser(description='Run nautilus network.')
     parser.add_argument(
-        '--dirname', type=str, default='./', help='Directory of the reaction network')
+        '--dir', type=str, default='./', help='Directory of the reaction network')
     parser.add_argument(
         '--use_evolution', action='store_true', help="Use structure_evolution.dat")
     args = parser.parse_args()
