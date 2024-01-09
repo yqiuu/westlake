@@ -17,6 +17,7 @@ class Medium(nn.Module):
                 self._constants[key] = getattr(config, key)
             else:
                 self.add_medium_parameter(key, val)
+        self.u_factor = 1./config.to_second
 
     def add_medium_parameter(self, key, val):
         try:
@@ -44,6 +45,7 @@ class Medium(nn.Module):
         Returns:
             dict: Medium parameters. (B, X) for each element.
         """
+        t_in = t_in*self.u_factor
         params_med = {}
         for key, val in self._constants.items():
             params_med[key] = torch.full(
