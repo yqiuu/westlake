@@ -34,7 +34,7 @@ def solve_H_cycle():
     t_start = 0.
     t_end = 1e5
     config = westlake.Config(
-        model="two phase", solver="BDF", atol=ATOL,
+        model="two phase", atol=ATOL,
         t_start=t_start, t_end=t_end,
         Av=10., den_gas=1e4, T_gas=10., T_dust=10.
     )
@@ -46,9 +46,9 @@ def solve_H_cycle():
     t_eval = np.linspace(t_start, t_end, n_eval)
     ab_0 = westlake.derive_initial_abundances(ab_0_dict, df_spec, config)
     t_span = (t_start, t_end)
-    res = westlake.solve_rate_equation(
+    res = westlake.solve_ivp_scipy(
         reaction_term, t_span, ab_0,
-        u_factor=config.to_second, t_eval=t_eval, method=config.solver,
+        u_factor=config.to_second, t_eval=t_eval, method="BDF",
         rtol=config.rtol, atol=config.atol,
     )
     return res

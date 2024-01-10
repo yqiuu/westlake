@@ -37,7 +37,6 @@ def solve_H_cycle():
         model="three phase", atol=ATOL, ab_0_min=1e-40,
         t_start=t_start, t_end=t_end,
         Av=10., den_gas=1e4, T_gas=17., T_dust=17.,
-        solver="LSODA",
     )
     reaction_term = westlake.create_astrochem_model(
         df_reac, df_spec, df_surf, config, df_barr=df_barr
@@ -47,9 +46,9 @@ def solve_H_cycle():
     t_eval = np.linspace(t_start, t_end, n_eval)
     ab_0 = westlake.derive_initial_abundances(ab_0_dict, df_spec, config)
     t_span = (t_start, t_end)
-    res = westlake.solve_rate_equation(
+    res = westlake.solve_ivp_scipy(
         reaction_term, t_span, ab_0,
-        u_factor=config.to_second, t_eval=t_eval, method=config.solver,
+        u_factor=config.to_second, t_eval=t_eval, method="LSODA",
         rtol=config.rtol, atol=config.atol,
     )
     return res

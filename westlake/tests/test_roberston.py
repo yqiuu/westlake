@@ -44,9 +44,9 @@ def solve_robertson_problem():
     t_span = (t_begin, t_end)
     t_eval = np.linspace(t_begin, t_end, n_eval)
     ab_0 = np.array([1., 0., 0.])
-    res = westlake.solve_rate_equation(
+    res = westlake.solve_ivp_scipy(
         reaction_term, t_span, ab_0, t_eval=t_eval,
-        method="BDF", rtol=1e-3, atol=ATOL
+        rtol=1e-3, atol=ATOL
     )
     return res
 
