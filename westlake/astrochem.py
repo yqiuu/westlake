@@ -31,7 +31,7 @@ from .reaction_terms import (
     ThermalHoppingRate,
     EvaporationRate,
 )
-from .solvers import solve_rate_equation
+from .solvers import solve_ivp_torch, solve_ivp_scipy
 
 
 def builtin_astrochem_reactions(config):
@@ -367,9 +367,13 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *, 
     Returns:
         object: A result object returned by a scipy ODE solver.
     """
-    def _solve(reac_term, df_spec, t_span, ab_0, kwargs):
+    def _solve(reac_term, df_spec, t_span, ab_0, method, kwargs):
         reac_term = replace_with_constant_rate_module(reac_term, df_spec)
-        res = solve_rate_equation(reaction_term, t_span, ab_0, **kwargs)
+        if method.startswith("scipy_"):
+            method = method.replace("scipy_", "")
+            res = solve_ivp_scipy(reaction_term, t_span, ab_0, method=method, **kwargs)
+        else:
+            res = solve_ivp_torch(reaction_term, t_span, ab_0, **kwargs)
         t_in = torch.as_tensor(res.t)[:, None] # (N_time, 1)
         y_in = torch.as_tensor(res.y).T # (N_time, N_spec)
         coeffs, den_gas = reac_term.compute_rate_coeffs(t_in, y_in)
@@ -397,7 +401,7 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *, 
         "show_progress": show_progress,
     }
     if method is None:
-        kwargs["method"] = config.solver
+        method = config.solver
     if use_auto_jac is None:
         kwargs["use_auto_jac"] = config.use_auto_jac
     if rtol is None:
@@ -407,7 +411,7 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *, 
 
     ab_0 = derive_initial_abundances(ab_0_dict, df_spec, config)
     if medium_list is None:
-        return _solve(reaction_term, df_spec, t_span, ab_0, kwargs)
+        return _solve(reaction_term, df_spec, t_span, ab_0, method, kwargs)
 
     res_tot = None
     reaction_term = deepcopy(reaction_term)

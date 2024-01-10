@@ -7,9 +7,9 @@ from scipy.integrate._ivp.ivp import OdeResult
 from .bdf import BDF
 
 
-def solve_torch(reaction_term, t_span, ab_0,
-                rtol=1e-4, atol=1e-20, t_eval=None, u_factor=1.,
-                use_auto_jac=False, device="cpu", show_progress=True):
+def solve_ivp_torch(reaction_term, t_span, ab_0,
+                    rtol=1e-4, atol=1e-20, t_eval=None, u_factor=1.,
+                    use_auto_jac=False, device="cpu", show_progress=True):
     t_span = tuple(t*u_factor for t in t_span)
     t_start, t_end = t_span
 
@@ -65,9 +65,9 @@ def solve_torch(reaction_term, t_span, ab_0,
     )
 
 
-def solve_rate_equation(reaction_term, t_span, ab_0, method="BDF",
-                        rtol=1e-4, atol=1e-20, t_eval=None, u_factor=1.,
-                        use_auto_jac=False, device="cpu", show_progress=True):
+def solve_ivp_scipy(reaction_term, t_span, ab_0, method="BDF",
+                    rtol=1e-4, atol=1e-20, t_eval=None, u_factor=1.,
+                    use_auto_jac=False, device="cpu", show_progress=True):
     """Solve the rate equations.
 
     Args:
