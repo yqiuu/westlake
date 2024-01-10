@@ -173,6 +173,7 @@ class BDF:
         self.device = device
 
         self.max_step = validate_max_step(max_step)
+        self.min_step = 10*abs(np.nextafter(0., self.direction * math.inf))
         if first_step is None:
             self.h_abs = select_initial_step(
                 fun_wrapped, t0, y0, dydt, self.direction, 1, rtol, atol
@@ -219,7 +220,7 @@ class BDF:
         D = self.D
 
         max_step = self.max_step
-        min_step = 2 * abs(np.nextafter(t, self.direction * math.inf) - t)
+        min_step = self.min_step
         if self.h_abs > max_step:
             h_abs = max_step
             change_D(D, self.order, max_step / self.h_abs, self.device)
