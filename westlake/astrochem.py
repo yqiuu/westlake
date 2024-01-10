@@ -31,7 +31,7 @@ from .reaction_terms import (
     ThermalHoppingRate,
     EvaporationRate,
 )
-from .solver import solve_rate_equation
+from .solvers import solve_rate_equation
 
 
 def builtin_astrochem_reactions(config):

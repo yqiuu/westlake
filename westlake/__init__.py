@@ -9,7 +9,7 @@ from .reaction_modules import *
 from .reaction_rates import *
 from .astrochem import *
 from .medium import *
-from .solver import *
+from .solvers import *
 from .reaction_terms import *
 from .assemblers import *
 from .config import *
