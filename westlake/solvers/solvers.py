@@ -23,11 +23,13 @@ def solve_ivp_torch(reaction_term, t_span, ab_0,
     )
 
     i_step = 0
-    t_ret = []
-    y_ret = []
     if t_eval is None:
+        t_ret = [t_start]
+        y_ret = [ab_0]
         t_list = [t_end]
     else:
+        t_ret = []
+        y_ret = []
         t_list = t_eval*u_factor
     for t_target in t_list:
         while True:
