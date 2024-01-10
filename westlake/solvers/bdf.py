@@ -223,7 +223,11 @@ class BDF:
 
         def lu(A):
             self.nlu += 1
-            return torch.linalg.lu_factor(A)
+            LU = torch.linalg.lu_factor(A)
+            if torch.any(torch.isinf(LU.LU)) or torch.any(torch.isnan(LU.LU)) \
+                or torch.any(torch.isinf(LU.pivots)) or torch.any(torch.isnan(LU.pivots)):
+                raise ValueError("LU decomposition results in infs or NaNs.")
+            return LU
 
         def solve_lu(LU, b):
             return torch.linalg.lu_solve(LU.LU, LU.pivots, b[:, None])[:, 0]
