@@ -19,23 +19,33 @@ def solve_torch(reaction_term, t_span, ab_0,
         reaction_term, reaction_term.jacobian,
         t_start, ab_0, rtol=rtol, atol=atol, device=device
     )
+
+    if t_eval is None:
+        t_list = [t_end]
+    else:
+        t_list = t_eval*u_factor
     i_step = 0
-    while True:
-        success, message = solver.step(t_end)
-        t_new = solver.t
-        y_new = solver.y
-        solver.y = y_new
-        t_ret.append(t_new)
-        y_ret.append(y_new.cpu().numpy())
+    for t_target in t_list:
+        while True:
+            success, message = solver.step(t_target)
+            t_new = solver.t
+            y_new = solver.y
+            solver.y = y_new
+            if t_eval is None:
+                t_ret.append(t_new)
+                y_ret.append(y_new.cpu().numpy())
 
-        if show_progress:
-            percent = (t_new - t_span[0])/(t_span[1] - t_span[0])*100
-            t_show = t_new/u_factor
-            print("\r[{:5.1f}%] t = {:<12.5e}".format(percent, t_show), end='')
+            if show_progress:
+                percent = (t_new - t_span[0])/(t_span[1] - t_span[0])*100
+                t_show = t_new/u_factor
+                print("\r[{:5.1f}%] t = {:<12.5e}".format(percent, t_show), end='')
 
-        if t_new >= t_end:
-            break
-        i_step += 1
+            if t_new >= t_target:
+                break
+            i_step += 1
+        if t_eval is not None:
+            t_ret.append(t_new)
+            y_ret.append(y_new.cpu().numpy())
     print()
 
     t_ret = np.array(t_ret)/u_factor
