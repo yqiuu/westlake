@@ -62,7 +62,8 @@ class Config:
         solver (str): ODE solver.
         rtol (float): Relative tolerance.
         atol (float): Ababsolute tolerance.
-        ab_0_min (float): Minimum initial abundances.
+        ab_0_min (float): Minimum initial abundances. This should not be zero
+            for the three model.
         use_auto_jac (bool): If True, use `jacrev` in `torch` to compute
             jacobian, which is slow but accurate.
         to_second (float): A unit factor that converts the desired unit to
@@ -113,7 +114,7 @@ class Config:
     solver: str = "BDF"
     rtol: float = 1e-4
     atol: float = 1e-20
-    ab_0_min: float = 0.
+    ab_0_min: float = 1e-40
     use_auto_jac: bool = False
 
     #
