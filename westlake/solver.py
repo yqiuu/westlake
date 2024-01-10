@@ -8,23 +8,27 @@ from .bdf import BDF
 
 
 def solve_torch(reaction_term, t_span, ab_0,
-          rtol=1e-4, atol=1e-20, t_eval=None, u_factor=1.,
-          use_auto_jac=False, device="cpu", show_progress=True):
+                rtol=1e-4, atol=1e-20, t_eval=None, u_factor=1.,
+                use_auto_jac=False, device="cpu", show_progress=True):
     t_span = tuple(t*u_factor for t in t_span)
     t_start, t_end = t_span
 
-    t_ret = []
-    y_ret = []
+    if use_auto_jac:
+        jacobian = jacrev(reaction_term, argnums=1)
+    else:
+        jacobian = reaction_term.jacobian
     solver = BDF(
-        reaction_term, reaction_term.jacobian,
+        reaction_term, jacobian,
         t_start, ab_0, rtol=rtol, atol=atol, device=device
     )
 
+    i_step = 0
+    t_ret = []
+    y_ret = []
     if t_eval is None:
         t_list = [t_end]
     else:
         t_list = t_eval*u_factor
-    i_step = 0
     for t_target in t_list:
         while True:
             success, message = solver.step(t_target)
