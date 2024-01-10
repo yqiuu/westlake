@@ -45,6 +45,8 @@ MAX_ORDER = 5
 NEWTON_MAXITER = 4
 MIN_FACTOR = 0.2
 MAX_FACTOR = 10
+MSG_SUCCESS = "The solver successfully reached the end of the integration interval."
+MSG_FAIL = "Required step size is less than spacing between numbers."
 
 
 def compute_R(order, factor, device):
@@ -280,7 +282,7 @@ class BDF:
         step_accepted = False
         while not step_accepted:
             if h_abs < min_step:
-                return False, self.TOO_SMALL_STEP
+                return False, MSG_FAIL
 
             if isinstance(h_abs, torch.Tensor):
                 h_abs = h_abs.item()
@@ -364,7 +366,7 @@ class BDF:
             D[i] += D[i + 1]
 
         if self.n_equal_steps < order + 1:
-            return True, None
+            return True, MSG_SUCCESS
 
         if order > 1:
             error_m = error_const[order - 1] * D[order]
@@ -395,4 +397,4 @@ class BDF:
         self.n_equal_steps = 0
         self.LU = None
 
-        return True, None
+        return True, MSG_SUCCESS

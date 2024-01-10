@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from torch.func import jacrev
 from scipy.integrate import solve_ivp
+from scipy.integrate._ivp.ivp import OdeResult
 
 from .bdf import BDF
 
@@ -48,7 +49,15 @@ def solve_torch(reaction_term, t_span, ab_0,
 
     t_ret = np.array(t_ret)/u_factor
     y_ret = np.vstack(y_ret).T
-    return t_ret, y_ret
+    return OdeResult(
+        t=t_ret,
+        y=y_ret,
+        nfev=solver.nfev,
+        njev=solver.njev,
+        nlu=solver.nlu,
+        message=message,
+        success=success
+    )
 
 
 def solve_rate_equation(reaction_term, t_span, ab_0, method="BDF",
