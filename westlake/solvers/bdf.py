@@ -199,6 +199,7 @@ class BDF:
 
         y0 = torch.tensor(y0, dtype=torch.get_default_dtype(), device=device)
         self.t = t0
+        self.y = y0
         dydt = fun_wrapped(t0, y0)
         self.J = jac_wrapped(t0, y0)
         self.direction = 1
@@ -251,6 +252,9 @@ class BDF:
         self.LU = None
 
     def step(self, t_bound):
+        if self.t == t_bound:
+            return True, MSG_SUCCESS
+
         t = self.t
         D = self.D
 
