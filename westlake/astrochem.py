@@ -386,6 +386,9 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *,
         return Result(
             message=res.message,
             success=res.success,
+            nfev=res.nfev,
+            njev=res.njev,
+            nlu=res.nlu,
             time=res.t,
             ab=res.y,
             species=tuple(df_spec.index),
@@ -507,6 +510,9 @@ class Result:
     Args:
         message (str): Message returned by the ODE solver.
         success (bool): Success status returned by the ODE solver.
+        nfev (int): Number of objective function evaluations.
+        njev (int): Number of jacobian evaluations.
+        nlu (int): Number of LU decompositions.
         time (array): (N_time,). Simulation time.
         ab (array): (N_spec, N_time). Abundances.
         species (list): (N_spec,). Species.
@@ -515,9 +521,13 @@ class Result:
         stages (list): Time index pair of each stage. If this is `None`, the
             code assumes that there is only one stage.
     """
-    def __init__(self, message, success, time, ab, species, den_gas, coeffs, stages=None):
+    def __init__(self, message, success, nfev, njev, nlu,
+                 time, ab, species, den_gas, coeffs, stages=None):
         self._message = message
         self._success = success
+        self._nfev = nfev
+        self._njev = njev
+        self._nlu = nlu
         self._time = time
         self._ab = ab
         self._species = {key: idx for idx, key in enumerate(species)}
@@ -529,15 +539,18 @@ class Result:
             self._stages = stages
 
     def __repr__(self):
-        text = f"message: {self._message}\n" \
-            + f"success: {self._success}.\n" \
-            + f"species: Specie list ({len(self.species)},).\n" \
-            + f"stages: Time index pair of each stage ({len(self.stages)},).\n" \
-            + f"time: Time {self.time.shape}.\n" \
-            + f"ab: Abundances {self.ab.shape}.\n" \
-            + f"den_gas: Gas density {self.den_gas.shape}."
+        text = f" message: {self._message}\n" \
+            + f" success: {self._success}\n" \
+            + f"    nfev: {self._nfev}\n" \
+            + f"    njev: {self._njev}\n" \
+            + f"     nlu: {self._nlu}\n" \
+            + f" species: Specie list ({len(self.species)},).\n" \
+            + f"  stages: Time index pair of each stage ({len(self.stages)},).\n" \
+            + f"    time: Time {self.time.shape}.\n" \
+            + f"      ab: Abundances {self.ab.shape}.\n" \
+            + f" den_gas: Gas density {self.den_gas.shape}."
         if self.coeffs is not None:
-            text += f"\ncoeffs: Rate coefficients {self.coeffs.shape}."
+            text += f"\n  coeffs: Rate coefficients {self.coeffs.shape}."
         return text
 
     def __getitem__(self, key):
@@ -548,11 +561,28 @@ class Result:
 
     @property
     def message(self):
+        """Message returned by the ODE solver."""
         return self._message
 
     @property
     def success(self):
+        """Success status returned by the ODE solver."""
         return self._success
+
+    @property
+    def nfev(self):
+        """Number of objective function evaluations."""
+        return self._nfev
+
+    @property
+    def njev(self):
+        """Number of jacobian evaluations."""
+        return self._njev
+
+    @property
+    def nlu(self):
+        """Number of LU decompositions."""
+        return self._nlu
 
     @property
     def species(self):
