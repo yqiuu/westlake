@@ -59,7 +59,10 @@ class Config:
         zeta_cr (float): Cosmic ray ionisation rate [s^-1].
         zeta_xr (float): X-ray ionisation rate [s^-1].
 
-        solver (str): ODE solver.
+        use_scipy_solver (bool): Switch to use a scipy ODE sovler.
+        method (str): Name of the scipy ODE solver. This only works when
+            `use_scipy_solver=True`; otherwise, the code uses a BDF solver
+            implmented using `torch`.
         rtol (float): Relative tolerance.
         atol (float): Ababsolute tolerance.
         ab_0_min (float): Minimum initial abundances. This should not be zero
@@ -111,7 +114,8 @@ class Config:
     zeta_xr: float = 0.
 
     # Numerics
-    solver: str = "BDF"
+    use_scipy_solver: bool = False
+    method: str = "BDF"
     rtol: float = 1e-4
     atol: float = 1e-25
     ab_0_min: float = 1e-40

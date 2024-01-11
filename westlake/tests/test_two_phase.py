@@ -50,7 +50,9 @@ def solve_two_phase():
         uv_flux=1.9,
         t_start=1e-10,
         t_end=1e4,
-        solver="scipy_LSODA"
+        use_scipy_solver=True,
+        method="LSODA",
+        atol=ATOL,
     )
 
     n_eval = 100

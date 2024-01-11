@@ -354,9 +354,9 @@ def create_evapor_rate_module(df_reac, df_spec):
 
 def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *,
                                   medium_list=None, t_span=None, t_eval=None,
-                                  method=None, rtol=None, atol=None,
-                                  use_auto_jac=None, device="cpu",
-                                  show_progress=True):
+                                  use_scipy_solver=None, method=None,
+                                  rtol=None, atol=None, use_auto_jac=None,
+                                  device="cpu", show_progress=True):
     """Solve the rate equations for astrochemical problems.
 
     Args:
@@ -369,10 +369,9 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *,
     Returns:
         object: A result object returned by a scipy ODE solver.
     """
-    def _solve(reac_term, df_spec, t_span, ab_0, method, kwargs):
+    def _solve(reac_term, df_spec, t_span, ab_0, method, use_scipy_solver, kwargs):
         reac_term = replace_with_constant_rate_module(reac_term, df_spec)
-        if method.startswith("scipy_"):
-            method = method.replace("scipy_", "")
+        if use_scipy_solver:
             res = solve_ivp_scipy(reaction_term, t_span, ab_0, method=method, **kwargs)
         else:
             res = solve_ivp_torch(reaction_term, t_span, ab_0, **kwargs)
@@ -403,7 +402,7 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *,
         "show_progress": show_progress,
     }
     if method is None:
-        method = config.solver
+        method = config.method
     if use_auto_jac is None:
         kwargs["use_auto_jac"] = config.use_auto_jac
     else:
@@ -416,10 +415,12 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *,
         kwargs["atol"] = config.atol
     else:
         kwargs["atol"] = atol
+    if use_scipy_solver is None:
+        use_scipy_solver = config.use_scipy_solver
 
     ab_0 = derive_initial_abundances(ab_0_dict, df_spec, config)
     if medium_list is None:
-        return _solve(reaction_term, df_spec, t_span, ab_0, method, kwargs)
+        return _solve(reaction_term, df_spec, t_span, ab_0, method, use_scipy_solver, kwargs)
 
     res_tot = None
     reaction_term = deepcopy(reaction_term)
