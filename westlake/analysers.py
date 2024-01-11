@@ -28,7 +28,7 @@ class MainReactionTracer:
         inds_r = df_spec.index.get_indexer(df_reac["reactant_1"])
         rates = coeffs*ab[inds_r]*den_gas
 
-        cond = df_reac["reactant_2"].map(lambda name: name not in special_species)
+        cond = df_reac["reactant_2"].map(lambda name: name not in special_species and name != "")
         inds_r = df_spec.index.get_indexer(df_reac["reactant_2"][cond])
         rates[cond] = rates[cond]*ab[inds_r]*den_gas
         return rates
@@ -112,7 +112,11 @@ class MainReactionTracer:
             df_reac.index, df_reac["reactant_1"], df_reac["reactant_2"],
             df_reac["products"], df_reac["rate"], df_reac["percent"]
         ):
-            reac = f"{reac_1} + {reac_2} -> " + prods.replace(";", " + ")
+            if reac_2 == "":
+                reac = f"{reac_1} -> "
+            else:
+                reac = f"{reac_1} + {reac_2} -> "
+            reac += prods.replace(";", " + ")
             line = "{:5d}   ".format(idx) + reac \
             + " "*(self.len_reac - len(reac)) + "{:.5e}   {:.1f}%".format(rate, percent)
             print(line)
