@@ -352,9 +352,11 @@ def create_evapor_rate_module(df_reac, df_spec):
     return EvaporationRate(inds_evapor, inds_r, n_spec)
 
 
-def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *, medium_list=None,
-                                  t_span=None, t_eval=None, method=None, rtol=None, atol=None,
-                                  use_auto_jac=None, device="cpu", show_progress=True):
+def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *,
+                                  medium_list=None, t_span=None, t_eval=None,
+                                  method=None, rtol=None, atol=None,
+                                  use_auto_jac=None, device="cpu",
+                                  show_progress=True):
     """Solve the rate equations for astrochemical problems.
 
     Args:
@@ -404,10 +406,16 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *, 
         method = config.solver
     if use_auto_jac is None:
         kwargs["use_auto_jac"] = config.use_auto_jac
+    else:
+        kwargs["use_auto_jac"] = use_auto_jac
     if rtol is None:
         kwargs["rtol"] = config.rtol
+    else:
+        kwargs["rtol"] = rtol
     if atol is None:
         kwargs["atol"] = config.atol
+    else:
+        kwargs["atol"] = atol
 
     ab_0 = derive_initial_abundances(ab_0_dict, df_spec, config)
     if medium_list is None:
