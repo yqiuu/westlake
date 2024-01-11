@@ -113,7 +113,7 @@ class Config:
     # Numerics
     solver: str = "BDF"
     rtol: float = 1e-4
-    atol: float = 1e-20
+    atol: float = 1e-25
     ab_0_min: float = 1e-40
     use_auto_jac: bool = False
 
