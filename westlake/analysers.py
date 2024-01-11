@@ -89,9 +89,11 @@ class MainReactionTracer:
             time = self._time
             rates = np.trapz(rates[:, idx_start : idx_end+1], time[idx_start : idx_end+1], axis=-1)
             rates = rates/(time[idx_end] - time[idx_start])
-        percents = rates/rates.sum(axis=0, keepdims=True)*100.
+        norm = rates.sum(axis=0, keepdims=True)
+        norm[norm == 0.] = 1.
+        percents = rates/norm*100.
 
-        cond = (percents > percent_cut) & (rates > rate_cut)
+        cond = (percents >= percent_cut) & (rates >= rate_cut)
         rates = rates[cond]
         percents = percents[cond]
         df_sub = df_sub[cond].copy()
