@@ -1,5 +1,7 @@
 import numpy as np
 
+from .config import Config
+
 
 class MainReactionTracer:
     len_reac = 40
@@ -16,12 +18,14 @@ class MainReactionTracer:
         self._time = time
 
     @classmethod
-    def from_result(cls, res, df_reac, df_spec, config):
+    def from_result(cls, res, df_reac, df_spec, special_species=None):
         if res.coeffs is None:
             raise ValueError("Rate coefficients are not saved. Set save_rate_coeffs=True.")
+        if special_species is None:
+            special_species = Config.special_species
         return cls(
             df_reac, df_spec, res.time, res.ab, res.den_gas, res.coeffs,
-            is_coeff=True, special_species=config.special_species
+            is_coeff=True, special_species=special_species
         )
 
     def compute_reaction_rates(self, df_reac, df_spec, ab, den_gas, coeffs, special_species):
