@@ -1,6 +1,5 @@
 import math
 from dataclasses import dataclass
-from pathlib import Path
 
 from astropy import units
 from docstring_parser import parse

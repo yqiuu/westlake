@@ -3,7 +3,6 @@ from collections import Counter
 from copy import deepcopy
 
 import numpy as np
-import pandas as pd
 import torch
 
 from .utils import get_specie_index
