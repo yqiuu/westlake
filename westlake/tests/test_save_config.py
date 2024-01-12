@@ -1,3 +1,5 @@
+import os
+
 import westlake
 
 
@@ -8,3 +10,7 @@ def test_save_config(tmp_path):
     fname = tmp_path/"config.yml"
     westlake.save_config_template(fname)
     fname.exists()
+
+
+def test_westlake_config():
+    os.system("westlake-config")
