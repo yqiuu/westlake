@@ -1,12 +1,15 @@
 import numpy as np
 
 from .config import Config
+from .astrochem import assign_reaction_key
 
 
 class MainReactionTracer:
     len_reac = 40
 
     def __init__(self, df_reac, df_spec, time, ab, den_gas, rates, is_coeff, special_species):
+        if "key" not in df_reac:
+            df_reac = assign_reaction_key(df_reac)
         df_reac = df_reac[["key", "reactant_1", "reactant_2", "products", "formula"]].copy()
         df_reac["products"] = df_reac["products"].map(lambda name: tuple(name.split(";")))
         if is_coeff:
