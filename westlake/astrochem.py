@@ -34,13 +34,6 @@ from .reaction_terms import (
 from .solvers import solve_ivp_torch, solve_ivp_scipy
 
 
-def builtin_astrochem_reactions(config):
-    return {
-        **builtin_gas_reactions(config),
-        **builtin_surface_reactions(config)
-    }
-
-
 def create_astrochem_model(df_reac, df_spec, df_surf, config,
                            medium=None, df_act=None, df_br=None,
                            df_barr=None, df_gap=None, df_ma=None,
@@ -302,21 +295,6 @@ def add_CO_shielding(df_reac, df_spec, config, formula_dict_ex):
     else:
         raise ValueError("Unknown CO shielding: '{}'.".format(config.CO_shielding))
     return df_reac
-
-
-def split_reac_table_by_formula(df_reac, formula_list):
-    conditions = np.vstack([df_reac["formula"].values == formula for formula in formula_list])
-    df_reac_target = pd.concat([df_reac[cond] for cond in conditions], axis=0)
-    df_reac_remain = df_reac[~np.any(conditions, axis=0)]
-    return df_reac_target, df_reac_remain
-
-
-def extract_by_formula(rmat, df_reac, formula_list):
-    df_sub = df_reac["formula"].loc[rmat.inds_id_uni].values
-    cond = np.full(len(df_sub), False)
-    for formula in formula_list:
-        cond |= df_sub == formula
-    return rmat.extract(cond, use_id_uni=True)
 
 
 def split_surface_reactions(df_reac, rmat):
