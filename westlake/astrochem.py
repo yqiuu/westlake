@@ -618,6 +618,9 @@ class Result:
         return {
             "message": self._message,
             "success": self._success,
+            "nfev": self._nfev,
+            "njev": self._njev,
+            "nlu": self._nlu,
             "time": self._time,
             "ab": self._ab,
             "species": self._species,
@@ -639,6 +642,9 @@ class Result:
             else:
                 stages.append((idx_b + offset - 1, idx_e + offset - 1))
         self._stages.extend(stages)
+        self._nfev += res._nfev
+        self._njev += res._njev
+        self._nlu += res._nlu
         self._time = np.append(self._time, res._time[1:])
         self._ab = np.concatenate([self._ab, res._ab[:, 1:]], axis=-1)
         self._den_gas = np.append(self._den_gas, res._den_gas[1:])

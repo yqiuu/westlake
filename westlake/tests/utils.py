@@ -1,5 +1,5 @@
-import os
+from pathlib import Path
 
 
-def get_abs_fname(fname):
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), fname)
+def get_dirname():
+    return Path(__file__).parent

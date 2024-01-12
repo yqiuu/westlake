@@ -1,44 +1,44 @@
 reactant_1,reactant_2,products,formula,alpha,beta,gamma,T_min,T_max
-H,CR,H+;e-,CR dissociation,0.46,0.0,0.0,-9999.0,9999.0
-He,CR,He+;e-,CR dissociation,0.5,0.0,0.0,-9999.0,9999.0
-O,CR,O+;e-,CR dissociation,2.8,0.0,0.0,-9999.0,9999.0
-H2,CR,H2+;e-,CR dissociation,0.93,0.0,0.0,-9999.0,9999.0
-CO,CR,C;O,CR dissociation,5.0,0.0,0.0,-9999.0,9999.0
-CO,CR,CO+;e-,CR dissociation,3.0,0.0,0.0,-9999.0,9999.0
-H2,CR,H;H,CR dissociation,0.1,0.0,0.0,-9999.0,9999.0
-H2,CR,H;H+;e-,CR dissociation,0.022,0.0,0.0,-9999.0,9999.0
-H2,CR,H+;H-,CR dissociation,0.0003,0.0,0.0,-9999.0,9999.0
-CH+,CRP,H;C+,CRP dissociation,112.0,0.0,0.0,-9999.0,9999.0
-CH+,CRP,C;H+,CRP dissociation,64.0,0.0,0.0,-9999.0,9999.0
-O2,CRP,O;O,CRP dissociation,750.0,0.0,0.0,-9999.0,9999.0
-OH,CRP,H;O,CRP dissociation,510.0,0.0,0.0,-9999.0,9999.0
-CH2,CRP,CH2+;e-,CRP dissociation,500.0,0.0,0.0,-9999.0,9999.0
-H2O,CRP,H;OH,CRP dissociation,970.0,0.0,0.0,-9999.0,9999.0
-C,CRP,C+;e-,CRP dissociation,1020.0,0.0,0.0,-9999.0,9999.0
-S,CRP,S+;e-,CRP dissociation,960.0,0.0,0.0,-9999.0,9999.0
-CH,CRP,C;H,CRP dissociation,730.0,0.0,0.0,-9999.0,9999.0
-CH+,Photon,C;H+,photodissociation,2.5e-10,0.0,2.94,-9999.0,9999.0
-H2+,Photon,H;H+,photodissociation,5.7e-10,0.0,2.37,-9999.0,9999.0
-OH+,Photon,O;H+,photodissociation,1.1e-11,0.0,3.5,-9999.0,9999.0
-CH2+,Photon,H;CH+,photodissociation,1.4e-10,0.0,2.21,-9999.0,9999.0
-H3+,Photon,H2;H+,photodissociation,2e-08,0.0,1.8,-9999.0,9999.0
-H3+,Photon,H;H2+,photodissociation,7.9e-09,0.0,2.3,-9999.0,9999.0
-CH3+,Photon,H2;CH+,photodissociation,1e-09,0.0,1.7,-9999.0,9999.0
-CH3+,Photon,H;CH2+,photodissociation,1e-09,0.0,1.7,-9999.0,9999.0
-H-,Photon,H;e-,photodissociation,2.4e-07,0.0,0.9,-9999.0,9999.0
-C,Photon,C+;e-,photodissociation,3.1e-10,0.0,3.33,-9999.0,9999.0
-S,Photon,S+;e-,photodissociation,6e-10,0.0,3.08,-9999.0,9999.0
-CH,Photon,C;H,photodissociation,9.2e-10,0.0,1.72,-9999.0,9999.0
-CH,Photon,CH+;e-,photodissociation,7.6e-10,0.0,3.28,-9999.0,9999.0
-CO,Photon,C;O,photodissociation,2.6e-10,0.0,3.53,-9999.0,9999.0
-H2,Photon,H;H,photodissociation,3.4e-11,0.0,2.5,-9999.0,9999.0
-O2,Photon,O;O,photodissociation,7.9e-10,0.0,2.13,-9999.0,9999.0
-OH,Photon,H;O,photodissociation,3.9e-10,0.0,2.24,-9999.0,9999.0
-OH,Photon,OH+;e-,photodissociation,1.6e-12,0.0,3.1,-9999.0,9999.0
-CH2,Photon,H;CH,photodissociation,5.8e-10,0.0,2.02,-9999.0,9999.0
-CH2,Photon,CH2+;e-,photodissociation,1e-09,0.0,2.3,-9999.0,9999.0
-H2O,Photon,H;OH,photodissociation,8e-10,0.0,2.2,-9999.0,9999.0
-H2O,Photon,H2O+;e-,photodissociation,3.1e-11,0.0,3.9,-9999.0,9999.0
+H,CR,H+;e-,CR dissociation,0.46,0.0,0.0,0.0,0.0
+He,CR,He+;e-,CR dissociation,0.5,0.0,0.0,0.0,0.0
+O,CR,O+;e-,CR dissociation,2.8,0.0,0.0,0.0,0.0
+H2,CR,H2+;e-,CR dissociation,0.93,0.0,0.0,0.0,0.0
+CO,CR,C;O,CR dissociation,5.0,0.0,0.0,0.0,0.0
+CO,CR,CO+;e-,CR dissociation,3.0,0.0,0.0,0.0,0.0
+H2,CR,H;H,CR dissociation,0.1,0.0,0.0,0.0,0.0
+H2,CR,H;H+;e-,CR dissociation,0.022,0.0,0.0,0.0,0.0
+H2,CR,H+;H-,CR dissociation,0.0003,0.0,0.0,0.0,0.0
+CH+,CRP,H;C+,CRP dissociation,112.0,0.0,0.0,0.0,0.0
+CH+,CRP,C;H+,CRP dissociation,64.0,0.0,0.0,0.0,0.0
+O2,CRP,O;O,CRP dissociation,750.0,0.0,0.0,0.0,0.0
+OH,CRP,H;O,CRP dissociation,510.0,0.0,0.0,0.0,0.0
+CH2,CRP,CH2+;e-,CRP dissociation,500.0,0.0,0.0,0.0,0.0
+H2O,CRP,H;OH,CRP dissociation,970.0,0.0,0.0,0.0,0.0
+C,CRP,C+;e-,CRP dissociation,1020.0,0.0,0.0,0.0,0.0
+S,CRP,S+;e-,CRP dissociation,960.0,0.0,0.0,0.0,0.0
+CH,CRP,C;H,CRP dissociation,730.0,0.0,0.0,0.0,0.0
+CH+,Photon,C;H+,photodissociation,2.5e-10,0.0,2.94,0.0,0.0
+H2+,Photon,H;H+,photodissociation,5.7e-10,0.0,2.37,0.0,0.0
+OH+,Photon,O;H+,photodissociation,1.1e-11,0.0,3.5,0.0,0.0
+CH2+,Photon,H;CH+,photodissociation,1.4e-10,0.0,2.21,0.0,0.0
+H3+,Photon,H2;H+,photodissociation,2e-08,0.0,1.8,0.0,0.0
+H3+,Photon,H;H2+,photodissociation,7.9e-09,0.0,2.3,0.0,0.0
+CH3+,Photon,H2;CH+,photodissociation,1e-09,0.0,1.7,0.0,0.0
+CH3+,Photon,H;CH2+,photodissociation,1e-09,0.0,1.7,0.0,0.0
+H-,Photon,H;e-,photodissociation,2.4e-07,0.0,0.9,0.0,0.0
+C,Photon,C+;e-,photodissociation,3.1e-10,0.0,3.33,0.0,0.0
+S,Photon,S+;e-,photodissociation,6e-10,0.0,3.08,0.0,0.0
+CH,Photon,C;H,photodissociation,9.2e-10,0.0,1.72,0.0,0.0
+CH,Photon,CH+;e-,photodissociation,7.6e-10,0.0,3.28,0.0,0.0
+CO,Photon,C;O,photodissociation,2.6e-10,0.0,3.53,0.0,0.0
+H2,Photon,H;H,photodissociation,3.4e-11,0.0,2.5,0.0,0.0
+O2,Photon,O;O,photodissociation,7.9e-10,0.0,2.13,0.0,0.0
+OH,Photon,H;O,photodissociation,3.9e-10,0.0,2.24,0.0,0.0
+OH,Photon,OH+;e-,photodissociation,1.6e-12,0.0,3.1,0.0,0.0
+CH2,Photon,H;CH,photodissociation,5.8e-10,0.0,2.02,0.0,0.0
+CH2,Photon,CH2+;e-,photodissociation,1e-09,0.0,2.3,0.0,0.0
+H2O,Photon,H;OH,photodissociation,8e-10,0.0,2.2,0.0,0.0
+H2O,Photon,H2O+;e-,photodissociation,3.1e-11,0.0,3.9,0.0,0.0
 O2,C+,CO;O+,modified Arrhenius,4.53e-10,0.0,0.0,10.0,300.0
 O2,C+,O;CO+,modified Arrhenius,3.42e-10,0.0,0.0,10.0,300.0
 OH,C+,H;CO+,ionpol1,1.0,9.15e-10,5.5,10.0,800.0
@@ -249,112 +249,172 @@ CH3+,e-,C;H;H2,modified Arrhenius,3e-07,-0.3,0.0,10.0,300.0
 CH3+,e-,H;H;CH,modified Arrhenius,1.6e-07,-0.3,0.0,10.0,300.0
 CH3+,e-,CH;H2,modified Arrhenius,1.4e-07,-0.3,0.0,10.0,300.0
 CH3+,e-,H;CH2,modified Arrhenius,4e-07,-0.3,0.0,10.0,300.0
-JC,JO,JCO,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JC,JO,CO,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JC,JO2,JCO;JO,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JC,JO2,CO;O,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JC,JOH,JCO;JH,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JC,JOH,CO;H,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JH,JC,JCH,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JH,JC,CH,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JH,JCH,JCH2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JH,JCH,CH2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JH,JH,JH2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JH,JH,H2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JH,JO,JOH,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JH,JO,OH,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JH,JOH,JH2O,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JH,JOH,H2O,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JH2,JC,JCH2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JH2,JC,CH2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JH2,JOH,JH2O;JH,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JH2,JOH,H2O;H,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JO,JO,JO2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JO,JO,O2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JH2,JH2,JH2;H2,surface reaction,1.0,0.0,0.0,-9999.0,9999.0
-JC,,C,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JCH,,CH,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JCH2,,CH2,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JCO,,CO,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JH,,H,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JH2,,H2,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JH2O,,H2O,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JHe,,He,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JO,,O,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JO2,,O2,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JOH,,OH,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JS,,S,thermal evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JC,,C,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JCH,,CH,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JCH2,,CH2,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JCO,,CO,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JH,,H,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JH2,,H2,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JH2O,,H2O,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JHe,,He,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JO,,O,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JO2,,O2,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JOH,,OH,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JS,,S,CR evaporation,1.0,0.0,0.0,-9999.0,9999.0
-JCH,,JC;JH,CR dissociation,730.0,0.0,0.0,-9999.0,9999.0
-JCO,,JC;JO,CR dissociation,5.0,0.0,0.0,-9999.0,9999.0
-JH2O,,JOH;JH,CR dissociation,970.0,0.0,0.0,-9999.0,9999.0
-JO2,,JO;JO,CR dissociation,750.0,0.0,0.0,-9999.0,9999.0
-JOH,,JO;JH,CR dissociation,510.0,0.0,0.0,-9999.0,9999.0
-JCH2,,JC;JH2,CR dissociation,60.4,0.0,0.0,-9999.0,9999.0
-JCH2,,JCH;JH,CR dissociation,126.0,0.0,0.0,-9999.0,9999.0
-JCH2,,JC;JH;JH,CR dissociation,314.0,0.0,0.0,-9999.0,9999.0
-JCO,,JO;JC,CR dissociation,3.0,0.0,0.0,-9999.0,9999.0
-JO2,,JO;JO,CR dissociation,117.0,0.0,0.0,-9999.0,9999.0
-JCH,,JC;JH,photodissociation,1.4e-10,0.0,1.5,-9999.0,9999.0
-JCH2,,JCH;JH,photodissociation,5e-11,0.0,1.7,-9999.0,9999.0
-JCO,,JC;JO,photodissociation,3.1e-11,0.0,2.54,-9999.0,9999.0
-JH2O,,JOH;JH,photodissociation,3.28e-10,0.0,1.63,-9999.0,9999.0
-JO2,,JO;JO,photodissociation,3.3e-10,0.0,1.4,-9999.0,9999.0
-JOH,,JO;JH,photodissociation,1.68e-10,0.0,1.66,-9999.0,9999.0
-JCH,,JC;JH,photodissociation,2.9e-10,0.0,2.8,-9999.0,9999.0
-JCH2,,JC;JH2,photodissociation,1.21e-10,0.0,2.3,-9999.0,9999.0
-JCH2,,JCH;JH,photodissociation,2.51e-10,0.0,2.3,-9999.0,9999.0
-JCH2,,JC;JH;JH,photodissociation,6.28e-10,0.0,2.3,-9999.0,9999.0
-JH2O,,JH2;JO,photodissociation,1.9e-12,0.0,3.1,-9999.0,9999.0
-JH2O,,JOH;JH,photodissociation,4.2e-12,0.0,3.1,-9999.0,9999.0
-JH2O,,JO;JH;JH,photodissociation,1.49e-11,0.0,3.1,-9999.0,9999.0
-JO2,,JO;JO,photodissociation,6.2e-12,0.0,3.1,-9999.0,9999.0
-JOH,,JO;JH,photodissociation,1.6e-12,0.0,3.1,-9999.0,9999.0
-JC,,C,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JCH,,CH,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JCH2,,CH2,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JCO,,CO,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JH,,H,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JH2,,H2,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JH2O,,H2O,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JHe,,He,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JO,,O,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JO2,,O2,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JOH,,OH,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JS,,S,UV photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JC,,C,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JCH,,CH,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JCH2,,CH2,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JCO,,CO,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JH,,H,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JH2,,H2,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JH2O,,H2O,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JHe,,He,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JO,,O,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JO2,,O2,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JOH,,OH,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JS,,S,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-JH2O,,OH;H,CR photodesorption,0.0001,0.0,0.0,-9999.0,9999.0
-C,,JC,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
-CH,,JCH,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
-CH2,,JCH2,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
-CO,,JCO,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
-H,,JH,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
-H2,,JH2,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
-H2O,,JH2O,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
-He,,JHe,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
-O,,JO,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
-O2,,JO2,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
-OH,,JOH,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
-S,,JS,surface accretion,1.0,0.0,0.0,-9999.0,9999.0
+JC,JO,JCO,surface reaction,1.0,0.0,0.0,0.0,0.0
+JC,JO,CO,surface reaction,1.0,0.0,0.0,0.0,0.0
+JC,JO2,JCO;JO,surface reaction,1.0,0.0,0.0,0.0,0.0
+JC,JO2,CO;O,surface reaction,1.0,0.0,0.0,0.0,0.0
+JC,JOH,JCO;JH,surface reaction,1.0,0.0,0.0,0.0,0.0
+JC,JOH,CO;H,surface reaction,1.0,0.0,0.0,0.0,0.0
+JH,JC,JCH,surface reaction,1.0,0.0,0.0,0.0,0.0
+JH,JC,CH,surface reaction,1.0,0.0,0.0,0.0,0.0
+JH,JCH,JCH2,surface reaction,1.0,0.0,0.0,0.0,0.0
+JH,JCH,CH2,surface reaction,1.0,0.0,0.0,0.0,0.0
+JH,JH,JH2,surface reaction,1.0,0.0,0.0,0.0,0.0
+JH,JH,H2,surface reaction,1.0,0.0,0.0,0.0,0.0
+JH,JO,JOH,surface reaction,1.0,0.0,0.0,0.0,0.0
+JH,JO,OH,surface reaction,1.0,0.0,0.0,0.0,0.0
+JH,JOH,JH2O,surface reaction,1.0,0.0,0.0,0.0,0.0
+JH,JOH,H2O,surface reaction,1.0,0.0,0.0,0.0,0.0
+JH2,JC,JCH2,surface reaction,1.0,0.0,0.0,0.0,0.0
+JH2,JC,CH2,surface reaction,1.0,0.0,0.0,0.0,0.0
+JH2,JOH,JH2O;JH,surface reaction,1.0,0.0,0.0,0.0,0.0
+JH2,JOH,H2O;H,surface reaction,1.0,0.0,0.0,0.0,0.0
+JO,JO,JO2,surface reaction,1.0,0.0,0.0,0.0,0.0
+JO,JO,O2,surface reaction,1.0,0.0,0.0,0.0,0.0
+JH2,JH2,JH2;H2,surface reaction,1.0,0.0,0.0,0.0,0.0
+JC,,C,thermal evaporation,1.0,0.0,0.0,0.0,0.0
+JCH,,CH,thermal evaporation,1.0,0.0,0.0,0.0,0.0
+JCH2,,CH2,thermal evaporation,1.0,0.0,0.0,0.0,0.0
+JCO,,CO,thermal evaporation,1.0,0.0,0.0,0.0,0.0
+JH,,H,thermal evaporation,1.0,0.0,0.0,0.0,0.0
+JH2,,H2,thermal evaporation,1.0,0.0,0.0,0.0,0.0
+JH2O,,H2O,thermal evaporation,1.0,0.0,0.0,0.0,0.0
+JHe,,He,thermal evaporation,1.0,0.0,0.0,0.0,0.0
+JO,,O,thermal evaporation,1.0,0.0,0.0,0.0,0.0
+JO2,,O2,thermal evaporation,1.0,0.0,0.0,0.0,0.0
+JOH,,OH,thermal evaporation,1.0,0.0,0.0,0.0,0.0
+JS,,S,thermal evaporation,1.0,0.0,0.0,0.0,0.0
+JC,,C,CR evaporation,1.0,0.0,0.0,0.0,0.0
+JCH,,CH,CR evaporation,1.0,0.0,0.0,0.0,0.0
+JCH2,,CH2,CR evaporation,1.0,0.0,0.0,0.0,0.0
+JCO,,CO,CR evaporation,1.0,0.0,0.0,0.0,0.0
+JH,,H,CR evaporation,1.0,0.0,0.0,0.0,0.0
+JH2,,H2,CR evaporation,1.0,0.0,0.0,0.0,0.0
+JH2O,,H2O,CR evaporation,1.0,0.0,0.0,0.0,0.0
+JHe,,He,CR evaporation,1.0,0.0,0.0,0.0,0.0
+JO,,O,CR evaporation,1.0,0.0,0.0,0.0,0.0
+JO2,,O2,CR evaporation,1.0,0.0,0.0,0.0,0.0
+JOH,,OH,CR evaporation,1.0,0.0,0.0,0.0,0.0
+JS,,S,CR evaporation,1.0,0.0,0.0,0.0,0.0
+JCH,,JC;JH,CR dissociation,730.0,0.0,0.0,0.0,0.0
+JCO,,JC;JO,CR dissociation,5.0,0.0,0.0,0.0,0.0
+JH2O,,JOH;JH,CR dissociation,970.0,0.0,0.0,0.0,0.0
+JO2,,JO;JO,CR dissociation,750.0,0.0,0.0,0.0,0.0
+JOH,,JO;JH,CR dissociation,510.0,0.0,0.0,0.0,0.0
+JCH2,,JC;JH2,CR dissociation,60.4,0.0,0.0,0.0,0.0
+JCH2,,JCH;JH,CR dissociation,126.0,0.0,0.0,0.0,0.0
+JCH2,,JC;JH;JH,CR dissociation,314.0,0.0,0.0,0.0,0.0
+JCO,,JO;JC,CR dissociation,3.0,0.0,0.0,0.0,0.0
+JO2,,JO;JO,CR dissociation,117.0,0.0,0.0,0.0,0.0
+JCH,,JC;JH,photodissociation,1.4e-10,0.0,1.5,0.0,0.0
+JCH2,,JCH;JH,photodissociation,5e-11,0.0,1.7,0.0,0.0
+JCO,,JC;JO,photodissociation,3.1e-11,0.0,2.54,0.0,0.0
+JH2O,,JOH;JH,photodissociation,3.28e-10,0.0,1.63,0.0,0.0
+JO2,,JO;JO,photodissociation,3.3e-10,0.0,1.4,0.0,0.0
+JOH,,JO;JH,photodissociation,1.68e-10,0.0,1.66,0.0,0.0
+JCH,,JC;JH,photodissociation,2.9e-10,0.0,2.8,0.0,0.0
+JCH2,,JC;JH2,photodissociation,1.21e-10,0.0,2.3,0.0,0.0
+JCH2,,JCH;JH,photodissociation,2.51e-10,0.0,2.3,0.0,0.0
+JCH2,,JC;JH;JH,photodissociation,6.28e-10,0.0,2.3,0.0,0.0
+JH2O,,JH2;JO,photodissociation,1.9e-12,0.0,3.1,0.0,0.0
+JH2O,,JOH;JH,photodissociation,4.2e-12,0.0,3.1,0.0,0.0
+JH2O,,JO;JH;JH,photodissociation,1.49e-11,0.0,3.1,0.0,0.0
+JO2,,JO;JO,photodissociation,6.2e-12,0.0,3.1,0.0,0.0
+JOH,,JO;JH,photodissociation,1.6e-12,0.0,3.1,0.0,0.0
+JC,,KC,surface to mantle,1.0,0.0,0.0,0.0,0.0
+JCH,,KCH,surface to mantle,1.0,0.0,0.0,0.0,0.0
+JCH2,,KCH2,surface to mantle,1.0,0.0,0.0,0.0,0.0
+JCO,,KCO,surface to mantle,1.0,0.0,0.0,0.0,0.0
+JH,,KH,surface to mantle,1.0,0.0,0.0,0.0,0.0
+JH2,,KH2,surface to mantle,1.0,0.0,0.0,0.0,0.0
+JH2O,,KH2O,surface to mantle,1.0,0.0,0.0,0.0,0.0
+JHe,,KHe,surface to mantle,1.0,0.0,0.0,0.0,0.0
+JO,,KO,surface to mantle,1.0,0.0,0.0,0.0,0.0
+JO2,,KO2,surface to mantle,1.0,0.0,0.0,0.0,0.0
+JOH,,KOH,surface to mantle,1.0,0.0,0.0,0.0,0.0
+JS,,KS,surface to mantle,1.0,0.0,0.0,0.0,0.0
+KC,,JC,mantle to surface,1.0,0.0,0.0,0.0,0.0
+KCH,,JCH,mantle to surface,1.0,0.0,0.0,0.0,0.0
+KCH2,,JCH2,mantle to surface,1.0,0.0,0.0,0.0,0.0
+KCO,,JCO,mantle to surface,1.0,0.0,0.0,0.0,0.0
+KH,,JH,mantle to surface,1.0,0.0,0.0,0.0,0.0
+KH2,,JH2,mantle to surface,1.0,0.0,0.0,0.0,0.0
+KH2O,,JH2O,mantle to surface,1.0,0.0,0.0,0.0,0.0
+KHe,,JHe,mantle to surface,1.0,0.0,0.0,0.0,0.0
+KO,,JO,mantle to surface,1.0,0.0,0.0,0.0,0.0
+KO2,,JO2,mantle to surface,1.0,0.0,0.0,0.0,0.0
+KOH,,JOH,mantle to surface,1.0,0.0,0.0,0.0,0.0
+KS,,JS,mantle to surface,1.0,0.0,0.0,0.0,0.0
+JC,,C,UV photodesorption,0.0001,0.0,0.0,0.0,0.0
+JCH,,CH,UV photodesorption,0.0001,0.0,0.0,0.0,0.0
+JCH2,,CH2,UV photodesorption,0.0001,0.0,0.0,0.0,0.0
+JCO,,CO,UV photodesorption,0.0001,0.0,0.0,0.0,0.0
+JH,,H,UV photodesorption,0.0001,0.0,0.0,0.0,0.0
+JH2,,H2,UV photodesorption,0.0001,0.0,0.0,0.0,0.0
+JH2O,,H2O,UV photodesorption,0.0001,0.0,0.0,0.0,0.0
+JHe,,He,UV photodesorption,0.0001,0.0,0.0,0.0,0.0
+JO,,O,UV photodesorption,0.0001,0.0,0.0,0.0,0.0
+JO2,,O2,UV photodesorption,0.0001,0.0,0.0,0.0,0.0
+JOH,,OH,UV photodesorption,0.0001,0.0,0.0,0.0,0.0
+JS,,S,UV photodesorption,0.0001,0.0,0.0,0.0,0.0
+JC,,C,CR photodesorption,0.0001,0.0,0.0,0.0,0.0
+JCH,,CH,CR photodesorption,0.0001,0.0,0.0,0.0,0.0
+JCH2,,CH2,CR photodesorption,0.0001,0.0,0.0,0.0,0.0
+JCO,,CO,CR photodesorption,0.0001,0.0,0.0,0.0,0.0
+JH,,H,CR photodesorption,0.0001,0.0,0.0,0.0,0.0
+JH2,,H2,CR photodesorption,0.0001,0.0,0.0,0.0,0.0
+JH2O,,H2O,CR photodesorption,0.0001,0.0,0.0,0.0,0.0
+JHe,,He,CR photodesorption,0.0001,0.0,0.0,0.0,0.0
+JO,,O,CR photodesorption,0.0001,0.0,0.0,0.0,0.0
+JO2,,O2,CR photodesorption,0.0001,0.0,0.0,0.0,0.0
+JOH,,OH,CR photodesorption,0.0001,0.0,0.0,0.0,0.0
+JS,,S,CR photodesorption,0.0001,0.0,0.0,0.0,0.0
+JH2O,,OH;H,CR photodesorption,0.0001,0.0,0.0,0.0,0.0
+C,,JC,surface accretion,1.0,0.0,0.0,0.0,0.0
+CH,,JCH,surface accretion,1.0,0.0,0.0,0.0,0.0
+CH2,,JCH2,surface accretion,1.0,0.0,0.0,0.0,0.0
+CO,,JCO,surface accretion,1.0,0.0,0.0,0.0,0.0
+H,,JH,surface accretion,1.0,0.0,0.0,0.0,0.0
+H2,,JH2,surface accretion,1.0,0.0,0.0,0.0,0.0
+H2O,,JH2O,surface accretion,1.0,0.0,0.0,0.0,0.0
+He,,JHe,surface accretion,1.0,0.0,0.0,0.0,0.0
+O,,JO,surface accretion,1.0,0.0,0.0,0.0,0.0
+O2,,JO2,surface accretion,1.0,0.0,0.0,0.0,0.0
+OH,,JOH,surface accretion,1.0,0.0,0.0,0.0,0.0
+S,,JS,surface accretion,1.0,0.0,0.0,0.0,0.0
+KCH,,KC;KH,CR dissociation,730.0,0.0,0.0,0.0,0.0
+KCO,,KC;KO,CR dissociation,5.0,0.0,0.0,0.0,0.0
+KH2O,,KOH;KH,CR dissociation,970.0,0.0,0.0,0.0,0.0
+KO2,,KO;KO,CR dissociation,750.0,0.0,0.0,0.0,0.0
+KOH,,KO;KH,CR dissociation,510.0,0.0,0.0,0.0,0.0
+KCH2,,KC;KH2,CR dissociation,60.4,0.0,0.0,0.0,0.0
+KCH2,,KCH;KH,CR dissociation,126.0,0.0,0.0,0.0,0.0
+KCH2,,KC;KH;KH,CR dissociation,314.0,0.0,0.0,0.0,0.0
+KCO,,KO;KC,CR dissociation,3.0,0.0,0.0,0.0,0.0
+KO2,,KO;KO,CR dissociation,117.0,0.0,0.0,0.0,0.0
+KCH,,KC;KH,photodissociation,1.4e-10,0.0,1.5,0.0,0.0
+KCH2,,KCH;KH,photodissociation,5e-11,0.0,1.7,0.0,0.0
+KCO,,KC;KO,photodissociation,3.1e-11,0.0,2.54,0.0,0.0
+KH2O,,KOH;KH,photodissociation,3.28e-10,0.0,1.63,0.0,0.0
+KO2,,KO;KO,photodissociation,3.3e-10,0.0,1.4,0.0,0.0
+KOH,,KO;KH,photodissociation,1.68e-10,0.0,1.66,0.0,0.0
+KCH,,KC;KH,photodissociation,2.9e-10,0.0,2.8,0.0,0.0
+KCH2,,KC;KH2,photodissociation,1.21e-10,0.0,2.3,0.0,0.0
+KCH2,,KCH;KH,photodissociation,2.51e-10,0.0,2.3,0.0,0.0
+KCH2,,KC;KH;KH,photodissociation,6.28e-10,0.0,2.3,0.0,0.0
+KH2O,,KH2;KO,photodissociation,1.9e-12,0.0,3.1,0.0,0.0
+KH2O,,KOH;KH,photodissociation,4.2e-12,0.0,3.1,0.0,0.0
+KH2O,,KO;KH;KH,photodissociation,1.49e-11,0.0,3.1,0.0,0.0
+KO2,,KO;KO,photodissociation,6.2e-12,0.0,3.1,0.0,0.0
+KOH,,KO;KH,photodissociation,1.6e-12,0.0,3.1,0.0,0.0
+KC,KO,KCO,surface reaction,1.0,0.0,0.0,0.0,0.0
+KC,KO2,KCO;KO,surface reaction,1.0,0.0,0.0,0.0,0.0
+KC,KOH,KCO;KH,surface reaction,1.0,0.0,0.0,0.0,0.0
+KH,KC,KCH,surface reaction,1.0,0.0,0.0,0.0,0.0
+KH,KCH,KCH2,surface reaction,1.0,0.0,0.0,0.0,0.0
+KH,KH,KH2,surface reaction,1.0,0.0,0.0,0.0,0.0
+KH,KO,KOH,surface reaction,1.0,0.0,0.0,0.0,0.0
+KH,KOH,KH2O,surface reaction,1.0,0.0,0.0,0.0,0.0
+KH2,KC,KCH2,surface reaction,1.0,0.0,0.0,0.0,0.0
+KH2,KOH,KH2O;KH,surface reaction,1.0,0.0,0.0,0.0,0.0
+KO,KO,KO2,surface reaction,1.0,0.0,0.0,0.0,0.0

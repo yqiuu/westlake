@@ -1,26 +1,22 @@
 
 """Test the whole framework using the Roberston problem"""
-
-import os
 import pickle
+from pathlib import Path
 
 import numpy as np
 from numpy.testing import assert_allclose
 import pandas as pd
-import torch
 import westlake
 
-from utils import get_abs_fname
+from utils import get_dirname
 
 
-torch.set_default_dtype(torch.float64)
-FILE_NAME = "data_robertson.pickle"
 ATOL = 1e-8
 
 
 def test_roberston_problem():
     res_new = solve_robertson_problem()
-    res_fid = pickle.load(open(get_abs_fname(FILE_NAME), "rb"))
+    res_fid = pickle.load(open(get_save_name(), "rb"))
     assert_allclose(res_fid.y, res_new.y, atol=ATOL)
 
 
@@ -51,7 +47,11 @@ def solve_robertson_problem():
     return res
 
 
+def get_save_name():
+    return get_dirname()/Path("data")/Path("data_robertson.pickle")
+
+
 if __name__ == "__main__":
     # Save test data
     res = solve_robertson_problem()
-    pickle.dump(res, open(FILE_NAME, "wb"))
+    pickle.dump(res, open(get_save_name(), "wb"))
