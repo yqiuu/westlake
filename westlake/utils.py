@@ -17,7 +17,7 @@ class LinearInterpolation(nn.Module):
     """
     def __init__(self, x_node, y_node, boundary="fixed"):
         super(LinearInterpolation, self).__init__()
-        self.register_buffer("x_node", x_node)
+        self.register_buffer("x_node", x_node.contiguous())
         self.register_buffer("y_node", y_node)
         options = ("fixed", "extrapolate")
         if boundary not in options:
