@@ -374,14 +374,18 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *,
             coeffs=coeffs
         )
 
-    if t_span is None:
-        t_span = (config.t_start, config.t_end)
     kwargs = {
-        "t_eval": t_eval,
         "u_factor": config.to_second,
         "device": device,
         "show_progress": show_progress,
     }
+    if medium_list is None:
+        if t_span is None:
+            t_span = (config.t_start, config.t_end)
+        kwargs["t_eval"] = t_eval
+    else:
+        if t_span is None:
+            raise ValueError("t_span must be provided when medium_list is not None.")
     if method is None:
         method = config.method
     if use_auto_jac is None:
@@ -408,7 +412,7 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *,
     for i_stage, module_med in enumerate(medium_list):
         reaction_term.module_med = module_med
         t_span_sub = (t_span[i_stage], t_span[i_stage + 1])
-        res = _solve(reaction_term, df_spec, t_span_sub, ab_0, kwargs)
+        res = _solve(reaction_term, df_spec, t_span_sub, ab_0, method, use_scipy_solver, kwargs)
         if not res.success:
             raise ValueError(res.message)
         ab_0 = res.last()
