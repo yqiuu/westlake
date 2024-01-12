@@ -25,5 +25,5 @@ class ReactionRate(nn.Module):
 
 
 class NoReaction(ReactionRate):
-    def forward(self, params_med, params_reac, **params_extra):
+    def forward(self, params_med, params_reac, **kwargs):
         return torch.zeros_like(params_reac["alpha"])

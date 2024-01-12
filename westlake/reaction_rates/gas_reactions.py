@@ -22,7 +22,7 @@ class CRDissociation(ReactionRate):
     def __init__(self):
         super().__init__(["alpha"])
 
-    def forward(self, params_med, params_reac, **params_extra):
+    def forward(self, params_med, params_reac, **kwargs):
         """
         Args:
             params_reac (KeyTensor): (R, 5). Reaction parameters.
@@ -39,7 +39,7 @@ class Photodissociation(ReactionRate):
         super().__init__(["alpha", "gamma"])
         self.register_buffer("uv_flux", torch.tensor(config.uv_flux))
 
-    def forward(self, params_med, params_reac, **params_extra):
+    def forward(self, params_med, params_reac, **kwargs):
         """
         Args:
             params_reac (KeyTensor): (R, 5). Reaction parameters.
@@ -58,7 +58,7 @@ class ModifiedArrhenius(ReactionRate):
             "T_min", "T_max", "is_leftmost", "is_rightmost"
         ])
 
-    def forward(self, params_med, params_reac, **params_extra):
+    def forward(self, params_med, params_reac, **kwargs):
         """
         Args:
             params_reac (KeyTensor): (R, 5). Reaction parameters.
@@ -79,7 +79,7 @@ class Ionpol1(ReactionRate):
     def __init__(self):
         super().__init__(["alpha", "beta", "gamma"])
 
-    def forward(self, params_med, params_reac, **params_extra):
+    def forward(self, params_med, params_reac, **kwargs):
         alpha = params_reac["alpha"]
         beta = params_reac["beta"]
         gamma = params_reac["gamma"]
@@ -92,7 +92,7 @@ class Ionpol2(ReactionRate):
     def __init__(self):
         super().__init__(["alpha", "beta", "gamma"])
 
-    def forward(self, params_med, params_reac, **params_extra):
+    def forward(self, params_med, params_reac, **kwargs):
         alpha = params_reac["alpha"]
         beta = params_reac["beta"]
         gamma = params_reac["gamma"]
@@ -106,7 +106,7 @@ class GasGrainReaction(ReactionRate):
     def __init__(self):
         super().__init__(["alpha", "beta"])
 
-    def forward(self, params_med, params_reac, **params_extra):
+    def forward(self, params_med, params_reac, **kwargs):
         """
         Args:
             params_reac (KeyTensor): (R, 5). Reaction parameters.
@@ -125,7 +125,7 @@ class SurfaceHAccretion(ReactionRate):
         super().__init__(["alpha", "beta"])
         self.register_buffer("dtg_num_ratio", torch.tensor(config.dtg_num_ratio))
 
-    def forward(self, params_med, params_reac, **params_extra):
+    def forward(self, params_med, params_reac, **kwargs):
         return params_reac["alpha"]*(params_med["T_gas"]/300)**params_reac["beta"] \
             *self.dtg_num_ratio*params_med["den_gas"]
 
@@ -135,7 +135,7 @@ class SurfaceH2Formation(ReactionRate):
         super().__init__(["alpha"])
         self.register_buffer("inv_dtg_num_ratio", torch.tensor(1./config.dtg_num_ratio))
 
-    def forward(self, params_med, params_reac, **params_extra):
+    def forward(self, params_med, params_reac, **kwargs):
         return 1.186e7*params_reac["alpha"]*torch.exp(-225./params_med["T_gas"]) \
             *self.inv_dtg_num_ratio/params_med["den_gas"]
 

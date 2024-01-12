@@ -30,7 +30,7 @@ class ThermalEvaporation(ReactionRate):
     def __init__(self):
         super().__init__(["alpha", "freq_vib_r1", "E_deso_r1"])
 
-    def forward(self, params_med, params_reac, **params_extra):
+    def forward(self, params_med, params_reac, **kwargs):
         return compute_evaporation_rate(
             params_reac["alpha"], params_reac["freq_vib_r1"],
             params_reac["E_deso_r1"], params_med["T_dust"]
@@ -44,7 +44,7 @@ class CosmicRayEvaporation(ReactionRate):
         self.register_buffer("prefactor", torch.tensor(prefactor))
         self.register_buffer("T_grain_cr_peak", torch.tensor(config.T_grain_cr_peak))
 
-    def forward(self, params_med, params_reac, **params_extra):
+    def forward(self, params_med, params_reac, **kwargs):
         prefactor = self.prefactor \
             * params_reac["alpha"] \
             * (params_med["zeta_cr"] + params_med["zeta_xr"])
@@ -86,7 +86,7 @@ class SurfaceAccretion(ReactionRate):
         super().__init__(["alpha", "factor_rate_acc_r1"])
         self.register_buffer("dtg_num_ratio", torch.tensor(config.dtg_num_ratio))
 
-    def forward(self, params_med, params_reac, **params_extra):
+    def forward(self, params_med, params_reac, **kwargs):
         return params_reac["alpha"]*params_reac["factor_rate_acc_r1"] \
             *(params_med["T_gas"].sqrt()*params_med["den_gas"]*self.dtg_num_ratio)
 
