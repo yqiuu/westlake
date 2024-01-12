@@ -1,10 +1,8 @@
 from pathlib import Path
 
-import numpy as np
 from numpy.testing import assert_allclose
 import pandas as pd
 import westlake
-import pytest
 
 from utils import get_dirname
 
