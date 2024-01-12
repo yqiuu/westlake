@@ -23,6 +23,20 @@ class ReactionRate(nn.Module):
     def required_props(self):
         return list(self._required_props)
 
+    def forward(self, params_med, params_reac, **kwargs):
+        """Compute reaction rates.
+
+        Args:
+            params_med (TensorDict): Each element in the dict is a (B, X)
+                tensor, where B is the number of time points and X is the number
+                of properties.
+            params_reac (TensorDict): Each element in the dict is a (R,) tensor,
+                where R is the number of reactions.
+
+        Returns:
+            tensor: (B, R) or (R,).
+        """
+
 
 class NoReaction(ReactionRate):
     def forward(self, params_med, params_reac, **kwargs):
