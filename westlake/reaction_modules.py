@@ -156,35 +156,6 @@ def create_surface_mantle_transition(df_reac, df_spec, config):
     return SurfaceMantleTransition(inds_fm_dict, inds_reac, params_reac, config)
 
 
-def prepare_formula_dict_indices(df_sub, rmat, inds_id_uni):
-    # The code below construct the following variables.
-    #   1. inds_reac, index in the reaction dataframe for the outputs of the reaction module.
-    #   2. inds_k, index of the rates in the equation for the outputs of the reaction module. This
-    #   should align with rmat.rate_sign
-
-    # Link the indices in the df_sub to those in the reaction dataframe.
-    lookup_sub = pd.DataFrame(np.arange(len(df_sub)), index=df_sub.index, columns=["index_sub"])
-    # Link the indices in the outputs of the reaction module to those in the df_sub.
-    inds_fm_dict = defaultdict(list)
-    for i_fm, fm in enumerate(df_sub["formula"]):
-        inds_fm_dict[fm].append(i_fm)
-    inds_fm = np.asarray(sum(inds_fm_dict.values(), start=[]))
-    lookup_fm = pd.DataFrame(np.arange(len(inds_fm)), index=inds_fm, columns=["index_fm"])
-    # Link the indices in the outputs of the reaction module to those in the reaction dataframe.
-    lookup_sub["index_fm"] = lookup_fm.loc[lookup_sub["index_sub"], "index_fm"].values
-    #
-    inds_reac = lookup_sub.loc[inds_id_uni, "index_fm"].values
-    inds_k = lookup_sub.loc[rmat.inds_k, "index_fm"].values
-    return inds_fm_dict, inds_reac, inds_k
-
-
-def reindex(rmat, inds_id_fm):
-    lookup = pd.DataFrame(np.arange(len(inds_id_fm)), index=inds_id_fm, columns=["index_fm"])
-    inds_id = lookup.loc[rmat.inds_id_uni, "index_fm"].values
-    inds_k = lookup.loc[rmat.inds_k, "index_fm"].values
-    return inds_id, inds_k
-
-
 def prepare_params_reac(df_sub, df_spec, param_names):
     params_reac = data_frame_to_tensor_dict(df_sub[param_names])
     # inds_r is used to extract specie propeties.
