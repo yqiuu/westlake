@@ -116,6 +116,7 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
     """
     validate_specie_params(df_spec, "'df_spec'")
     validate_specie_params(df_surf, "'df_surf'")
+    validate_reactions(df_reac, df_spec, config.special_species)
 
     if use_copy:
         df_reac = df_reac.copy()
@@ -478,6 +479,24 @@ def validate_specie_params(df_spec, var_name):
             dups.append(spec)
     if len(dups) != 0:
         raise ValueError(f"Find duplicated species in {var_name}: " + ", ".join(dups))
+
+
+def validate_reactions(df_reac, df_spec, special_species):
+    # Check that if all species in df_reac are in the specie table
+    species = set(df_spec.index)
+    species.update(set(special_species))
+    species.add("") # The second reactant is "" if there is no second reactant
+    species_reac = set()
+    species_reac.update(set(df_reac["reactant_1"]))
+    species_reac.update(set(df_reac["reactant_2"]))
+    for prods in df_reac["products"]:
+        species_reac.update(set(prods.split(";")))
+    missing = species_reac - species
+    if len(missing) != 0:
+        raise ValueError("Find species that are not in the specie table: {}.".format(missing))
+    missing = species - species_reac
+    if len(missing) != 0:
+        raise ValueError("Find species that are not in the reaction table: {}.".format(missing))
 
 
 def save_result(res, fname):
