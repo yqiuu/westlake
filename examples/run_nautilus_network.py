@@ -87,7 +87,8 @@ def load_inputs_nautilus(dirname):
 
 def load_reaction_network(file_gas, file_grain):
     lines = open(file_gas).readlines()
-    lines.extend(open(file_grain).readlines())
+    if file_grain.exists():
+        lines.extend(open(file_grain).readlines())
 
     n_col_reac = 34
     n_col_prod = 91
@@ -151,36 +152,38 @@ def preprocess_lines(lines, n_col_reac, n_col_prod, remove_list=None):
 
 
 def load_species(file_gas, file_grain, file_element):
-    data = []
+    data_spec = []
     for ln in open(file_gas).readlines():
         if ln.startswith("!"):
             continue
-        data.append(ln.split())
-    if file_grain is not None:
+        data_spec.append(ln.split())
+    if file_grain.exists():
         for ln in open(file_grain).readlines():
             if ln.startswith("!"):
                 continue
-            data.append(ln.split())
-    columns = [
-        "specie", "charge",
-        "H", "He", "C", "N", "O", "Si", "S", "Fe", "Na", "Mg", "Cl", "P", "F"
-    ]
-    df = pd.DataFrame(data, columns=columns)
-    df.set_index("specie", inplace=True)
-    df = df.astype("i4")
+            data_spec.append(ln.split())
 
-    data = []
+    data_elem = []
     for ln in open(file_element).readlines():
         if ln.startswith("!"):
             continue
-        data.append(ln.split())
-    names, mas = list(zip(*data))
+        data_elem.append(ln.split())
+    names, mas = list(zip(*data_elem))
+
+    columns = ["specie", "charge"] + list(names)
+    df = pd.DataFrame(data_spec, columns=columns)
+    df.set_index("specie", inplace=True)
+    df = df.astype("i4")
+
     df["num_atoms"] = np.sum(df[list(names)].values, axis=-1)
     df["ma"] = np.sum(df[list(names)].values*np.asarray(mas, dtype="f8"), axis=-1)
     return df
 
 
 def load_surface_params(fname):
+    if not fname.exists():
+        return None, None, None
+
     index = []
     data = []
     for ln in open(fname).readlines():
@@ -201,6 +204,9 @@ def load_surface_params(fname):
 
 
 def load_activation_energies(fname):
+    if not fname.exists():
+        return None
+
     n_col_reac = 34
     n_col_prod_b = 37
     n_col_prod_e = 93
