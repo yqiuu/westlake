@@ -9,4 +9,4 @@ def main():
     parser.add_argument(
         '--dir', type=str, default='./', help='Directory to save the config file.')
     args = parser.parse_args()
-    save_config_template(Path(args.dirname)/Path("config.yml"))
+    save_config_template(Path(args.dir)/Path("config.yml"))

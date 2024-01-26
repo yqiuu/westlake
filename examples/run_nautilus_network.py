@@ -244,4 +244,4 @@ if __name__ == "__main__":
     parser.add_argument(
         '--use_evolution', action='store_true', help="Use structure_evolution.dat")
     args = parser.parse_args()
-    main(args.dirname, args.use_evolution)
+    main(args.dir, args.use_evolution)
