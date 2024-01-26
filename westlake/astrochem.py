@@ -468,6 +468,9 @@ def replace_with_constant_rate_module(reac_term, df_spec):
 
 
 def validate_specie_params(df_spec, var_name):
+    if df_spec is None:
+        return
+
     counts = Counter(df_spec.index.values)
     dups = []
     for spec, num in counts.items():
