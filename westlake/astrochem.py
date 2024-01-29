@@ -350,9 +350,9 @@ def solve_rate_equation_astrochem(reaction_term, ab_0_dict, df_spec, config, *,
     def _solve(reac_term, df_spec, t_span, ab_0, method, use_scipy_solver, kwargs):
         reac_term = replace_with_constant_rate_module(reac_term, df_spec)
         if use_scipy_solver:
-            res = solve_ivp_scipy(reaction_term, t_span, ab_0, method=method, **kwargs)
+            res = solve_ivp_scipy(reac_term, t_span, ab_0, method=method, **kwargs)
         else:
-            res = solve_ivp_torch(reaction_term, t_span, ab_0, **kwargs)
+            res = solve_ivp_torch(reac_term, t_span, ab_0, **kwargs)
         t_in = torch.as_tensor(res.t)[:, None] # (N_time, 1)
         y_in = torch.as_tensor(res.y).T # (N_time, N_spec)
         coeffs, den_gas = reac_term.compute_rate_coeffs(t_in, y_in)
