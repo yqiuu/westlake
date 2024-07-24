@@ -1,10 +1,10 @@
 from pathlib import Path
 from argparse import ArgumentParser
 
-from ..config import save_config_template
+from .config import save_config_template
 
 
-def main():
+def exec_config():
     parser = ArgumentParser()
     parser.add_argument(
         '--dir', type=str, default='./', help='Directory to save the config file.')

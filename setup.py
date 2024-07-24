@@ -25,7 +25,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'westlake-config=westlake.scripts.westlake_config:main',
+            'westlake-config=westlake.scripts:exec_config',
         ],
     },
 )
