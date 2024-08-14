@@ -34,7 +34,7 @@ from .solvers import solve_ivp_torch, solve_ivp_scipy
 
 
 def create_astrochem_model(df_reac, df_spec, df_surf, config,
-                           medium=None, df_act=None, df_br=None,
+                           medium=None, df_br=None,
                            df_barr=None, df_gap=None, df_ma=None,
                            formula_dict=None, formula_dict_ex=None,
                            use_copy=True):
@@ -69,12 +69,6 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
 
         config (Config): Config.
         medium (Medium, optional): Medium. Defaults to None.
-        df_act (pd.DataFrame, optional): Additional Activation energy. The
-        default value is 0. Defaults to None.
-            The dataframe should include:
-            - index: Reaction key.
-            - 'E_act': Activation energy [K].
-
         df_br (pd.DataFrame, optional): Additional Branching ratio. This will
             overwrite all builtin branching ratios. Defaults to None.
             The dataframe should include:
@@ -134,8 +128,7 @@ def create_astrochem_model(df_reac, df_spec, df_surf, config,
     if config.model != "simple":
         prepare_surface_reaction_params(
             df_reac, df_spec, df_surf, config,
-            df_act=df_act, df_br=df_br,
-            df_barr=df_barr, df_gap=df_gap, df_ma=df_ma,
+            df_br=df_br, df_barr=df_barr, df_gap=df_gap, df_ma=df_ma,
         )
         vmod = VariableModule()
         vmod.add_variable("rate_hopping", create_hopping_rate_module(df_spec, config))

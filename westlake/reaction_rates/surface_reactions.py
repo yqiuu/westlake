@@ -168,7 +168,7 @@ def prepare_surface_reaction_params(df_reac, df_spec, df_surf, config,
         df_barr=df_barr, df_gap=df_gap, df_ma=df_ma
     )
     assign_surface_params(df_reac, df_spec, df_surf)
-    assign_activation_energy(df_reac, df_act)
+    assign_activation_energy(df_reac)
     compute_branching_ratio(df_reac, df_surf, config)
     assign_branching_ratio(df_reac, df_br)
     assign_surface_tunneling_probability(df_reac, df_surf, config)
@@ -285,43 +285,38 @@ def assign_surface_params(df_reac, df_spec, df_surf):
     df_reac.fillna(0., inplace=True)
 
 
-def assign_activation_energy(df_reac, df_act):
+def assign_activation_energy(df_reac):
     df_reac["E_act"] = 0.
-    if df_act is None:
-        return
 
-    index = np.intersect1d(df_reac["key"], df_act.index)
-    df_tmp = pd.DataFrame(df_reac.index, index=df_reac["key"], columns=["index"])
-    df_reac.loc[df_tmp.loc[index, "index"], "E_act"] = df_act.loc[index, "E_act"].values
-
-    # When we have the following reactions:
-    # - JA + JB > X + Y
-    # - JA + JB > JX + JY
-    # The activation energy is only given for the second reaction. The code
-    # below assign the activation energy for the first reaction.
-    cond = df_reac["formula"] == 'surface reaction'
-    df_tmp = df_reac.loc[cond, ["key", "reactant_1", "reactant_2", "products", "E_act"]].copy()
-    df_tmp["index"] = df_tmp.index.values
-    df_lookup = df_tmp[["key", "index", "E_act"]].set_index("key")
-    lookup_idx = df_lookup["index"].to_dict()
-
+    # Find all following reactions:
+    # - JA + JB > JX + JY (inds) (inds_1)
+    # - JA + JB > X + Y (inds_0)
+    cond = df_reac["formula"] == "surface reaction"
+    df_tmp = df_reac.loc[cond, ["key"]]
+    lookup = pd.Series(df_tmp.index.values, index=df_tmp["key"]).to_dict()
     inds = []
-    inds_surf = []
+    inds_0 = []
+    inds_1 = []
     for idx, reac_1, reac_2, prods in zip(
-        df_tmp.index.values,
-        df_tmp["reactant_1"].values,
-        df_tmp["reactant_2"].values,
-        df_tmp["products"].values,
+        df_reac.index.values,
+        df_reac["reactant_1"].values,
+        df_reac["reactant_2"].values,
+        df_reac["products"].values,
     ):
-        if reac_1.startswith("J") and reac_2.startswith("J") \
-            and not (prods.startswith("J") or prods.startswith("K")):
+        if not reac_1.startswith("J") or not reac_2.startswith("J"):
+            continue
+        if prods.startswith("J") or prods.startswith("K"):
+            inds.append(idx)
+        else:
             prods = prods.split(";")
             prods = [f"J{prod}" for prod in prods]
             prods = ";".join(prods)
             key = f"{reac_1};{reac_2}>{prods}"
-            inds.append(idx)
-            inds_surf.append(lookup_idx[key])
-    df_reac.loc[inds, "E_act"] = df_reac.loc[inds_surf, "E_act"].values
+            inds_0.append(idx)
+            inds_1.append(lookup[key])
+
+    df_reac.loc[inds, "E_act"] = df_reac.loc[inds, "gamma"]
+    df_reac.loc[inds_0, "E_act"] = df_reac.loc[inds_1, "E_act"].values
 
 
 def compute_branching_ratio(df_reac, df_surf, config):

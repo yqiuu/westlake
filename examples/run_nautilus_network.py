@@ -9,7 +9,7 @@ import westlake
 
 
 def main(dirname, use_evolution):
-    df_reac, df_spec, df_surf, df_barr, df_ma, df_act, ab_0_dict = \
+    df_reac, df_spec, df_surf, df_barr, df_ma, ab_0_dict = \
         load_inputs_nautilus(dirname)
     config_dict = yaml.safe_load(open(Path(dirname)/Path("config.yml")))
 
@@ -44,7 +44,7 @@ def main(dirname, use_evolution):
 
     reaction_term = westlake.create_astrochem_model(
         df_reac, df_spec, df_surf, config,
-        medium=medium, df_act=df_act, df_barr=df_barr, df_ma=df_ma,
+        medium=medium, df_barr=df_barr, df_ma=df_ma,
     )
     res = westlake.solve_rate_equation_astrochem(
         reaction_term, ab_0_dict, df_spec, config,
@@ -81,8 +81,9 @@ def load_inputs_nautilus(dirname):
     )
     df_surf, df_barr, df_ma = load_surface_params(dirname/Path("surface_parameters.in"))
     df_act = load_activation_energies(dirname/Path("activation_energies.in"))
+    assign_activation_energy(df_reac, df_act)
     ab_0_dict = load_initial_abundances(dirname/Path("abundances.in"))
-    return df_reac, df_spec, df_surf, df_barr, df_ma, df_act, ab_0_dict
+    return df_reac, df_spec, df_surf, df_barr, df_ma, ab_0_dict
 
 
 def load_reaction_network(file_gas, file_grain):
@@ -230,6 +231,20 @@ def load_activation_energies(fname):
     df["E_act"] = df["E_act"].astype("f8")
     df.set_index("key", inplace=True)
     return df
+
+
+def assign_activation_energy(df_reac, df_act):
+    if df_act is None:
+        return
+
+    lookup = df_act["E_act"].to_dict()
+    inds = []
+    values = []
+    for idx, key in zip(df_reac.index, df_reac["key"]):
+        if key in lookup:
+            inds.append(idx)
+            values.append(lookup[key])
+    df_reac.loc[inds, "gamma"] = values
 
 
 def load_initial_abundances(fname):
