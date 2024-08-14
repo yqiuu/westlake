@@ -450,7 +450,7 @@ def derive_initial_abundances(ab_0_dict, df_spec, config):
 
 def replace_with_constant_rate_module(reac_term, df_spec):
     """Use constant module to improve the performance if possible."""
-    if reac_term.module_med.is_static():
+    if reac_term.module_med.is_static() and not isinstance(reac_term, ThreePhaseTerm):
         reac_term_new = deepcopy(reac_term)
         t_in = torch.zeros(1)
         y_in = torch.zeros(len(df_spec))
