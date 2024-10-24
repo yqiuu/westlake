@@ -1,0 +1,2 @@
+# Westlake 
+Westlake is a tool to study the chemical evolution of interstellar molecules. The code employs the rate equation method, describing the chemical evolution using a set of coupled ordinary differential equations. Due to the stiffness of the chemical system, the backward difference method is applied to solve the equations. Both two phase and three phase models are implemented. Written in Python, Westlake is user-friendly and facilitates the easy incorporation of new reaction mechanisms. 
